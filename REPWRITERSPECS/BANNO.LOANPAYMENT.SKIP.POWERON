@@ -80,6 +80,7 @@ END
 SETUP
  Q=CTRLCHR(34)
 
+ CALL INITIALIZETERMS
  TERMS(1)="Some example terms go here"
  TERMS(2)="Some more text"
  TERMS(3)="Even moar text!"
@@ -88,7 +89,6 @@ END [SETUP]
 
 PRINT TITLE="Banno Skip a Loan Payment"
  CALL INITIALIZEDATA
- CALL PROCGETPRELOADDATA [temporary until we get rgstate working in uat]
  IF @RGSTATE=GETPRELOADDATA THEN
   DO
    CALL PROCGETPRELOADDATA
@@ -142,7 +142,7 @@ PROCEDURE PROCGETPRELOADDATA
   DO
    IF I>1 THEN
     PRINT ","
-   PRINT Q+TERMS(I)+Q
+   PRINT Q+TERMS(I)+" "+Q
    NEWLINE
    I=I+1
   END
