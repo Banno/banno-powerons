@@ -145,7 +145,7 @@ PROCEDURE PROCGETPRELOADDATA
   PRINT Q+Q+","
  NEWLINE 
  
- PRINT "  "+Q+"feePerPaymentSkip"+Q+":"+Q+FORMAT("##,###,##9.99",FEEAMOUNT)+Q+","
+ PRINT "  "+Q+"feePerPaymentSkip"+Q+":"+Q+FORMAT("#######9.99",FEEAMOUNT)+Q+","
  NEWLINE
 
  PRINT "  "+Q+"terms"+Q+":["
@@ -180,7 +180,7 @@ PROCEDURE PROCGETPRELOADDATA
      NEWLINE
      PRINT Q+"name"+Q+": "+Q+LDESCRIPTION+Q+","
      NEWLINE
-     PRINT Q+"paymentAmount"+Q+": "+Q+FORMAT("##,###,##9.99",LPAYMENT)+Q+","
+     PRINT Q+"paymentAmount"+Q+": "+Q+FORMAT("#######9.99",LPAYMENT)+Q+","
      NEWLINE
      PRINT Q+"accountId"+Q+":"+Q+LID+Q+","
      NEWLINE
@@ -237,13 +237,6 @@ PROCEDURE PROCGETPRELOADDATA
  PRINT "  ],"
  NEWLINE
 
-[    "availableShares":
-      {
-        "name":"REGULAR SHARES",
-        "accountId":"123451234512345",
-        "balance":"233.92"
-      }
-]    
  PRINT "  "+Q+"availableShares"+Q+": ["
  NEWLINE
 
@@ -259,7 +252,7 @@ PROCEDURE PROCGETPRELOADDATA
    NEWLINE
    PRINT Q+"accountId"+Q+": "+Q+SHARE:ID+Q+","
    NEWLINE
-   PRINT Q+"balance"+Q+": "+Q+FORMAT("##,###,##9.99",SHARE:AVAILABLEBALANCE)+Q+"}"
+   PRINT Q+"balance"+Q+": "+Q+FORMAT("#######9.99",SHARE:AVAILABLEBALANCE)+Q+"}"
    NEWLINE
    SHAREDISPLAYED=TRUE
   END 
@@ -306,7 +299,7 @@ PROCEDURE INITIALIZEDATA
    FEEAMOUNTS(TEMPLOOP)=$0.00
   END
 
- FOR TEMPLOOP=1 TO TYPESMAX
+ FOR TEMPLOOP=0 TO TYPESMAX
   DO
    LOANTYPES(TEMPLOOP)=TRUE
    SHARETYPES(TEMPLOOP)=TRUE
