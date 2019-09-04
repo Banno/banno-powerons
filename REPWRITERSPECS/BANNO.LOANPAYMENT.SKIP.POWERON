@@ -648,7 +648,8 @@ PROCEDURE GETSKIPCRITERIA
   END
 END
 
-[ This procedure extracts the next LID from the LIDLIST. The 
+[ 
+  This procedure extracts the next LID from the LIDLIST. The 
   LIDLIST will be modified not to include the loan ID.
 
   PASS:   LIDLIST
@@ -675,13 +676,13 @@ PROCEDURE GETNEXTLID
  LID=TEXT1
 END [PROCEDURE]
 
-PROCEDURE TEXTNLS
 [
- REMOVE LEADING SPACES FROM A TEXT STRING.
+ Remove leading spaces from a text string.
 
- PASS:   TEXT1     THE STRING TO TRIM.
- RETURN: TEXT1     THE TRIMMED STRING.
+ PASS:   TEXT1     The string to trim
+ RETURN: TEXT1     The trimmed string
 ]
+PROCEDURE TEXTNLS
 
  TT=1
  TEXTFOUND=FALSE
@@ -696,13 +697,13 @@ PROCEDURE TEXTNLS
   TEXT1=SEGMENT(TEXT1,TT,LENGTH(TEXT1))
 END
 
-PROCEDURE TEXTNTS
 [
- REMOVE TRAILING SPACES FROM A TEXT STRING.
+ Remove trailing spaces from a text string.
 
- PASS:   TEXT1     THE STRING TO TRIM.
- RETURN: TEXT1     THE TRIMMED STRING.
+ PASS:   TEXT1     The string to trim
+ RETURN: TEXT1     The trimmed string
 ]
+PROCEDURE TEXTNTS
 
  TT=LENGTH(TEXT1)
  TEXTFOUND=FALSE
@@ -716,14 +717,13 @@ PROCEDURE TEXTNTS
  TEXT1=SEGMENT(TEXT1,1,TT)
 END
 
-
-PROCEDURE TEXTNLTS
 [
- REMOVE LEADING AND TRAILING SPACES FROM A TEXT STRING.
+ Remove leading and trailing spaces from a text string.
 
- PASS:   TEXT1     THE STRING TO TRIM.
- RETURN: TEXT1     THE TRIMMED STRING.
+ PASS:   TEXT1     The string to trim
+ RETURN: TEXT1     The trimmed string
 ]
+PROCEDURE TEXTNLTS
  CALL TEXTNLS
  CALL TEXTNTS
 END
