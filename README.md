@@ -1,3 +1,3 @@
-# banno-powerons
+# Banno PowerOns
 
-This is a (temporary?) repository to store banno PowerOns
+This is a repository for development of Banno PowerOns
