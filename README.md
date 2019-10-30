@@ -16,13 +16,13 @@ This is a repository for development of Banno PowerOns
 
 1. You need to install Git - you can do that from [here](https://git-scm.com/)
 
-1. Create a folder where you want to store your cloned repository
+2. Create a folder where you want to store your cloned repository
 
-1. Use the `Clone or download` button on the repository and copy the URL. Make sure you're using HTTPS.
+3. Use the `Clone or download` button on the repository and copy the URL. Make sure you're using HTTPS.
 
 ![how_to_clone1](docs/images/clone1.png)
 
-1. Open a command prompt and navigate to the new folder. Type `git clone` and paste the URL you copied. You should have the cloned repository after executing this command.
+4. Open a command prompt and navigate to the new folder. Type `git clone` and paste the URL you copied. You should have the cloned repository after executing this command.
 
 ![how_to_clone2](docs/images/clone2.png)
 
@@ -30,15 +30,15 @@ This is a repository for development of Banno PowerOns
 
 1. Open Episys Quest and Navigate to the PC Transfer screen
 
-1. On the local panel navigate to the repository that you cloned. Then navigate to the `REPWRITERSPECS` folder of the PowerOn that you want to install.
+2. On the local panel navigate to the repository that you cloned. Then navigate to the `REPWRITERSPECS` folder of the PowerOn that you want to install.
 
 ![pctransfer1](docs/images/pctransfer1.png)
 
-1. On the host panel navigate to the `PowerOn Specfiles` folder. Make sure that Text mode is selected. Drag the .POW file from your local to your host panel.
+3. On the host panel navigate to the `PowerOn Specfiles` folder. Make sure that Text mode is selected. Drag the .POW file from your local to your host panel.
 
 ![pctransfer2](docs/images/pctransfer2.png)
 
-1. On the local panel navigate back to the previous folder and then to the `LETTERSPECS` folder. On the host panel navigate to the previous, and then to the `Letter Files` folder. Drag the .CFG file from your local to your host panel. Make sure that Text mode is selected for this transfer.
+4. On the local panel navigate back to the previous folder and then to the `LETTERSPECS` folder. On the host panel navigate to the previous, and then to the `Letter Files` folder. Drag the .CFG file from your local to your host panel. Make sure that Text mode is selected for this transfer.
 
 ![pctransfer3](docs/images/pctransfer3.png)
 
@@ -46,11 +46,11 @@ This is a repository for development of Banno PowerOns
 
 1. Navigate to the PowerOn Control screen.
 
-1. Open the new PowerOn that you just transferred
+2. Open the new PowerOn that you just transferred
 
-1. Click the `Install a Specfile for Demand Use` button or press the F8 key
+3. Click the `Install a Specfile for Demand Use` button or press the F8 key
 
-1. Click `Yes` to confirm. You should see a `Specfile: <name of your PowerOn> installed successfully!` message at the bottom.
+4. Click `Yes` to confirm. You should see a `Specfile: <name of your PowerOn> installed successfully!` message at the bottom.
 
 ![install1](docs/images/install1.png)
 
@@ -60,7 +60,7 @@ This is a repository for development of Banno PowerOns
 
 ![devicecontrol1](docs/images/devicecontrol1.png)
 
-1. Select your sym's BANNO SymXchange instance and click `Refresh`. After the refresh is complete you should see a status `Done`.
+2. Select your sym's BANNO SymXchange instance and click `Refresh`. After the refresh is complete you should see a status `Done`.
 
 ![devicecontrol2](docs/images/devicecontrol2.png)
 
