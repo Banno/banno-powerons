@@ -54,6 +54,22 @@ This is a repository for development of Banno PowerOns
 
 ![install1](docs/images/install1.png)
 
+### Add the PowerOn to the SymXchange common parameters
+
+1. Navigate the the Parameter Manager screen.
+
+2. Select SymXchange Parameters in the dropdown
+
+![commonparams1](docs/images/commonparams1.png)
+
+3. Expand your sym's Banno SymXchange instance and select `Common` under it (should be the first one)
+
+![commonparams2](docs/images/commonparams2.png)
+
+3. Find the next available `Custom Specfile` slot and enter your PowerOn's name in it. You will get a warning that this might adversely affect services - this specific change will not interrupt any services.
+
+4. Click the `OK` button to confirm the changes.
+
 ### Refresh SymXchange
 
 1. In Episys Quest navigate to the `Device Control` screen. Select `SymXchange` in the device dropdown.
