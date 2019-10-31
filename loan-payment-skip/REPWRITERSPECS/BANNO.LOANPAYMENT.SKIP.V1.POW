@@ -1,3 +1,19 @@
+[*
+**  Copyright 2019 Jack Henry and Associates
+**
+**  This Banno service PowerOn allow the user to select one or more
+**  eligible loans and, for a fee, have the loan due date advanced
+**  by a month.
+**
+**  For more information check
+**  https://github.com/Banno/banno-powerons
+**
+**  Banno is not responsible for any modifications to this file
+**  made by unauthorized personel.
+**
+**  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
+*]
+
 SYMCONNECT
 STATELESS
 
