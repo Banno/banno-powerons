@@ -3,7 +3,7 @@
 
 
 
-This is a repository for development of Banno PowerOns
+This is a repository for development and support of Banno PowerOns 
 
 
 
