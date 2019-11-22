@@ -12,25 +12,19 @@ This is a repository for development of Banno PowerOns
 
 
 
-### Clone this repository
+### Download the repository files
 
-1. You need to install Git - you can do that from [here](https://git-scm.com/)
-
-2. Create a folder where you want to store your cloned repository
-
-3. Use the `Clone or download` button on the repository and copy the URL. Make sure you're using HTTPS.
+1. Download the repository zip file
 
 ![how_to_clone1](docs/images/clone1.png)
 
-4. Open a command prompt and navigate to the new folder. Type `git clone` and paste the URL you copied. You should have the cloned repository after executing this command.
-
-![how_to_clone2](docs/images/clone2.png)
+2. Extract the zip file into a folder of your choice
 
 ### Transfer the PowerOn and the associated configuration file
 
 1. Open Episys Quest and Navigate to the PC Transfer screen
 
-2. On the local panel navigate to the repository that you cloned. Then navigate to the `REPWRITERSPECS` folder of the PowerOn that you want to install.
+2. On the local panel navigate to the repository folder where you extracted the zip file. Then navigate to the `REPWRITERSPECS` folder of the PowerOn that you want to install.
 
 ![pctransfer1](docs/images/pctransfer1.png)
 
