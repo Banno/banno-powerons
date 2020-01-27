@@ -1,0 +1,496 @@
+[*
+**  PowerOn Name:       BANNO.LOAN.PAYOFF.V1.POW
+**  Letterfile Name:    BANNO.LOAN.PAYOFF.V1.CFG
+**
+**  Copyright 2020 Jack Henry and Associates
+**
+**  This Banno service PowerOn allow the user to select an account, 
+**  a loan, and a payoff date to obtain payoff information.
+**
+**  For more information check
+**  https://github.com/Banno/banno-powerons
+**
+**  Banno is not responsible for any modifications to this file
+**  made by unauthorized personnel.
+**
+**  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
+*
+
+**  PASS:  This information is passed for the selected 
+  
+                RGSTATE        (REQUIRED, NOT USED)
+                RGUSERCHR1     Member Account number 
+                RGUSERCHR2     Loan ID (4)
+                RGUSERCHR3     Payoff Date yyyy-mm-dd
+**
+** PowerOn will return:
+
+{
+ "clientToPOSubmitRequest": {
+    "rgState": "PERFORMLOANPAYOFFCALC",
+    "powerOnFileName": "BANNO.LOANPAYOFF.POWERON.V0.POW",
+    "userCharList": [
+      {"id": 1, "value": "member-account-number"},
+      {"id": 2, "value": "4charLoanId"},
+      {"id": 3, "value": "yyyy-mm-dd"},
+      {"id": 4, "value": ""},
+      {"id": 5, "value": ""}
+    ],
+    "userNumList": [],
+    "rgSession": 1
+  },
+  "POPayoffCalcResponse": {
+    "clientErrorMessage": "A user friendly error message (configurable by FI)",
+    "loggingErrorMessage": "an error message used in logging",
+    "results": {
+      "totalPayoffAmount": "$5,774.60",
+      "payoffDate": "yyyy-mm-dd",
+      "accountDetails": {
+        "principalBalance": "$4,814.76",
+        "interestType": "Daily Billed 360 (configurable by FI, optional display, maybe remove completely)",
+        "interestRate": "3.400% (optional. not supplied for credit cards)",
+        "interestDue": "1.43 (not in design spec currently)",
+        "dueDate": "yyyy-mm-dd",
+        "amountPastDueByPayoffDate": "$0.00",
+        "pastDuePayoffCount": "0",
+        "lateChargeDue": "$5.00"
+      },
+      "associatedCollateral": [
+        {"label": "Year", "value": "2009 (max 64 chars)"},
+        {"label": "Make", "value": "Toyota"},
+        {"label": "Model", "value": "Corolla"}
+      ]
+    }
+  }
+}
+]
+SYMCONNECT
+STATELESS
+
+TARGET=ACCOUNT
+
+DEFINE
+ #INCLUDE "RD.GETDATA.DEF"
+ #INCLUDE "RB.LISTEXPAND.DEF"
+
+ PAYOFFACCOUNTNUM=CHARACTER(10)
+ PAYOFFID=CHARACTER
+ PAYOFFDATE=DATE
+
+ [LETTERFILE DEF]
+ CONFIGFILENAME            = "BANNO.LOAN.PAYOFF.V1.CFG"
+ LFNUMBER                  = NUMBER
+ LFERROR                   = CHARACTER
+ LFLINE                    = CHARACTER
+ READCONFIGERROR           = NUMBER
+ READCONFIGERRORMSG        = CHARACTER
+
+ TERMS	  	           = CHARACTER     ARRAY(40)
+ TERMSMAXLINES	           = 40
+ TERMSLINESCOUNT           = NUMBER
+
+ LOANTYPES                 = NUMBER        ARRAY(9999)
+ TYPESMAX                  = 9999
+
+ LOANID                    = CHARACTER(4)  ARRAY(25)
+ LOANINELIGIBLECODE        = NUMBER        ARRAY(10)
+ LOANSMAX                  = 25
+ INELIGIBLEREASONS         = CHARACTER(60) ARRAY(10)
+ INELIGIBLEREASONSMAX      = 10
+
+ LOANWARNINGS              = NUMBER        ARRAY(999)
+ ACCTWARNINGS              = NUMBER        ARRAY(999)
+ WARNINGLOOP               = NUMBER
+ WARNINGSMAX               = 999
+ FUTUREDAYS                = NUMBER
+
+ LOANTRACKINGTYPE          = NUMBER
+
+ I                         = NUMBER
+ J                         = NUMBER
+ Q                         = CHARACTER
+ TEMPLOOP                  = NUMBER
+ 
+ TRUE                      = 1
+ FALSE                     = 0
+
+ INELILIBLECHECK           = CHARACTER 
+ INELIGIBLECODESET         = 0
+ INELIGIBLECODELOANTYPE    = 1
+ INELIGIBLEMAXFUTUREDAYS   = 2
+ INELIGIBLECODELOANWARNING = 3
+ INELIGIBLECODEACCTWARNING = 4
+
+ VALIDATEERROR             = NUMBER
+ ERRORFLAG                 = NUMBER
+
+ PROJECTIONERRORMSG        = CHARACTER
+ PAYOFFCALCAMOUNT          = MONEY
+ PAYOFFCALCDUEDATE         = DATE
+ PAYOFFCALCINTRATE         = RATE
+ PAYOFFCALCUNAPPLPARTPMT   = MONEY
+ PAYOFFCALCPRINCIPALBAL    = MONEY
+ PAYOFFCALCINTERESTTYPE    = CHARACTER
+ PAYOFFCALCINTERESTDUE     = MONEY
+ PAYOFFCALCAMTPASTDUE      = MONEY
+ PAYOFFCALCPASTDUECOUNT    = NUMBER
+ PAYOFFCALCLATECHARGEDUE   = MONEY
+
+ INTERESTDESC              = CHARACTER(12) ARRAY(7)
+
+
+ GENERICUSERERRORMSG="We're sorry we've encountered an error. Please contact your credit union."
+END
+
+SETUP
+ Q=CTRLCHR(34)
+
+END
+
+PRINT TITLE="BANNO.LOAN.PAYOFF.V1.POW"
+
+ [GET VALUES FROM SYMX CALL]
+ PAYOFFACCOUNTNUM=@RGUSERCHR1
+ PAYOFFID=@RGUSERCHR2
+ PAYOFFDATE=DATEVALUE(@RGUSERCHR2)
+
+ CALL INITIALIZEDATA
+
+ CALL READCONFIGFILESETTINGS
+
+ [DISPLAY ANY LETTERFILE ERRORS]
+ IF READCONFIGERROR=TRUE THEN
+  DO
+   CALL ERRORHANDLING
+  END
+
+ IF READCONFIGERROR=FALSE THEN
+  DO
+   CALL GETLOANDATA
+   IF VALIDATEERROR=TRUE THEN
+    DO
+     CALL ERRORHANDLING
+    END
+  END
+END
+
+PROCEDURE ERRORHANDLING
+   PRINT "{"
+   NEWLINE
+   PRINT Q+"clientErrorMessage"+Q+":"
+   NEWLINE
+   PRINT Q+GENERICUSERERRORMSG+Q
+   NEWLINE
+   PRINT ","+Q+"loggingErrorMessage"+Q+":"
+   NEWLINE
+   PRINT Q+READCONFIGERRORMSG+Q+","
+   NEWLINE
+END
+
+
+PROCEDURE INITIALIZEDATA
+ WHILELIMIT=100000
+ FOR I=1 TO TERMSMAXLINES
+  DO
+   TERMS(I)=""
+  END
+
+ LOANTRACKINGTYPE=30  [replaced by config file]
+
+ [clear variable]
+ FOR TEMPLOOP=1 TO WARNINGSMAX
+  DO
+   LOANWARNINGS(TEMPLOOP)=FALSE
+   ACCTWARNINGS(TEMPLOOP)=FALSE
+  END
+
+ [clear variable]
+ FOR TEMPLOOP=0 TO TYPESMAX
+  DO
+   LOANTYPES(TEMPLOOP)=TRUE
+  END
+
+ [Initialize the ineligible reason messages]
+ INELIGIBLEREASONS(INELIGIBLECODELOANTYPE)=
+  "Ineligible Loan Type"
+ INELIGIBLEREASONS(INELIGIBLEMAXFUTUREDAYS)=
+  "Payoff Days than Maximum allowed"
+ INELIGIBLEREASONS(INELIGIBLECODELOANWARNING)=
+  "Loan Warning Found"
+ INELIGIBLEREASONS(INELIGIBLECODEACCTWARNING)=
+  "Account Warning Found"
+END
+
+PROCEDURE READCONFIGFILESETTINGS
+ READCONFIGERROR=FALSE
+ READCONFIGERRORMSG=""
+
+[ Parse letterfile]
+ FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
+ IF LFERROR<>"" THEN
+  DO
+   READCONFIGERROR=TRUE
+   READCONFIGERRORMSG="Error Opening Letterfile "+CONFIGFILENAME+": "+LFERROR
+  END
+ ELSE
+  DO
+   TERMSLINESCOUNT=0
+   WHILE LFERROR=""
+    DO
+     FILEREADLINE(LFNUMBER,LFLINE,LFERROR)
+     IF SEGMENT(LFLINE,1,1)<>"*" AND LFLINE<>"" THEN
+      DO
+
+       [ Loan types]
+       IF SEGMENT(LFLINE,1,3)="LT:" THEN
+        DO
+         LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         CALL LISTEXPAND
+         FOR I=0 TO TYPESMAX
+          DO
+           LOANTYPES(I)=LELIST(I)
+          END
+        END
+
+      [ Loan payoff max days]
+       IF SEGMENT(LFLINE,1,3)="FD:" THEN
+        DO
+         LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         IF LELISTINPUT="" THEN
+          LELISTINPUT="NONE"
+         CALL LISTEXPAND
+        END
+
+       [ Loan warning codes]
+       IF SEGMENT(LFLINE,1,3)="LW:" THEN
+        DO
+         IF LENGTH(LFLINE)>3 THEN
+          DO
+           LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+           CALL LISTEXPAND
+           FOR I=1 TO WARNINGSMAX
+            DO
+             LOANWARNINGS(I)=LELIST(I)
+            END
+          END
+        END
+
+       [ Acct warning codes]
+       IF SEGMENT(LFLINE,1,3)="AW:" THEN
+        DO
+         IF LENGTH(LFLINE)>3 THEN
+          DO
+           LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+           CALL LISTEXPAND
+           FOR I=1 TO WARNINGSMAX
+            DO
+             ACCTWARNINGS(I)=LELIST(I)
+            END
+          END
+        END
+
+
+      [ Loan tracking type]
+       IF SEGMENT(LFLINE,1,3)="TT:" THEN
+        LOANTRACKINGTYPE=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
+
+       [ Terms & conditions]
+       IF SEGMENT(LFLINE,1,3)="TC:" AND TERMSLINESCOUNT<TERMSMAXLINES THEN
+        DO
+         TERMSLINESCOUNT=TERMSLINESCOUNT+1
+         TERMS(TERMSLINESCOUNT)=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+        END
+      END
+    END
+  END
+
+END
+
+
+ [ NEED TO FIGURE OUT HOW TO GET TERMS AND COLLATERAL TO json]
+
+
+PROCEDURE GETLOANDATA
+ VALIDATEERROR=FALSE
+ FOR ACCOUNT WITH NUMBER PAYOFFACCOUNTNUM
+  DO
+   FOR EACH LOAN WITH (LOAN:ID=PAYOFFID)
+    DO
+
+     [CHECK LOAN TYPE]
+     IF LOANTYPES(LOAN:TYPE)=FALSE THEN
+      DO
+       VALIDATEERROR=TRUE
+       LOANINELIGIBLECODE(INELIGIBLECODELOANTYPE)=TRUE
+      END
+
+     [CHECK MAX DAYS]
+     IF PAYOFFDATE>SYSTEMDATE+FUTUREDAYS THEN 
+      DO
+       VALIDATEERROR=TRUE
+       LOANINELIGIBLECODE(INELIGIBLEMAXFUTUREDAYS)=TRUE
+      END
+
+     [CHECK LOAN & ACCOUNT WARNINGS]
+     FOR WARNINGLOOP=1 TO WARNINGSMAX
+      DO
+       IF ANYWARNING(ACCOUNT,WARNINGLOOP) AND
+          ACCTWARNINGS(WARNINGLOOP)=TRUE THEN
+        DO
+         VALIDATEERROR=TRUE
+         LOANINELIGIBLECODE(INELIGIBLECODEACCTWARNING)=TRUE
+        END
+       IF ANYWARNING(LOAN,WARNINGLOOP) AND 
+          LOANWARNINGS(WARNINGLOOP)=TRUE THEN
+        DO
+         VALIDATEERROR=TRUE
+         LOANINELIGIBLECODE(INELIGIBLECODELOANWARNING)=TRUE
+        END
+      END
+
+     [HANDLE ERRORS - TBD BASED ON MEETING 12/19
+     IF VALIDATEERROR=TRUE THEN          [CMS WORK ON THIS SECTION]
+      DO
+       CALL ERRORHANDLING
+      END ]
+
+     [EVERYTHING IS GOOD - LETS CALCULATE]
+     [ELSE] IF VALIDATEERROR=FALSE THEN 
+      DO
+       CALL CALCULATEPAYOFF
+
+       [HANDLE CALCULATION ERRORS]
+       IF ERRORFLAG=TRUE THEN
+        DO
+         CALL ERRORHANDLING
+        END
+
+       [DISPLAY RESULTS]
+       ELSE IF ERRORFLAG=FALSE THEN
+        DO
+         CALL DISPLAYRESULTS
+        END
+      END   
+
+    END [END LOAN LOOP]
+  
+
+  END [FOR ACCOUNT LOOP]
+
+END
+
+PROCEDURE CALCULATEPAYOFF
+
+ ERRORFLAG=FALSE
+
+ FOR ACCOUNT PAYOFFACCOUNTNUM
+  DO
+   FOR EACH LOAN WITH LOAN:ID=PAYOFFID
+    DO
+     PAYOFFCALCDUEDATE=LOAN:DUEDATE
+
+     IF LOAN:LOANCODE=6 THEN
+      PAYOFFCALCINTRATE=LOAN:AVGWEIGHTEDINTRATE
+     ELSE
+      PAYOFFCALCINTRATE=LOAN:INTERESTRATE
+     PAYOFFCALCUNAPPLPARTPMT=LOAN:UNAPPLIEDPARTIALPMT
+     LOANPROJECTINIT(1,0)
+     @LOANPROJECTCALCULATIONTYPE=3
+     @LOANPROJECTPAYOFFDATE=PAYOFFDATE
+
+     [Handle Member Birthdate insurance calc]  
+     @LOANPROJECTFIRSTINSBIRTHDATE=LOAN:FIRSTINSBIRTHDATE 
+     @LOANPROJECTSECONDINSBIRTHDATE=LOAN:SECONDINSBIRTHDATE
+     LOANPROJECTCALC
+     IF @LOANPROJECTERROR="" THEN
+      DO
+       PAYOFFCALCPRINCIPALBAL=@LOANPROJECTLOANAMOUNT
+       PAYOFFCALCINTERESTDUE=@LOANPROJECTINTERESTPAYOFF
+       PAYOFFCALCAMTPASTDUE=@LOANPROJECTAMOUNTPASTDUE 
+       PAYOFFCALCPASTDUECOUNT=@LOANPROJECTCOUNTPASTDUE
+       PAYOFFCALCLATECHARGEDUE=@LOANPROJECTLATECHGDUE
+       PAYOFFCALCAMOUNT=@LOANPROJECTAMOUNTPAYOFF
+       IF @LOANPROJECTINTERESTTYPE>5 THEN
+        PAYOFFCALCINTERESTTYPE=GETDATACHARACTER(
+         GETPARAMINTTYPEDESCRIPTION,@LOANPROJECTINTERESTTYPE)
+       ELSE
+        PAYOFFCALCINTERESTTYPE=INTERESTDESC(@LOANPROJECTINTERESTTYPE)
+      END
+     ELSE
+      DO
+       ERRORFLAG=TRUE
+       PROJECTIONERRORMSG="Loan Projection Error: "+@LOANPROJECTERROR
+       CALL ERRORHANDLING
+      END
+    END
+  END
+END
+
+
+PROCEDURE DISPLAYRESULTS
+
+ PRINT "results"
+ NEWLINE
+ PRINT "totalPayoffAmount: "
+ PRINT PAYOFFCALCAMOUNT
+ NEWLINE
+ PRINT "PayoffDate: "
+ PRINT PAYOFFDATE
+ NEWLINE
+
+ PRINT "accountDetails"
+ NEWLINE
+
+ PRINT "principalBalance"
+ PRINT PAYOFFCALCPRINCIPALBAL
+ NEWLINE
+
+ PRINT "Interest Type"
+ PRINT PAYOFFCALCINTERESTTYPE
+ NEWLINE
+
+ PRINT "interestRate"
+ PRINT PAYOFFCALCINTRATE
+ NEWLINE
+
+ PRINT "interestDue"
+ PRINT PAYOFFCALCINTERESTDUE
+ NEWLINE
+
+ PRINT "dueDate"
+ PRINT PAYOFFCALCDUEDATE
+ NEWLINE
+
+ PRINT "amountPastDueByPayoffDate"
+ PRINT PAYOFFCALCAMTPASTDUE
+ NEWLINE
+
+ PRINT "pastDuePayoffCount"
+ PRINT PAYOFFCALCPASTDUECOUNT
+ NEWLINE
+
+ PRINT "lateChargeDue"
+ PRINT PAYOFFCALCLATECHARGEDUE
+ NEWLINE
+
+ [COLLATERAL??]
+END
+
+PROCEDURE SETINTERESTDESCARRAY
+
+ INTERESTDESC(0)="Daily"
+ INTERESTDESC(1)="360 Day"
+ INTERESTDESC(2)="365.25 Day"
+ INTERESTDESC(3)="Daily Billed"
+ INTERESTDESC(4)="Daily Billed"
+ INTERESTDESC(5)="Actual/360"
+ INTERESTDESC(6)="Daily Billed 360"
+ INTERESTDESC(7)="Biweekly 360 Day"
+END
+
+#INCLUDE "RB.LISTEXPAND"
+
+
+
+
+
