@@ -15,13 +15,13 @@ To which the poweron should respond with:
   "accountEligible": true,
   "accountNumber": "0123456789",
   "accountBalance": "$5.00",
-  "address": {
-    "fullName": "Julie Jones",
-    "street": "6525 Chancellor Drive",
-    "city": "Cedar Falls",
-    "state": "IA",
-    "zip": "50613"
-  },
+  "address": [
+    "Julie Jones",
+    "6525 Chancellor Drive",
+    "Cedar Falls",
+    "IA",
+    "50613"
+  ],
   "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
 }
 ```
