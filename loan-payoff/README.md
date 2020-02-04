@@ -1,9 +1,16 @@
 # Loan payoff calculator
-This PowerOn included in the Banno Poweron Library allows the end-user to estimate their loan payoff amount with included interests and fees. By allowing the customer to retrieve this quote from within Banno, we can save you time and money and enable the customer to make smarter spending decisions. 
+The Loan payoff calculator allows the end-user to estimate their loan payoff amount with included interests and fees. By allowing the customer to retrieve this quote from within Banno, we can save you time and money and enable the customer to make smarter spending decisions.
+
+Loan payoffs are only available on in-house loans, the payoff option will not display on any 3rd party loans; both Account tracking and External Loan record types. Credit card loans will not display the interest rate as they typically have different interest rates for different portions of the balance.
 
 The configuration file gives you the ability to configure: 
-* Eligible account types
 * Eligible loan types
-* Number of days in the future they can estimate their payoff
-* Terms and conditions
-* Collateral descriptions
+* How many days into the future can a payoff be asked for
+* Account-level warnings that should prevent a payoff request
+* Loan level warnings that should prevent a payoff request
+* Real Estate secured loans (i.e. mortgages, HELOCS, etc)
+* Boat secured loans and the loan tracking set up for collateral
+* Vehicle secured loans and the loan tracking set up for collateral
+* Deposit or certificate secured loan types
+* Payoff terms and conditions statement
+
