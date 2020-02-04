@@ -14,3 +14,18 @@ The configuration file gives you the ability to configure:
 * Deposit or certificate secured loan types
 * Payoff terms and conditions statement
 
+## PowerOn installation
+[Click here](https://github.com/Banno/banno-powerons) to learn more about how to install the PowerOn on your host. 
+
+## Required files
+* PowerOn Name:  `BANNO.LOAN.PAYOFF.V1.POW`
+* Letter file Name:   `BANNO.LOAN.PAYOFF.V1.CFG`
+
+## Supported SymXchange web consoles
+* PowerOnService - 2017.01 V1
+* PowerOnService - 2018.00
+* PowerOnService - 2018.01
+
+_In order for your PowerOn to show-up you'll need to contact your support or implementation leader to turn on the Loan Payoff linktype._
+
+
