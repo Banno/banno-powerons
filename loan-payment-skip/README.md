@@ -1,7 +1,7 @@
 
 # Loan Payment Skip PowerOn
 
-This service PowerOn allow the user to select one or more eligible loans and, for a fee, have the loan due date advanced by a month.
+This service PowerOn allows the user to select one or more eligible loans and, for a fee, have the loan due date advanced by a month.
 
 The loan eligibility can be dictated by loan type, service code, minimum & maximum payment amount, account and loan level warning codes, loan season (minimum time opened), amount of time since last skip payment, and/or by the number of skip payments already performed within the last 12 months. The fee charged can be determined by setting a base fee and overwriting by account relationship code if applicable. The user will also be able to choose the share which the fees will be assessed against. The share can be limited by share type.
 
