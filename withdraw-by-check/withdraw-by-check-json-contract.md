@@ -40,14 +40,14 @@ If successful, the poweron should respond with:
 Missing or invalid Letterfile:
 ```json
 {
-  "errorCode": "00",
+  "errorCode": 500,
   "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
 }
 ```
 Share cannot have withdraw by check
 ```json
 {
-  "errorCode": "00",
+  "errorCode": 500,
   "loggingErrorMessage": "Ineligible Share"
 }
 ```
@@ -79,21 +79,21 @@ If the request is successful, the poweron should respond with:
 If the request is not successful, the poweron should respond with:
 ```json
 {
-  "errorCode": "00",
+  "errorCode": 500,
   "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
 }
 ```
 If the request is not successful due to insufficient funds, the poweron should respond with:
 ```json
 {
-  "errorCode": "01",
-  "loggingErrorMessage":"TRANPERFORM Error:+TRANERROR"
+  "errorCode": 501,
+  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
 }
 ```
 In the case of insufficient funds, the client may try request again with a lesser amount.
 
 ### Error codes
-| Code  | Description         |
-|-------|---------------------|
-| 00    | Generic Error       |
-| 01    | Try again           |
+| Code   | Description         |
+|--------|---------------------|
+| 500    | Generic Error       |
+| 501    | Try again           |
