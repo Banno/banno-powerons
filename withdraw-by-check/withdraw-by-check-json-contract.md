@@ -2,33 +2,60 @@
 To get things started, the client will send an initial request structured like so:
 ```json
 {
-  "rgState": "GETPRELOADDATA",
+  "rgState": "STATESTART",
   "powerOnFileName": "BANNO.WITHDRAW.CHECK.V1.POW",
-  "userChrList": [],
+  "userChrList":[
+    {"id": 1, "value": "member-account-number"},
+    {"id": 2, "value": "4charLoanId"},
+    {"id": 3, "value": ""},
+    {"id": 4, "value": ""},
+    {"id": 5, "value": ""}
+  ],
   "userNumList": [],
   "rgSession": 1
 }
 ```
-To which the poweron should respond with:
+If successful, the poweron should respond with:
 ```json
 {
-  "accountEligible": true,
-  "accountNumber": "0123456789",
-  "accountBalance": "$5.00",
-  "address": [
-    "Julie Jones",
-    "6525 Chancellor Drive",
-    "Cedar Falls",
-    "IA",
-    "50613"
-  ],
-  "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
+  "results": {
+    "shareEligible": true,
+    "accountNumber": "0123456789",
+    "accountDescription": "ADVANCED CHECKING",
+    "available": "123456.00",
+    "owner": "Julie Jones",
+    "address": [
+      "Julie Jones",
+      "6525 Chancellor Drive",
+      "Cedar Falls",
+      "IA",
+      "50613",
+      "ADDRESS 6"
+    ],
+    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
+  }
 }
 ```
+### Errors
+Missing or invalid Letterfile:
+```json
+{
+  "errorCode": "00",
+  "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
+}
+```
+Share cannot have withdraw by check
+```json
+{
+  "errorCode": "00",
+  "loggingErrorMessage": "Ineligible Share"
+}
+```
+
 When the client wishes to submit the check withdrawal request, it will send:
 ```json
 {
-  "rgState": "SUBMITWITHDRAWBYCHECKREQUEST",
+  "rgState": "PERFORMWITHDRAW",
   "powerOnFileName": "BANNO.WITHDRAW.CHECK.V1.POW",
   "userChrList":[
     {"id": 1, "value": "member-account-number"},
@@ -43,16 +70,30 @@ When the client wishes to submit the check withdrawal request, it will send:
 If the request is successful, the poweron should respond with:
 ```json
 {
-  "success": true
+  "results": {
+    "success": true,
+  }
 }
 ```
-
 ### Errors
-Any and all errors should be conveyed via the following structure (combined with the responses above):
+If the request is not successful, the poweron should respond with:
 ```json
 {
-  "clientErrorMessage": "if error processing, a user friendly error message (unused currently)",
-  "loggingErrorMessage": "if error processing, something to log"
+  "errorCode": "00",
+  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
 }
 ```
+If the request is not successful due to insufficient funds, the poweron should respond with:
+```json
+{
+  "errorCode": "01",
+  "loggingErrorMessage":"TRANPERFORM Error:+TRANERROR"
+}
+```
+In the case of insufficient funds, the client may try request again with a lesser amount.
 
+### Error codes
+| Code  | Description         |
+|-------|---------------------|
+| 00    | Generic Error       |
+| 01    | Try again           |
