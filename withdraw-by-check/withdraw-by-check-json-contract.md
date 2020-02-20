@@ -1,5 +1,7 @@
 # Withdraw by check JSON contract
+
 To get things started, the client will send an initial request structured like so:
+
 ```json
 {
   "rgState": "STATESTART",
@@ -15,7 +17,9 @@ To get things started, the client will send an initial request structured like s
   "rgSession": 1
 }
 ```
+
 If successful, the poweron should respond with:
+
 ```json
 {
   "results": {
@@ -36,15 +40,20 @@ If successful, the poweron should respond with:
   }
 }
 ```
+
 ### Errors
+
 Missing or invalid Letterfile:
+
 ```json
 {
   "errorCode": 500,
   "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
 }
 ```
+
 Share cannot have withdraw by check
+
 ```json
 {
   "errorCode": 500,
@@ -53,6 +62,7 @@ Share cannot have withdraw by check
 ```
 
 When the client wishes to submit the check withdrawal request, it will send:
+
 ```json
 {
   "rgState": "PERFORMWITHDRAW",
@@ -67,29 +77,37 @@ When the client wishes to submit the check withdrawal request, it will send:
   "rgSession": 1
 }
 ```
+
 If the request is successful, the poweron should respond with:
+
 ```json
 {
   "results": {
     "success": true,
+    "memoMode": false
   }
 }
 ```
+
 ### Errors
 If the request is not successful, the poweron should respond with:
+
 ```json
 {
   "errorCode": 500,
   "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
 }
 ```
+
 If the request is not successful due to insufficient funds, the poweron should respond with:
+
 ```json
 {
   "errorCode": 501,
   "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
 }
 ```
+
 In the case of insufficient funds, the client may try request again with a lesser amount.
 
 ### Error codes
