@@ -7,8 +7,8 @@ To get things started, the client will send an initial request structured like s
   "rgState": "STATESTART",
   "powerOnFileName": "BANNO.WITHDRAW.CHECK.V1.POW",
   "userChrList":[
-    {"id": 1, "value": "member-account-number"},
-    {"id": 2, "value": "4charLoanId"},
+    {"id": 1, "value": "0123456789S0123"},
+    {"id": 2, "value": ""},
     {"id": 3, "value": ""},
     {"id": 4, "value": ""},
     {"id": 5, "value": ""}
@@ -23,8 +23,8 @@ If successful, the poweron should respond with:
 ```json
 {
   "results": {
-    "shareEligible": true,
-    "accountNumber": "0123456789",
+    "eligible": true,
+    "memberAccountNumber": "0123456789S0123",
     "accountDescription": "ADVANCED CHECKING",
     "available": "123456.00",
     "owner": "Julie Jones",
@@ -68,9 +68,9 @@ When the client wishes to submit the check withdrawal request, it will send:
   "rgState": "PERFORMWITHDRAW",
   "powerOnFileName": "BANNO.WITHDRAW.CHECK.V1.POW",
   "userChrList":[
-    {"id": 1, "value": "member-account-number"},
-    {"id": 2, "value": "4charLoanId"},
-    {"id": 3, "value": "2.00"},
+    {"id": 1, "value": "0123456789S0123"},
+    {"id": 2, "value": "2.00"},
+    {"id": 3, "value": ""},
     {"id": 4, "value": ""},
     {"id": 5, "value": ""}],
   "userNumList": [],
