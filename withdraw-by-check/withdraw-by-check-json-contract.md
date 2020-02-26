@@ -25,7 +25,7 @@ If successful, the poweron should respond with:
   "results": {
     "eligible": true,
     "memberAccountNumber": "0123456789S0123",
-    "accountDescription": "ADVANCED CHECKING",
+    "shareLoanDescription": "ADVANCED CHECKING",
     "available": "123456.00",
     "owner": "Julie Jones",
     "address": [
