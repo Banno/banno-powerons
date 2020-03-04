@@ -43,21 +43,12 @@ If successful, the poweron should respond with:
 
 ### Errors
 
-Missing or invalid Letterfile:
+Missing or invalid Letterfile (or any generic, non-actionable error):
 
 ```json
 {
   "errorCode": 500,
   "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
-}
-```
-
-Share cannot have withdraw by check
-
-```json
-{
-  "errorCode": 500,
-  "loggingErrorMessage": "Ineligible Share"
 }
 ```
 
