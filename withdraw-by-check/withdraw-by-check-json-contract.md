@@ -43,21 +43,12 @@ If successful, the poweron should respond with:
 
 ### Errors
 
-Missing or invalid Letterfile:
+Missing or invalid Letterfile (or any generic, non-actionable error):
 
 ```json
 {
   "errorCode": 500,
   "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
-}
-```
-
-Share cannot have withdraw by check
-
-```json
-{
-  "errorCode": 500,
-  "loggingErrorMessage": "Ineligible Share"
 }
 ```
 
@@ -108,6 +99,24 @@ If the request is not successful due to insufficient funds, the poweron should r
 }
 ```
 
+If the request is not successful due to a missing address, the poweron should respond with:
+
+```json
+{
+  "errorCode": 502,
+  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+}
+```
+
+If the request is not successful due to an invalid loan/share, the poweron should respond with:
+
+```json
+{
+  "errorCode": 503,
+  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+}
+```
+
 In the case of insufficient funds, the client may try request again with a lesser amount.
 
 ### Error codes
@@ -115,3 +124,5 @@ In the case of insufficient funds, the client may try request again with a lesse
 |--------|---------------------|
 | 500    | Generic Error       |
 | 501    | Try again           |
+| 502    | Missing address     |
+| 503    | Invalid loan/share  |
