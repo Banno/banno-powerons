@@ -1,5 +1,5 @@
 
-# Loan Payment Skip PowerOn
+# Skip payment PowerOn
 
 This service PowerOn allows the user to select one or more eligible loans and, for a fee, have the loan due date advanced by a month.
 
