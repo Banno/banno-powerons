@@ -5,7 +5,7 @@ To get things started, the client will send an initial request structured like s
 ```json
 {
   "rgState": "STATESTART",
-  "powerOnFileName": "BANNO.WITHDRAW.CHECK.V1.POW",
+  "powerOnFileName": "BANNO.CHECK.WITHDRAW.V1.POW",
   "userChrList":[
     {"id": 1, "value": "0123456789S0123"},
     {"id": 2, "value": ""},
@@ -119,6 +119,14 @@ If the request is not successful due to an invalid loan/share, the poweron shoul
 
 In the case of insufficient funds, the client may try request again with a lesser amount.
 
+If the request is not successful to Reg D Limits, the poweron should respond wiht:
+```json
+{
+  "errorCode": 504,
+  "loggingErrorMessage": "TRANPERFORM Error: Reg D Limit"
+}
+```
+
 ### Error codes
 | Code   | Description         |
 |--------|---------------------|
@@ -126,3 +134,4 @@ In the case of insufficient funds, the client may try request again with a lesse
 | 501    | Try again           |
 | 502    | Missing address     |
 | 503    | Invalid loan/share  |
+| 504    | Reg D Limit         |
