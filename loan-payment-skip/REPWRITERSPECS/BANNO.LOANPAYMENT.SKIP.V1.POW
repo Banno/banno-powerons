@@ -37,7 +37,7 @@ DEFINE
  GRACEDAYS           = NUMBER
  SKIPCOUNT           = NUMBER
  TEMPLOOP            = NUMBER
- TIMEPERIOD          = CHARACTER(12)
+ TIMEPERIOD          = CHARACTER
  ERRORMSGUSER        = CHARACTER
  ERRORMSGLOG         = CHARACTER
  ERRORFLAG           = NUMBER
@@ -386,7 +386,7 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
      ERRORMSGLOG="Attempt to skip a payment on an ineligible loan: "+LID
     END
 
-   IF ERRORFLAG=FALSE THEN
+   IF ERRORFLAG=FALSE AND @RGUSERCHR2<>"" THEN
     DO
      SHAREFOUND=FALSE
      FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
@@ -452,14 +452,16 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
          NEWLINE
          PRINT Q+"feePaid"+Q+": "+Q+FORMAT("#######9.99",TOTALFEE)+Q+","
          NEWLINE
-         PRINT Q+"nextDueDate"+Q+": "+Q+FORMAT("99/99/9999",LNEWDUEDATE)+Q+","
+         PRINT Q+"nextDueDate"+Q+": "+Q+FORMAT("99/99/9999",LNEWDUEDATE)+Q
          NEWLINE
-	 FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
+         FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
           DO
-           PRINT Q+"shareDebited"+Q+": "+Q+SHARE:DESCRIPTION+Q+"}"
+           PRINT ","+Q+"shareDebited"+Q+": "+Q+SHARE:DESCRIPTION+Q
            NEWLINE
-	  END
-	 LOANDISPLAYED=TRUE
+         END
+         PRINT "}"
+         NEWLINE
+         LOANDISPLAYED=TRUE
         END
       END
     END
