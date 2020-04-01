@@ -91,12 +91,16 @@ DEFINE
  MAXSLTYPES                = NUMBER
  TMPTEXT                   = CHARACTER
  TMPTEXTLOOP               = NUMBER
- CHR                       = NUMBER
+ CHRVAL                    = NUMBER
+ ADDRESSLOC                = NUMBER
+ NADDRESSTYPE              = NUMBER
+   ADDRTYPEDOM             = 0
+   ADDRTYPEFOR             = 1
+   ADDRTYPEFORZL           = 2
 END [DEFINE]
 
 SETUP
  Q=CTRLCHR(34)
- DEBUGMODE=FALSE
  IDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
  IF IDLENGTH=2 THEN
   MAXSLTYPES=99
@@ -116,9 +120,8 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
 **      Invalid account - return error code and logging message
 **      Valid account - perform WD Transaction
 **        Unsuccessful - return error code and logging message
-**        Successful - return 'success:true'
+**        Successful - return 'success:true', memomode (true/false)
 *]
-
  CALL INITIALIZEDATA
  CALL READCONFIGFILESETTINGS
 
@@ -203,8 +206,11 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
          NEWLINE
          PRINT "    "+Q+"success"+Q+": true,"
          NEWLINE
-         PRINT "    "+Q+"memoMode"+Q+": false"
-         NEWLINE
+         PRINT "    "+Q+"memoMode"+Q+": "
+         IF SYSMEMOMODE=0 THEN
+          PRINT "false"
+         ELSE
+          PRINT "true"
          PRINT "  }"
          NEWLINE
          PRINT "}"
@@ -294,6 +300,10 @@ END [PROCEDURE]
 
 PROCEDURE RETURNINVALIDACCT
 [* Set correct error message
+** PASS    [various]     valid acct test (true/false)
+** RETURN  ERRORCODE     Error code for UX based upon flag     
+**         ERRORMSG      Error message for internal tracking
+**         ERRORDETAIL   Error detail for internal tracking
 *]
  TMPCHR=""
  IF ACCTFOUND=FALSE THEN
@@ -318,7 +328,7 @@ PROCEDURE RETURNINVALIDACCT
   ELSE
    TMPCHR="Loan Warning Found"
  ELSE IF SLAVAILABLEBAL<=$0.00 THEN
-  TMPCHR="Avail. Balance = $0.00"
+  TMPCHR="Avail. Balance <= $0.00"
 
  IF VALIDADDRESS=FALSE THEN
   ERRORCODE="502"
@@ -371,23 +381,22 @@ PROCEDURE FINDACCOUNT
         WARNINGSACCT(TMPLOOP)=TRUE THEN
       ACCTWARNINGFOUND=TRUE
     END
-[* Invalidate account if less than 3 payee lines for address
+[* Invalidate account if any key address fields are missing
 *]
-   IF ACCOUNT:PAYEELINE:1<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-   IF ACCOUNT:PAYEELINE:2<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-   IF ACCOUNT:PAYEELINE:3<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-   IF ACCOUNT:PAYEELINE:4<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-   IF ACCOUNT:PAYEELINE:5<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-   IF ACCOUNT:PAYEELINE:6<>"" THEN
-       ADDRESSLINECOUNT=ADDRESSLINECOUNT+1
-
-   IF ADDRESSLINECOUNT>=3 THEN
-    VALIDADDRESS=TRUE
+   ADDRESSLOC=ACCOUNT:PAYEENAMELOCATOR
+   FOR EACH NAME WITH (NAME:LOCATOR=ADDRESSLOC)
+    DO
+     NADDRESSTYPE=NAME:ADDRESSTYPE
+     IF NAME:STREET<>"" AND
+        NAME:CITY<>"" AND
+        NAME:STATE<>"" AND
+        NAME:ZIPCODE<>"" AND
+      ((NADDRESSTYPE<>ADDRTYPEDOM AND
+        NAME:COUNTRY<>"") OR
+       (NADDRESSTYPE=ADDRTYPEDOM AND
+        NAME:COUNTRY="")) THEN
+      VALIDADDRESS=TRUE
+    END
 
    IF SLTYPE="S" THEN
     DO
@@ -401,7 +410,8 @@ PROCEDURE FINDACCOUNT
 
        IF VALIDSHARETYPES(SHARE:TYPE)=TRUE THEN
         VALIDSLTYPE=TRUE
-
+[* Check for targeted Share warning(s)
+*]
        FOR TMPLOOP=1 TO MAXWARNINGTYPES
         DO
          IF ANYWARNING(SHARE,TMPLOOP) AND
@@ -425,7 +435,8 @@ PROCEDURE FINDACCOUNT
 
        IF VALIDLOANTYPES(LOAN:TYPE)=TRUE THEN
         VALIDSLTYPE=TRUE
-
+[* Check for targeted Loan warning(s)
+*]
        FOR TMPLOOP=1 TO MAXWARNINGTYPES
         DO
          IF ANYWARNING(LOAN,TMPLOOP) AND
@@ -460,8 +471,15 @@ PROCEDURE GETRGVALUES
  SLID=SEGMENT(SLID,LENGTH(SLID)-(IDLENGTH-1),LENGTH(SLID))
 
  IF @RGSTATE=STATEPERFORMWITHDRAW THEN
-  WDAMOUNT=MONEY(VALUE(@RGUSERCHR2))
+  DO
+   TMPCHR=@RGUSERCHR2+"00"
 
+   POS=CHARACTERSEARCH(TMPCHR,".")
+   IF POS>0 THEN
+    TMPCHR=SEGMENT(TMPCHR,1,POS+2)
+   
+   WDAMOUNT=MONEY(VALUE(TMPCHR))
+  END
 END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
@@ -518,6 +536,11 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="LW" AND
                PARAMVALUE<>"" THEN
         PARAMWARNINGSLOAN=PARAMVALUE
+[* Check for Debug Mode
+*]
+       IF PARAMNAME="DEBUG" AND
+          PARAMVALUE="TRUE" THEN
+        DEBUGMODE=TRUE
 [* Custom terms & conditions
 *]
        ELSE IF PARAMNAME="TC" THEN
@@ -559,6 +582,8 @@ PROCEDURE READCONFIGFILESETTINGS
    PRINT "SW: "+PARAMWARNINGSSHARE
    NEWLINE
    PRINT "LW: "+PARAMWARNINGSLOAN
+   NEWLINE
+   PRINT "DEBUG: "+FORMAT("9",DEBUGMODE)
    NEWLINE
    FOR TMPLOOP=1 TO PARAMCUSTOMTERMLINES
     DO
@@ -670,7 +695,9 @@ END [PROCEDURE]
 
 PROCEDURE CLEANUPTEXT
 [* Check character string and remove out any characters or hidden
-** characters which have an ASCII value less than 32 or greater than 175
+** characters which have an ASCII value less than 32 or greater
+** than 175 nor equal to 34. This is to avoid display issues with
+** displaying the terms or conditions.
 **  PASS       TMPCHR   String to test
 **  RETURN     TMPCHR   Updated string
 *]
@@ -679,10 +706,14 @@ PROCEDURE CLEANUPTEXT
   DO
    FOR TMPTEXTLOOP=1 TO LENGTH(TMPCHR)
     DO
-     CHR=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
-     IF (CHR>=32 AND
-         CHR<=175) AND
-         CHR<>34 THEN
+     CHRVAL=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
+     IF ((CHRVAL>=32 AND
+          CHRVAL<=175) AND
+          CHRVAL<>34) OR
+         (CHRVAL>=181 AND CHRVAL<=184) OR
+         (CHRVAL>=189 AND CHRVAL<=190) OR
+         (CHRVAL>=208 AND CHRVAL<=216) OR
+         (CHRVAL>=224 AND CHRVAL<=237) THEN
       TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
     END
   END
@@ -693,6 +724,7 @@ PROCEDURE INITIALIZEDATA
 [* Initialize state variables
 *]
  WHILELIMIT=100000
+ DEBUGMODE=FALSE
  LFNUMBER=0
  LFERROR=""
  MEMBERNUM=""
@@ -703,6 +735,8 @@ PROCEDURE INITIALIZEDATA
  READCONFIGERRORMSG=""
  LFERROR=""
  LFNUMBER=0
+ ADDRESSLOC=0
+ NADDRESSTYPE=-1
  PARAMREGD=TRUE
  PARAMVALIDSHARETYPES="ALL"
  PARAMVALIDLOANTYPES="ALL"
