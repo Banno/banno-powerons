@@ -65,7 +65,6 @@ DEFINE
  SLAVAILABLEBALCHR         = CHARACTER
  TMPLOOP                   = NUMBER
  TMPCHR                    = CHARACTER
-
  POS                       = NUMBER
  Q                         = CHARACTER
  MEMBERNUM                 = CHARACTER
@@ -212,7 +211,9 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
         END
        ELSE
         DO
-         IF TRANERROR="NSF" THEN
+         IF CHARACTERSEARCH(UPPERCASE(TRANERROR),"REG D")>0 THEN
+          ERRORCODE="504"
+         ELSE IF TRANERROR="NSF" THEN
           ERRORCODE="501"
          ELSE
           ERRORCODE="500"
