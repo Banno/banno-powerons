@@ -97,6 +97,9 @@ DEFINE
    ADDRTYPEDOM             = 0
    ADDRTYPEFOR             = 1
    ADDRTYPEFORZL           = 2
+ VALIDCHRINPUT1            = CHARACTER
+ VALIDCHARS                = NUMBER ARRAY(999)
+ MAXCHRVALUE               = 255
 END [DEFINE]
 
 SETUP
@@ -107,6 +110,8 @@ SETUP
  ELSE
   MAXSLTYPES=9999
  MAXWARNINGTYPES=999
+ VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
+ 
 END [SETUP]
 
 PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
@@ -284,7 +289,8 @@ PROCEDURE RETURNVALIDACCT
   DO
    TMPCHR=PARAMCUSTOMTERMS(TMPLOOP)
    CALL NTS
-   PRINT "       "+Q+TMPCHR+Q
+   PRINT "   "
+   PRINT Q+TMPCHR+Q
    IF TMPLOOP<PARAMCUSTOMTERMLINES THEN
     PRINT ","
    ELSE
@@ -406,7 +412,9 @@ PROCEDURE FINDACCOUNT
       DO
        SLFOUND=TRUE
        SLAVAILABLEBAL=SHARE:AVAILABLEBALANCE
-       SLDESCRIPTION=SHARE:DESCRIPTION
+       TMPCHR=SHARE:DESCRIPTION
+       CALL CLEANUPTEXT
+       SLDESCRIPTION=TMPCHR
 
        IF VALIDSHARETYPES(SHARE:TYPE)=TRUE THEN
         VALIDSLTYPE=TRUE
@@ -427,7 +435,9 @@ PROCEDURE FINDACCOUNT
                          LOAN:CHARGEOFFDATE=DATENULL)
       DO
        SLFOUND=TRUE
-       SLDESCRIPTION=LOAN:DESCRIPTION
+       TMPCHR=LOAN:DESCRIPTION
+       CALL CLEANUPTEXT
+       SLDESCRIPTION=TMPCHR
        SLAVAILABLEBAL=LOAN:AVAILABLECASHADVANCE
        IF PARAMCASHADVLIMIT>$0.00 AND
           SLAVAILABLEBAL>PARAMCASHADVLIMIT THEN
@@ -551,7 +561,9 @@ PROCEDURE READCONFIGFILESETTINGS
            TMPCHR=PARAMVALUE
            CALL NTS
            CALL CLEANUPTEXT
-           PARAMCUSTOMTERMS(PARAMCUSTOMTERMLINES)=TMPCHR
+[* Retain only first 123 characters to account for JSON spacing and field delimiters
+*]
+           PARAMCUSTOMTERMS(PARAMCUSTOMTERMLINES)=SEGMENT(TMPCHR,1,123)
           END
         END
       END
@@ -695,26 +707,36 @@ END [PROCEDURE]
 
 PROCEDURE CLEANUPTEXT
 [* Check character string and remove out any characters or hidden
-** characters which have an ASCII value less than 32 or greater
-** than 175 nor equal to 34. This is to avoid display issues with
-** displaying the terms or conditions.
+** characters which have an ASCII value which is not established in
+** the VALIDCHRINPUT1 string in the SETUP division . This is to avoid
+** display issues with displaying the terms or conditions. Additionally,
+** if a back-slash or double quote is encountered, add a preceding
+** backslash
 **  PASS       TMPCHR   String to test
 **  RETURN     TMPCHR   Updated string
 *]
+ LELISTINPUT=VALIDCHRINPUT1
+ CALL LISTEXPAND
+ FOR TMPLOOP=0 TO MAXCHRVALUE
+  DO
+   VALIDCHARS(TMPLOOP)=LELIST(TMPLOOP)
+  END
  TMPTEXT=""
+
  IF TMPCHR<>"" THEN
   DO
    FOR TMPTEXTLOOP=1 TO LENGTH(TMPCHR)
     DO
      CHRVAL=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
-     IF ((CHRVAL>=32 AND
-          CHRVAL<=175) AND
-          CHRVAL<>34) OR
-         (CHRVAL>=181 AND CHRVAL<=184) OR
-         (CHRVAL>=189 AND CHRVAL<=190) OR
-         (CHRVAL>=208 AND CHRVAL<=216) OR
-         (CHRVAL>=224 AND CHRVAL<=237) THEN
-      TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+     IF  VALIDCHARS(CHRVAL)=TRUE THEN
+      DO
+[* Check for back-slash or double-quote. If found, precede with a back-slash
+*]
+       IF (CHRVAL=92 OR CHRVAL=34) THEN
+        TMPTEXT=TMPTEXT+"\"+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+       ELSE
+        TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+      END
     END
   END
  TMPCHR=TMPTEXT
