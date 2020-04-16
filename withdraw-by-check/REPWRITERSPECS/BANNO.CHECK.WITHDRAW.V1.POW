@@ -4,6 +4,8 @@
 **
 **  Copyright 2020 Jack Henry and Associates
 **
+**  4/16/2020: fixes for invalid punctuation in share descriptions
+**
 **  This Banno service PowerOn allows the user to request
 **  withdraw by check from an eligible share or loan
 **
