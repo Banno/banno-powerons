@@ -4,6 +4,8 @@
 **
 **  Copyright 2019 Jack Henry and Associates
 **
+**  4/16/2020: fixes for invalid punctuation in share descriptions
+**
 **  This Banno service PowerOn allow the user to select one or more
 **  eligible loans and, for a fee, have the loan due date advanced
 **  by a month.
@@ -148,6 +150,16 @@ DEFINE
  DEFAULTENDDATE            = DATENULL
 
  GENERICUSERERRORMSG="We're sorry we've encountered an error. Please contact your credit union."
+
+[* 04/16/20 *]
+ TMPTEXT                   = CHARACTER
+ TMPCHR                    = CHARACTER
+ TMPLOOP                   = NUMBER
+ TMPTEXTLOOP               = NUMBER
+ CHRVAL                    = NUMBER
+ VALIDCHRINPUT1            = CHARACTER
+ VALIDCHARS                = NUMBER ARRAY(999)
+ MAXCHRVALUE               = 255
 END
 
 SETUP
@@ -157,7 +169,7 @@ SETUP
  TERMS(1)="Some example terms go here"
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
-
+ VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 END [SETUP]
 
 PRINT TITLE="Banno Skip a Loan Payment"
@@ -327,9 +339,12 @@ PROCEDURE PROCGETPRELOADDATA
                       SHARE:AVAILABLEBALANCE>=FEEAMOUNT AND
                       SHARETYPES(SHARE:TYPE)=TRUE)
   DO
+   TMPCHR=SHARE:DESCRIPTION
+   CALL CLEANUPTEXT
+ 
    IF SHAREDISPLAYED=TRUE THEN
     PRINT ","
-   PRINT "{"+Q+"name"+Q+": "+Q+SHARE:DESCRIPTION+Q+","
+   PRINT "{"+Q+"name"+Q+": "+Q+TMPCHR+Q+","
    NEWLINE
    PRINT Q+"accountId"+Q+": "+Q+SHARE:ID+Q+","
    NEWLINE
@@ -454,14 +469,17 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
          NEWLINE
          PRINT Q+"nextDueDate"+Q+": "+Q+FORMAT("99/99/9999",LNEWDUEDATE)+Q
          NEWLINE
-         FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
+	       FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
           DO
-           PRINT ","+Q+"shareDebited"+Q+": "+Q+SHARE:DESCRIPTION+Q
+           TMPCHR=SHARE:DESCRIPTION
+           CALL CLEANUPTEXT
+
+           PRINT ","+Q+"shareDebited"+Q+": "+Q+TMPCHR+Q
            NEWLINE
-         END
+	        END
          PRINT "}"
          NEWLINE
-         LOANDISPLAYED=TRUE
+	       LOANDISPLAYED=TRUE
         END
       END
     END
@@ -628,7 +646,10 @@ PROCEDURE READCONFIGFILESETTINGS
        IF SEGMENT(LFLINE,1,3)="TC:" AND TERMSLINESCOUNT<TERMSMAXLINES THEN
         DO
          TERMSLINESCOUNT=TERMSLINESCOUNT+1
-         TERMS(TERMSLINESCOUNT)=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         TMPCHR=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         CALL CLEANUPTEXT
+
+         TERMS(TERMSLINESCOUNT)=TMPCHR
         END
 [ Loan types]
        IF SEGMENT(LFLINE,1,3)="LT:" THEN
@@ -877,7 +898,10 @@ PROCEDURE GETSKIPCRITERIA
    LDUEDATE=LOAN:DUEDATE
    LPAYMENT=LOAN:PAYMENT
    LMATURITYDATE=LOAN:MATURITYDATE
-   LDESCRIPTION=LOAN:DESCRIPTION
+   TMPCHR=LOAN:DESCRIPTION
+   CALL CLEANUPTEXT
+
+   LDESCRIPTION=TMPCHR
    IF (LOAN:DUEDAY2<>0 AND
        DAY(LOAN:DUEDATE)>LOAN:DUEDAY1) THEN
     DO
@@ -971,5 +995,43 @@ PROCEDURE TEXTNLTS
  CALL TEXTNLS
  CALL TEXTNTS
 END
+
+PROCEDURE CLEANUPTEXT
+[* 04/16/20
+** Check character string and remove out any characters or hidden
+** characters which have an ASCII value which is not established in
+** the VALIDCHRINPUT1 string in the SETUP division . This is to avoid
+** display issues with displaying the terms or conditions. Additionally,
+** if a back-slash or double quote is encountered, add a preceding
+** backslash
+**  PASS       TMPCHR   String to test
+**  RETURN     TMPCHR   Updated string
+*]
+ LELISTINPUT=VALIDCHRINPUT1
+ CALL LISTEXPAND
+ FOR TMPLOOP=0 TO MAXCHRVALUE
+  DO
+   VALIDCHARS(TMPLOOP)=LELIST(TMPLOOP)
+  END
+ TMPTEXT=""
+
+ IF TMPCHR<>"" THEN
+  DO
+   FOR TMPTEXTLOOP=1 TO LENGTH(TMPCHR)
+    DO
+     CHRVAL=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
+     IF  VALIDCHARS(CHRVAL)=TRUE THEN
+      DO
+[* Check for back-slash or double-quote. If found, precede with a back-slash
+*]
+       IF (CHRVAL=92 OR CHRVAL=34) THEN
+        TMPTEXT=TMPTEXT+"\"+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+       ELSE
+        TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+      END
+    END
+  END
+ TMPCHR=TMPTEXT
+END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
