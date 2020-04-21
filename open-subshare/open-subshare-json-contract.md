@@ -28,7 +28,6 @@ NOTE: if memoMode true, categories won't exist
 {
   "memoMode": false,
   "results": {
-    "memoMode": false,
     "canOpenSubShare": true,
     "categories": [
       {
@@ -67,30 +66,42 @@ After the user has chosen their desired category/group and accountType, the clie
 }
 ```
 
-to which this poweron should respond with:
+To which the poweron should respond with:
+
+WHERE: fundingOptions is any combination of the three available types
+AND: if "electronic" is an option, the `electronicFundingAccunts` contains a list of available shares to fund the new account from.
+
+NOTE: the 'electronic' type should not be present if the member does not have any valid shares to fund with.
 
 ```json
 {
-  "memoMode":false,
+  "memoMode": false,
   "results": {
     "categoryTerms":["array ", "of ", "strings."],
-    "fundingOptions":[],
+    "fundingOptions":["electronic", "check", "later"],
+    "electronicFundingAccounts":[
+      {
+        "name":"Share",
+        "availableBalance": "1.00",
+        "memberAccountNumber": "1234567890S1234",
+      }
+    ]
   }
 }
 ```
 
-Once the user agrees to the terms, the client will send:
+Once the user agrees to the terms and optionally sets up their electronic funding, the client will send:
 
 ```json
 {
   "rgState": "NAMEPRELOAD",
   "powerOnFileName": "BANNO.NEWSUBCREATE.V1.POW",
   "userChrList": [
-    {"id": 1, "value": ""},
-    {"id": 2, "value": ""},
-    {"id": 3, "value": ""},
-    {"id": 4, "value": ""},
-    {"id": 5, "value": ""}
+    {"id": 1, "value": "groupNumber"},
+    {"id": 2, "value": "shareType"},
+    {"id": 3, "value": "fundingType"},
+    {"id": 4, "value": "memberAccountNumber"},
+    {"id": 5, "value": "fundingAmount"}
   ],
   "userNumList": [],
   "rgSession": 1
@@ -104,7 +115,14 @@ To which the poweron should respond with:
   "memoMode": false,
   "results": {
     "canAddNames": true,
-    "existingNames": [],
+    "maxNames": "3",
+    "nameTypes": ["Beneficiary", "Joint"],
+    "existingNames": [
+      {
+        "name": "Watson Sadler",
+        "type": "Beneficiary"
+      }
+    ],
   }
 }
 ```
