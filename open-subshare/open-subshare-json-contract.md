@@ -30,14 +30,32 @@ Poweron response:
     "categories": [
       {
         "name": "Certificate of deposit",
-        "groupNumber": "??",
+        "groupNumber": "0",
         "accountTypes": [
           {
-            "shareType": "??",
+            "shareType": "0",
             "name": "7 Month certificate",
             "term": "7 months",
             "minBalance": "1000.00",
-            "interestRate": "2.450%" // optional
+            "interestRates": [
+              {
+                "rate": "0.000",
+                "minBalance": "0.00",
+                "maxBalance": "4.99",
+              },
+              {
+                "rate": "1.200%",
+                "minBalance": "5.00",
+                "maxBalance": "99.99",
+              }
+            ]
+          },
+          {
+            "shareType": "1",
+            "name": "7 Month certificate",
+            "term": "7 months",
+            "minBalance": "1000.00",
+            "interestRates": "1.250",
           }
         ]
       }
@@ -108,7 +126,7 @@ Once the user agrees to the terms and optionally sets up their electronic fundin
     {"id": 1, "value": "groupNumber"},
     {"id": 2, "value": "shareType"},
     {"id": 3, "value": "fundingType"},
-    {"id": 4, "value": "memberAccountNumber"},
+    {"id": 4, "value": "fundingMemberAccountNumber"},
     {"id": 5, "value": "fundingAmount"}
   ],
   "userNumList": [],
