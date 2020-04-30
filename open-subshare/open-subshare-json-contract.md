@@ -136,9 +136,10 @@ Poweron response:
 ```
 ### Errors
 ```json
-[500]
+[500, 501]
 ```
 
+#TODO adding names
 
 ## Error Information
 If a request is not successful for any number of reasons, the poweron should respond with the following structure:
