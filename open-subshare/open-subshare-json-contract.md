@@ -1,10 +1,9 @@
 # Open subshare JSON contract
 
-To get things started, the client will send the initial request.
-The first item in the `userCharList` is the `memberAccountId`
+NOTES: every state checks memoMode - if memoMode is true, we cannot proceed.
 
-NOTE: every state checks memoMode - if memoMode is true, we cannot proceed
-
+## PRELOADDATA
+To get things started, the client will send the initial PRELOADDATA request.
 ```json
 {
   "rgState": "PRELOADDATA",
@@ -21,8 +20,7 @@ NOTE: every state checks memoMode - if memoMode is true, we cannot proceed
 }
 ```
 
-To which the poweron should respond with:
-NOTE: if memoMode true, categories won't exist
+Poweron response:
 
 ```json
 {
@@ -47,7 +45,12 @@ NOTE: if memoMode true, categories won't exist
   }
 }
 ```
+### Errors
+```json
+[500]
+```
 
+## GETTERMSFUNDING
 After the user has chosen their desired category/group and accountType, the client will send:
 
 ```json
@@ -66,20 +69,20 @@ After the user has chosen their desired category/group and accountType, the clie
 }
 ```
 
-To which the poweron should respond with:
+Poweron response:
 
-WHERE: fundingOptions is any combination of the three available types
-AND: if "electronic" is an option, the `electronicFundingAccunts` contains a list of available shares to fund the new account from.
-
-NOTE: the 'electronic' type should not be present if the member does not have any valid shares to fund with.
+* fundingOptions is any combination of the three available types
+* if "electronic" is an option, the `electronicFundingAccunts` contains a list of available shares to fund the new account from.
+* the 'electronic' type should not be present if the member does not have any valid shares to fund with.
 
 ```json
 {
   "memoMode": false,
   "results": {
-    "categoryTerms":["array ", "of ", "strings."],
-    "fundingOptions":["electronic", "check", "later"],
-    "electronicFundingAccounts":[
+    "categoryTerms": ["array ", "of ", "strings."],
+    "fundingOptions": ["electronic", "check", "later"],
+    "minimumFundingAmount": "100.00",
+    "electronicFundingAccounts": [
       {
         "name":"Share",
         "availableBalance": "1.00",
@@ -89,7 +92,12 @@ NOTE: the 'electronic' type should not be present if the member does not have an
   }
 }
 ```
+### Errors
+```json
+[500, 503, 501]
+```
 
+## NAMEPRELOAD
 Once the user agrees to the terms and optionally sets up their electronic funding, the client will send:
 
 ```json
@@ -108,7 +116,7 @@ Once the user agrees to the terms and optionally sets up their electronic fundin
 }
 ```
 
-To which the poweron should respond with:
+Poweron response:
 
 ```json
 {
@@ -126,3 +134,27 @@ To which the poweron should respond with:
   }
 }
 ```
+### Errors
+```json
+[500]
+```
+
+
+## Error Information
+If a request is not successful for any number of reasons, the poweron should respond with the following structure:
+
+```json
+{
+  "errorCode": 500,
+  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+}
+```
+
+## Error codes
+| Code   | Description         |
+|--------|---------------------|
+| 500    | Generic Error       |
+| 501    | Try again           |
+| 502    | Missing address     |
+| 503    | Invalid loan/share  |
+| 504    | Reg D Limit         |
