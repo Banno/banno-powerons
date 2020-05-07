@@ -25,8 +25,8 @@ Poweron response:
 ```json
 {
   "memoMode": false,
+  "canOpenSubShare": true,
   "results": {
-    "canOpenSubShare": true,
     "categories": [
       {
         "name": "Certificate of deposit",
@@ -41,12 +41,12 @@ Poweron response:
               {
                 "rate": "0.000",
                 "minBalance": "0.00",
-                "maxBalance": "4.99",
+                "maxBalance": "4.99"
               },
               {
-                "rate": "1.200%",
+                "rate": "1.200",
                 "minBalance": "5.00",
-                "maxBalance": "99.99",
+                "maxBalance": "99.99"
               }
             ]
           },
@@ -55,7 +55,7 @@ Poweron response:
             "name": "7 Month certificate",
             "term": "7 months",
             "minBalance": "1000.00",
-            "interestRates": "1.250",
+            "interestRates": [{"rate":"1.250"}],
           }
         ]
       }
@@ -157,7 +157,30 @@ Poweron response:
 [500, 501]
 ```
 
-#TODO adding names
+## Adding names
+The client will send up to max names
+```json
+{
+  "rgState": "ADDNAMES",
+  "powerOnFileName": "BANNO.NEWSUBCREATE.V1.POW",
+  "userChrList": [
+    {"id": 1, "value": "nameType,first,last,address1,address2,city,state,zip,dob,ssn,phone,nameType,first,"},
+    {"id": 2, "value": "last,address1,address2,city,state,zip,dob,ssn,phone,nameType,first"},
+    {"id": 3, "value": ",last,address1,address2,city,state,zip,dob,ssn,phone"},
+    {"id": 4, "value": ""},
+    {"id": 5, "value": ""}
+  ],
+  "userNumList": [
+    {"id": 1, "value": 0}, // group number
+    {"id": 2, "value": 1}, // share type
+    {"id": 3, "value": 0}, // funding type
+    {"id": 4, "value": 1.00}, //funding amount
+    {"id": 5, "value": null}
+  ],
+  "rgSession": 1
+}
+```
+
 
 ## Error Information
 If a request is not successful for any number of reasons, the poweron should respond with the following structure:
