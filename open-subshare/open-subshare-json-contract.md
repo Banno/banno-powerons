@@ -55,7 +55,7 @@ Poweron response:
             "name": "7 Month certificate",
             "term": "7 months",
             "minBalance": "1000.00",
-            "interestRates": [{"rate":"1.250"}],
+            "interestRates": [{"rate":"1.250"}]
           }
         ]
       }
@@ -92,7 +92,7 @@ Poweron response:
 * fundingOptions is any combination of the three available types
 * if "electronic" is an option, the `electronicFundingAccunts` contains a list of available shares to fund the new account from.
 * the 'electronic' type should not be present if the member does not have any valid shares to fund with.
-
+* categoryTerms may be empty
 ```json
 {
   "memoMode": false,
@@ -141,7 +141,7 @@ Poweron response:
   "memoMode": false,
   "results": {
     "canAddNames": true,
-    "maxNames": "3",
+    "maxNames": 1,
     "nameTypes": ["Beneficiary", "Joint"],
     "existingNames": [
       {
@@ -158,25 +158,55 @@ Poweron response:
 ```
 
 ## Adding names
-The client will send up to max names
+The client will send a max of 2 names using userCharList items 2-5, where 2-3 are the first, and 4-5 are the second.
+item 1 contains the new share info:
+
+newShareType;transferFromId;transferAmount
+
+items 2 and 4:
+
+nameType;first;middle;last;suffix;ssn;email
+
+item 3 and 5:
+
+street;address2;city;state;zip;dob;phoneType;phoneNumber
+
+#### max characters:
+| Count  | Description         |
+|--------|---------------------|
+| 4      | newShareType        |
+| 4      | transferFromId      |
+| 15     | transferAmount      |
+| 2      | nameType*           |
+| 20     | first               |
+| 10     | middle              |
+| 40     | last                |
+| 4      | suffix              |
+| 9      | ssn                 |
+| 40     | email               |
+| 40     | street              |
+| 20     | address2            |
+| 31     | city                |
+| 2      | state               |
+| 5      | zip                 |
+| 8      | dob                 |
+| 1      | phoneType           |
+| 10     | phoneNumber         |
+
+* nameType is the numeric index from the nameTypes returned via the NAMEPRELOAD request
+
 ```json
 {
   "rgState": "ADDNAMES",
   "powerOnFileName": "BANNO.NEWSUBCREATE.V1.POW",
   "userChrList": [
-    {"id": 1, "value": "nameType,first,last,address1,address2,city,state,zip,dob,ssn,phone,nameType,first,"},
-    {"id": 2, "value": "last,address1,address2,city,state,zip,dob,ssn,phone,nameType,first"},
-    {"id": 3, "value": ",last,address1,address2,city,state,zip,dob,ssn,phone"},
+    {"id": 1, "value": "0038;0000;100.00"},
+    {"id": 2, "value": "04;Mary;Quite;Contrary;JR;333222111;mary@aol.com"},
+    {"id": 3, "value": "4519 Fairy Castle Way;Dungeon;Emerald;KS;66104;01011981;1;2125551212"},
     {"id": 4, "value": ""},
     {"id": 5, "value": ""}
   ],
-  "userNumList": [
-    {"id": 1, "value": 0}, // group number
-    {"id": 2, "value": 1}, // share type
-    {"id": 3, "value": 0}, // funding type
-    {"id": 4, "value": 1.00}, //funding amount
-    {"id": 5, "value": null}
-  ],
+  "userNumList": [],
   "rgSession": 1
 }
 ```
