@@ -5,6 +5,8 @@
 **  Copyright 2020 Jack Henry and Associates
 **
 **  4/16/2020: fixes for invalid punctuation in share descriptions
+**  5/14/2020: corrected error condition when no terms and conditions
+**             defined in the parameter file.
 **
 **  This Banno service PowerOn allows the user to request
 **  withdraw by check from an eligible share or loan
@@ -113,7 +115,7 @@ SETUP
   MAXSLTYPES=9999
  MAXWARNINGTYPES=999
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- 
+
 END [SETUP]
 
 PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
@@ -295,11 +297,10 @@ PROCEDURE RETURNVALIDACCT
    PRINT Q+TMPCHR+Q
    IF TMPLOOP<PARAMCUSTOMTERMLINES THEN
     PRINT ","
-   ELSE
-    PRINT "]"
    NEWLINE
   END
 
+ PRINT "]"
  PRINT "  }"
  NEWLINE
  PRINT "}"
@@ -309,7 +310,7 @@ END [PROCEDURE]
 PROCEDURE RETURNINVALIDACCT
 [* Set correct error message
 ** PASS    [various]     valid acct test (true/false)
-** RETURN  ERRORCODE     Error code for UX based upon flag     
+** RETURN  ERRORCODE     Error code for UX based upon flag
 **         ERRORMSG      Error message for internal tracking
 **         ERRORDETAIL   Error detail for internal tracking
 *]
@@ -489,7 +490,7 @@ PROCEDURE GETRGVALUES
    POS=CHARACTERSEARCH(TMPCHR,".")
    IF POS>0 THEN
     TMPCHR=SEGMENT(TMPCHR,1,POS+2)
-   
+
    WDAMOUNT=MONEY(VALUE(TMPCHR))
   END
 END [PROCEDURE]
