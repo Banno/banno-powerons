@@ -197,7 +197,7 @@ street;address2;city;state;zip;dob;phoneType;phoneNumber
 
 ```json
 {
-  "rgState": "ADDNAMES",
+  "rgState": "CREATESHARE",
   "powerOnFileName": "BANNO.NEWSUBCREATE.V1.POW",
   "userChrList": [
     {"id": 1, "value": "0038;0000;100.00"},
