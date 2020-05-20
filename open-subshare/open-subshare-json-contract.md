@@ -226,8 +226,8 @@ Poweron response:
       },
       "newShareId": "35",
       "namesCreated": [
-        {"nameType": "0", "name": "Bob"},
-        {"nameType": "1", "name": "Fred"}
+        {"nameType": "Joint", "name": "Bob Jones"},
+        {"nameType": "Beneficiary", "name": "Fred Flintstone"}
       ]
     }
   }
