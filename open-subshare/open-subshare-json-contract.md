@@ -142,7 +142,10 @@ Poweron response:
   "results": {
     "canAddNames": true,
     "maxNames": 1,
-    "nameTypes": ["Beneficiary", "Joint"],
+    "nameTypes": [
+      {"label": "Beneficiary", "code": "04"},
+      {"label": "Joint", "code": "01"}
+    ],
     "existingNames": [
       {
         "name": "Watson Sadler",
@@ -211,6 +214,24 @@ street;address2;city;state;zip;dob;phoneType;phoneNumber
 }
 ```
 
+Poweron response:
+```json
+{
+    "memoMode": false,
+    "results": {
+      "funding": {
+        "type": "electronic",
+        "amount": "1.00",
+        "successfulTransfer": true
+      },
+      "newShareId": "35",
+      "namesCreated": [
+        {"nameType": "0", "name": "Bob"},
+        {"nameType": "1", "name": "Fred"}
+      ]
+    }
+  }
+```
 
 ## Error Information
 If a request is not successful for any number of reasons, the poweron should respond with the following structure:
