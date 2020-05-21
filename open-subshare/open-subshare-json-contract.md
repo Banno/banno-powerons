@@ -225,9 +225,17 @@ Poweron response:
         "successfulTransfer": true
       },
       "newShareId": "35",
-      "namesCreated": [
-        {"nameType": "Joint", "name": "Bob Jones"},
-        {"nameType": "Beneficiary", "name": "Fred Flintstone"}
+      "names": [
+        {
+          "nameType": "Joint",
+          "name": "Bob Jones",
+          "created": true
+        },
+        {
+          "nameType": "Beneficiary",
+           "name": "Fred Flintstone",
+           "created": false
+        }
       ]
     }
   }
