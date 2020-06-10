@@ -11,13 +11,14 @@ Account types included (but not limited to):
 Included in the PowerOn files is a configuration tool that helps you customize the PowerOn to your needs.
 
 ## Required files
-PowerOn Name:
-Configuration PowerOn: 
-Letter file Name: 
 
-Supported SymXchange web consoles
-PowerOnService - 2017.01 V1
-PowerOnService - 2018.00
-PowerOnService - 2018.01
+* PowerOn Name:
+* Configuration PowerOn: 
+* Letter file Name: 
+
+## Supported SymXchange web consoles:
+* PowerOnService - 2017.01 V1
+* PowerOnService - 2018.00
+* PowerOnService - 2018.01
 
 *In order for your PowerOn to display to your customers, you'll need to contact your support or implementation leader to turn on the Open a Subshare linktype.*
