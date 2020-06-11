@@ -198,6 +198,9 @@ street;address2;city;state;zip;dob;phoneType;phoneNumber
 
 * nameType is the numeric index from the nameTypes returned via the NAMEPRELOAD request
 
+## CREATESHARE
+Once the user finishes the name createion, the client will send:
+
 ```json
 {
   "rgState": "CREATESHARE",
@@ -215,6 +218,10 @@ street;address2;city;state;zip;dob;phoneType;phoneNumber
 ```
 
 Poweron response:
+* if everything is read in correctly, then the share is created.
+* if share creation is successful, then the names created and transfer performed.
+* One of those two can fail and the call it still be considered a success.
+
 ```json
 {
     "memoMode": false,
