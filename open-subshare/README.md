@@ -11,7 +11,6 @@ Account types included (but not limited to):
 Included in the PowerOn files is a configuration tool that helps you customize the PowerOn to your needs.The configuration tool will generate a letterfile for you.
 
 ## Required files
-
 * PowerOn Name: BANNO.NEWSUBCREATE.V1.CONFIG
 * Configuration PowerOn: BANNO.NEWSUBCREATE.V1.CONFIG
 
