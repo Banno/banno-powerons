@@ -8,13 +8,12 @@ Account types included (but not limited to):
 * Savings 
 * Money market
 
-Included in the PowerOn files is a configuration tool that helps you customize the PowerOn to your needs.
+Included in the PowerOn files is a configuration tool that helps you customize the PowerOn to your needs.The configuration tool will generate a letterfile for you.
 
 ## Required files
 
-* PowerOn Name:
-* Configuration PowerOn: 
-* Letter file Name: 
+* PowerOn Name: BANNO.NEWSUBCREATE.V1.CONFIG
+* Configuration PowerOn: BANNO.NEWSUBCREATE.V1.CONFIG
 
 ## Supported SymXchange web consoles:
 * PowerOnService - 2017.01 V1
