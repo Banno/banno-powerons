@@ -4,8 +4,10 @@
 **
 **  Copyright 2019 Jack Henry and Associates
 **
-**  3/24/2020: fixes for no fee and skip period
-**  4/16/2020: fixes for invalid punctuation in share descriptions
+**  03/24/2020: fixes for no fee and skip period
+**  04/16/2020: fixes for invalid punctuation in share descriptions
+**  06/16/2020: Correct new due date and maturity date to insure
+**              it falls on the correct day of the week.
 **
 **  This Banno service PowerOn allow the user to select one or more
 **  eligible loans and, for a fee, have the loan due date advanced
@@ -342,7 +344,7 @@ PROCEDURE PROCGETPRELOADDATA
   DO
    TMPCHR=SHARE:DESCRIPTION
    CALL CLEANUPTEXT
- 
+
    IF SHAREDISPLAYED=TRUE THEN
     PRINT ","
    PRINT "{"+Q+"name"+Q+": "+Q+TMPCHR+Q+","
@@ -903,16 +905,28 @@ PROCEDURE GETSKIPCRITERIA
    CALL CLEANUPTEXT
 
    LDESCRIPTION=TMPCHR
+
    IF (LOAN:DUEDAY2<>0 AND
        DAY(LOAN:DUEDATE)>LOAN:DUEDAY1) THEN
     DO
      LNEWDUEDATE=DATEOFFSET(LOAN:DUEDATE,1,LOAN:DUEDAY2)
-     LNEWMATURITYDATE=DATEOFFSET(LOAN:MATURITYDATE,1,LOAN:DUEDAY2)
+     IF LMATURITYDATE<>DATENULL THEN
+      LNEWMATURITYDATE=DATEOFFSET(LOAN:MATURITYDATE,1,LOAN:DUEDAY2)
     END
    ELSE
     DO
-     LNEWDUEDATE=DATEOFFSET(LOAN:DUEDATE,1,LOAN:DUEDAY1)
-     LNEWMATURITYDATE=DATEOFFSET(LOAN:MATURITYDATE,1,LOAN:DUEDAY1)
+     IF CHARACTERSEARCH("06,07,08,09,11,12",FORMAT("99",LOAN:PAYMENTFREQUENCY))>0 THEN
+      DO
+       LNEWDUEDATE=LOAN:DUEDATE+28
+       IF LMATURITYDATE<>DATENULL THEN
+        LNEWMATURITYDATE=LOAN:MATURITYDATE+28
+      END
+     ELSE
+      DO
+       LNEWDUEDATE=DATEOFFSET(LOAN:DUEDATE,1,LOAN:DUEDAY1)
+       IF LMATURITYDATE<>DATENULL THEN
+        LNEWMATURITYDATE=DATEOFFSET(LOAN:MATURITYDATE,1,LOAN:DUEDAY1)
+      END
     END
   END
 END
