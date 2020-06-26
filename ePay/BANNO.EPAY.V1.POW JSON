@@ -2,13 +2,13 @@
 
 NOTES: 1. Every state checks memoMode - if memoMode is true, we cannot proceed.
 
-## PRELOADDATA, ## PROCESSDATA
+## AUTHORIZEPAYMENT, ## PERFORMPAYMENT
 Because the Specfile functionality is basically the same in both states,
 the same returns will apply to both states. The state name will indicate whether
 the transaction will be performed as a pre-auth or as a final tranaction.
 ```json
 {
-  "rgState": "[PRELOADDATA,PROCESSDATA]",
+  "rgState": "[AUTHORIZEPAYMENT,PERFORMPAYMENT]",
   "powerOnFileName": "BANNO.EPAY.V1.POW",
   "userChrList": [
     {"id": 1, "value": "1234567890L0010"},  // 10-digit account+'L'+LOAN:ID
