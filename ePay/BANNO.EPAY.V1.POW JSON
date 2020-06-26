@@ -1,0 +1,77 @@
+#JSON contract for BANNO.EPAY.V1.POW
+
+NOTES: 1. Every state checks memoMode - if memoMode is true, we cannot proceed.
+
+## PRELOADDATA, ## PROCESSDATA
+Because the Specfile functionality is basically the same in both states,
+the same returns will apply to both states. The state name will indicate whether
+the transaction will be performed as a pre-auth or as a final tranaction.
+```json
+{
+  "rgState": "[PRELOADDATA,PROCESSDATA]",
+  "powerOnFileName": "BANNO.EPAY.V1.POW",
+  "userChrList": [
+    {"id": 1, "value": "1234567890L0010"},  // 10-digit account+'L'+LOAN:ID
+    {"id": 2, "value": "1234567.89"},       // payment amount
+    {"id": 3, "value": ""},                 // userchar3-5 is unused
+    {"id": 4, "value": ""},
+    {"id": 5, "value": ""}
+  ],
+  "userNumList": [],  //  usernum1-5 is unused
+  "rgSession": 1
+}
+```
+Poweron response - Memo Mode: (results in program stop)
+```json
+{
+  "errorCode":"500",
+  "loggingErrorMessage": "System in Memo Mode"
+}
+
+Poweron response - Configuration File read error:
+```json
+{
+  "errorCode":"501",
+  "loggingErrorMessage": "Error reading from config file"
+}
+```
+
+Poweron response - Invalid Account (by Service Code or Account Warning):
+```json
+{
+  "errorCode":"502",
+  "loggingErrorMessage": "Invalid Account - [service code xx, account warning xxx]"
+}
+```
+
+Poweron response - If loan not found:
+```json
+{
+  "errorCode":"503",
+  "loggingErrorMessage": "Loan not found"
+}
+```
+Poweron response - Invalid Loan (by Service Code or Loan Warning):
+```json
+{
+  "errorCode":"504",
+  "loggingErrorMessage": "Invalid Loan" - [service code xx, loan warning xxx]"
+}
+```
+
+Poweron response - If preauth or transaction is unsuccessful:
+```json
+{
+  "results": {
+     "transactionType": "preauth [or] final",
+     "transactionResults": "successful [or] unsuccessful"
+    }
+}
+```
+
+Error Codes
+500 - MemoMode Error
+501 - Config file read / validation error
+502 - Invalid Account
+503 - Loan not Found
+504 - Invalid Loan
