@@ -8,13 +8,7 @@ To get things started, the client will send the initial PRELOADDATA request.
 {
   "rgState": "PRELOADDATA",
   "powerOnFileName": "BANNO.ODTOPTIN.V1.POW",
-  "userChrList": [
-    {"id": 1, "value": "1234567890S0010"},  [NOTE: 10-digit account+'S'+SHARE:ID]
-    {"id": 2, "value": ""},
-    {"id": 3, "value": ""},
-    {"id": 4, "value": ""},
-    {"id": 5, "value": ""}
-  ],
+  "userChrList": [],
   "userNumList": [],
   "rgSession": 1
 }
@@ -23,7 +17,7 @@ To get things started, the client will send the initial PRELOADDATA request.
 Poweron response - when system is in Memo Mode:
 ```json
 {
-  "memoMode": true,
+  "memoMode": true
 }
 ```
 
@@ -56,17 +50,17 @@ Poweron response - With eligible shares:
 {
  "memoMode": false,
  "results": {
-  "maxSharesExceeded": false, ['true' if the number of shares found exceeds processing capbilities (130 shares)]
-  "shareDetail": [{           [note: the first share returned will be the share the member]
-    "SID": "0000",            [currently has opened, provided it is eligible. All other shares will be in heirarchal order]
-    "name": "My Primary Share"
-    "balance": "######9.99"
+  "maxSharesExceeded": false, //'true' if the number of shares found exceeds processing capbilities (130 shares)
+  "shareDetail": [{           //note: the first share returned will be the share the member
+    "SID": "0000",            //currently has opened, provided it is eligible. All other shares will be in heirarchal order
+    "name": "My Primary Share",
+    "balance": "######9.99",
     "currentState": false
    },
    {
     "SID": "0010",
-    "name": "SuperDuper Checking"
-    "balance": "######9.99"
+    "name": "SuperDuper Checking",
+    "balance": "######9.99",
     "currentState": true
    }
   ],
@@ -103,8 +97,8 @@ UX returns updated state of each share
   "rgState": "PROCESSDATA",
   "powerOnFileName": "BANNO.ODTOPTIN.V1.POW",
   "userChrList": [
-    {"id": 1, "value": "0000,0010,0012,0014"},  [comma dilineated list of 4-digit share ID for those shares which are]
-    {"id": 2, "value": ""},                     [to be enrolled into ODT services. All 5 userChr lists can be used]
+    {"id": 1, "value": "0000,0010,0012,0014"},  //comma dilineated list of 4-digit share ID for those shares which are
+    {"id": 2, "value": ""},                     //to be enrolled into ODT services. All 5 userChr lists can be used
     {"id": 3, "value": ""},
     {"id": 4, "value": ""},
     {"id": 5, "value": ""}
@@ -131,14 +125,14 @@ PowerOn Response if successful
   "maxSharesExceeded": false,
   "shareDetailUpdated": [{
     "SID": "0000",
-    "name": "My Primary Share"
-    "balance": "######9.99"
+    "name": "My Primary Share",
+    "balance": "######9.99",
     "currentState": false
    },
    {
     "SID": "0010",
-    "name": "SuperDuper Checking"
-    "balance": "######9.99"
+    "name": "SuperDuper Checking",
+    "balance": "######9.99",
     "currentState": true
    }
   ]
@@ -148,7 +142,6 @@ PowerOn Response if successful
 
 Error Codes (individual error codes are for ease of researching issues.
              All error codes will be returned to the UX as '500')
-500 - MemoMode Error
 501 - Config file read / validation error
 502 - Invalid Account error:
 503 - No eligible shares
