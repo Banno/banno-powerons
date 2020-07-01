@@ -29,11 +29,11 @@ Poweron response - Config File read error:
 }
 ```
 
-Poweron response - Invalid Account error:
+Poweron response - Config File validation error:
 ```json
 {
-   "errorCode":"502",
-   "loggingErrorMessage": "Invalid Account:"+[Invalid Account Type XX, Acct Warning XX, Acct Svc Code XX]
+  "errorCode":"502",
+  "loggingErrorMessage": "Config file validation error"
 }
 ```
 
@@ -42,6 +42,22 @@ Poweron response - If no eligible shares:
 {
   "errorCode":"503",
   "loggingErrorMessage": "No Eligible Shares"
+}
+```
+
+Poweron response - Invalid Account type error:
+```json
+{
+   "errorCode":"504",
+   "loggingErrorMessage": "Ineligible account type [account type] found"
+}
+```
+
+Poweron response - Account warning code error:
+```json
+{
+   "errorCode":"505",
+   "loggingErrorMessage": "Account warning [acount warning] exists"
 }
 ```
 
@@ -108,12 +124,19 @@ UX returns updated state of each share
 }
 ```
 
-PowerOn Response if error condition
+PowerOn Response if error while updating tracking record
 ```json
 {
-  "memoMode": false,
-  "errorCode":"504",
-  "loggingErrorMessage": "Error Processing Update(s): [error detail]"
+  "errorCode":"506",
+  "loggingErrorMessage": "Error attempting to update share tracking: [error detail]"
+}
+```
+
+PowerOn Response if error while updating share record
+```json
+{
+  "errorCode":"507",
+  "loggingErrorMessage": "Error updating sourcecode & auth/fee fields: [error detail]"
 }
 ```
 
@@ -122,7 +145,7 @@ PowerOn Response if successful
 {
  "memoMode": false,
  "results": {
-  "maxSharesExceeded": false,
+  "maxSharesExceeded": false,  //'true' if the number of shares found exceeds processing capbilities (130 shares)
   "shareDetailUpdated": [{
     "SID": "0000",
     "name": "My Primary Share",
@@ -140,9 +163,13 @@ PowerOn Response if successful
 }
 ```
 
-Error Codes (individual error codes are for ease of researching issues.
-             All error codes will be returned to the UX as '500')
-501 - Config file read / validation error
-502 - Invalid Account error:
+Error Codes // Individual error codes are for ease of researching issues.
+            // All error codes except for '503' will be returned to the UX as '500'
+
+501 - Config file read error
+502 - Config file validation error
 503 - No eligible shares
-504 - Error processing update
+504 - Ineligible account type
+505 - Account warning found
+506 - Error attempting to update share tracking record
+507 - Error updating source code and auth & fee fields
