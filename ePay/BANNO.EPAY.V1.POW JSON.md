@@ -1,6 +1,4 @@
-#JSON contract for BANNO.EPAY.V1.POW
-
-NOTES: 1. Every state checks memoMode - if memoMode is true, we cannot proceed.
+#JSON contract for BANNO.GL.LOAN.PAYMENT.V1.POW
 
 ## AUTHORIZEPAYMENT, ## PERFORMPAYMENT
 Because the Specfile functionality is basically the same in both states,
@@ -21,12 +19,6 @@ the transaction will be performed as a pre-auth or as a final tranaction.
   "rgSession": 1
 }
 ```
-Poweron response - Memo Mode: (results in program stop)
-```json
-{
-  "errorCode":"500",
-  "loggingErrorMessage": "System in Memo Mode"
-}
 
 Poweron response - Configuration File read error:
 ```json
@@ -63,6 +55,7 @@ Poweron response - If preauth or transaction is unsuccessful:
 ```json
 {
   "results": {
+     "memoMode": true, [or false]
      "transactionType": "preauth [or] final",
      "transactionResults": "successful [or] unsuccessful"
     }
@@ -70,7 +63,6 @@ Poweron response - If preauth or transaction is unsuccessful:
 ```
 
 Error Codes
-500 - MemoMode Error
 501 - Config file read / validation error
 502 - Invalid Account
 503 - Loan not Found
