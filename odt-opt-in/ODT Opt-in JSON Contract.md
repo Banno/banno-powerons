@@ -1,9 +1,9 @@
-# Open subshare JSON contract
+# ODT Opt-in JSON contract
 
-NOTES: every state checks memoMode - if memoMode is true, we cannot proceed.
+PLEASE NOTE: The program will not proceed if the system is in Memo Post Mode
 
 ## PRELOADDATA
-To get things started, the client will send the initial PRELOADDATA request.
+The client will send the initial PRELOADDATA request.
 ```json
 {
   "rgState": "PRELOADDATA",
@@ -67,8 +67,8 @@ Poweron response - With eligible shares:
  "memoMode": false,
  "results": {
   "maxSharesExceeded": false, //'true' if the number of shares found exceeds processing capbilities (130 shares)
-  "shareDetail": [{           //note: the first share returned will be the share the member
-    "SID": "0000",            //currently has opened, provided it is eligible. All other shares will be in heirarchal order
+  "shareDetail": [{
+    "SID": "0000",
     "name": "My Primary Share",
     "balance": "######9.99",
     "currentState": false
@@ -145,7 +145,7 @@ PowerOn Response if successful
 {
  "memoMode": false,
  "results": {
-  "maxSharesExceeded": false,  //'true' if the number of shares found exceeds processing capbilities (130 shares)
+  "maxSharesExceeded": false,  //'true' if the number of shares found exceeds processing capabilities (130 shares)
   "shareDetailUpdated": [{
     "SID": "0000",
     "name": "My Primary Share",
