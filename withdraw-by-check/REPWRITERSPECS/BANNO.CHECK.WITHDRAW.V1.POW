@@ -4,9 +4,10 @@
 **
 **  Copyright 2020 Jack Henry and Associates
 **
-**  4/16/2020: fixes for invalid punctuation in share descriptions
-**  5/14/2020: corrected error condition when no terms and conditions
-**             defined in the parameter file.
+**  04/16/2020: fixes for invalid punctuation in share descriptions
+**  05/14/2020: corrected error condition when no terms and conditions
+**              defined in the parameter file.
+**  08/12/2020: corrected TOC end of line spacing issue
 **
 **  This Banno service PowerOn allows the user to request
 **  withdraw by check from an eligible share or loan
@@ -294,7 +295,10 @@ PROCEDURE RETURNVALIDACCT
    TMPCHR=PARAMCUSTOMTERMS(TMPLOOP)
    CALL NTS
    PRINT "   "
-   PRINT Q+TMPCHR+Q
+   PRINT Q
+   IF TMPLOOP>1 THEN
+    PRINT " "
+   PRINT TMPCHR+Q
    IF TMPLOOP<PARAMCUSTOMTERMLINES THEN
     PRINT ","
    NEWLINE
