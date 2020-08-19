@@ -1,0 +1,145 @@
+[*
+**  PowerOn Name:       BANNO.ALERT.TRANSFILE.V1
+**
+**  Copyright 2020 Jack Henry and Associates
+**
+**  09/21/2018 CM Simms        Original Author
+**
+**  This Banno feature PowerOn returns transactions for users set up for Alerts.
+**  This PowerOn is called if the previous step indicates more there are more
+**  transactions to transmit. It will return 9500 transactions per request.
+**
+**  For more information check
+**  https://github.com/Banno/banno-powerons
+**
+**  Banno is not responsible for any modifications to this file
+**  made by unauthorized personnel.
+**
+**  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
+*]
+
+
+[*Details:
+**  First, using SymX call UploadDateFile, Banno uploads a Datafile 
+**  of shares and loans where an alert has been set up.  
+**  File name: MEMBERDATA.DAT
+**
+**  Second, using SymX call executePowerOn (BANNO.ALERT.TRANSACTIONS.V1)
+**  is ran. This counts the transactions and indicates if more
+**  transactions are available.  If so, letterfile MEMBERTRANS.DAT is
+**  created with transactions not transmitted.  
+**
+**  Third, if needed, using this SymX call executePowerOn, this PowerOn
+**  is ran.  Banno sends the following:
+**     RGUSERNUM1   REQUIRED  Start number (from prev step) 
+**     RGUSERNUM2   REQUIRED  Total number (from prev step)
+**
+**    RETURNS:
+**     RGLines
+**      Header
+**      Detail lines (up to 9500)
+**      COUNT:  this is the total found in this run
+**      PRINTCOUNT: this is the count that is returned from this call
+**      MORETOPRINT: YES means a second pass is required
+**      STARTCOUNT: this is what transaction # to start with in the 
+**                  next call
+**
+**  Fourth, if needed, this SymX call executePowerOn will be ran
+**  until MORETOPRINT reads "NO"
+* ]
+
+SYMCONNECT
+STATELESS
+
+TARGET=ACCOUNT
+
+DEFINE
+ PRINTHEADERLINE1=CHARACTER
+ PRINTHEADERLINE2=CHARACTER
+
+ INPUTFILE=CHARACTER(40)
+ INPUTFILENUMBER=NUMBER
+ FILEERROR=CHARACTER(40)
+ OUTPUTTRAN=CHARACTER(132)
+
+ STARTCOUNT=NUMBER
+ COUNT=NUMBER
+ PRINTCOUNT=NUMBER
+
+ TRUE=1
+ FALSE=0
+ X=NUMBER
+END
+
+SETUP
+ PRINTHEADERLINE1=" COUNT|ACCOUNT        |EFFECTDT|TIME|A|TRANSACTIONAMNT|NEWBALANCEAMOUN|"
+ PRINTHEADERLINE2="NEWAVAILABLEAMT|DRAFTNUMBR|SEQUENCENO|PREVIBALANCEAMT|"
+
+ STARTCOUNT=@RGUSERNUM1
+ COUNT=@RGUSERNUM2
+ PRINTCOUNT=0
+
+ INPUTFILE="MEMBERTRANS.DAT"
+
+ [CHECK TO SEE IF THE FILE WILL OPEN FOR READING]
+ FILEOPEN("LETTER", INPUTFILE,"READ",INPUTFILENUMBER,FILEERROR)
+ IF FILEERROR <> "" THEN
+  DO
+   PRINT "Error opening input file: " + FILEERROR
+   NEWLINE
+  END
+END
+
+SELECT
+ ALL
+END
+
+PRINT TITLE="BANNO.TRANSACTIONS.INQUIRY"
+
+ IF PRINTCOUNT=0 THEN
+  DO
+   PRINT PRINTHEADERLINE1
+   PRINT PRINTHEADERLINE2
+   NEWLINE
+  END
+
+ WHILE FILEERROR = "" 
+  DO
+   FILEREADLINE(INPUTFILENUMBER, OUTPUTTRAN, FILEERROR)
+   IF FILEERROR="" AND
+      OUTPUTTRAN<>"" AND
+      LENGTH(OUTPUTTRAN)>2 AND
+      PRINTCOUNT<=9499 AND
+      VALUE(SEGMENT(OUTPUTTRAN,1,6))>=STARTCOUNT THEN
+    DO
+     PRINT OUTPUTTRAN
+     NEWLINE
+     PRINTCOUNT=PRINTCOUNT+1
+    END
+  END
+END
+
+TOTAL
+ FILECLOSE(INPUTFILENUMBER, FILEERROR)
+ PRINT "COUNT: "
+ PRINT LEFT COUNT
+ NEWLINE
+ PRINT "PRINTCOUNT: "
+ PRINT LEFT PRINTCOUNT
+ NEWLINE
+ IF COUNT>PRINTCOUNT+STARTCOUNT THEN
+  DO
+   PRINT "MORE TO PRINT: YES"
+   NEWLINE
+   PRINT "STARTCOUNT: "
+   PRINT LEFT STARTCOUNT+PRINTCOUNT
+   NEWLINE
+  END
+ ELSE
+  DO
+   PRINT "MORE TO PRINT: NO"
+   NEWLINE
+  END
+END
+
+
