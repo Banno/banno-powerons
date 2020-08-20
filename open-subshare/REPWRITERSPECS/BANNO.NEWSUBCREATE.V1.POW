@@ -5,8 +5,11 @@
 **
 **  Copyright 2020 Jack Henry and Associates
 **
-**  This Banno service PowerOn allows the user to open a new  
-**  share on the main account, add a joint, fund. 
+**  08/19/2020: Added debug mode switch. When on, config file
+**              resides in LETTTERSPECS else in DATAFILES dir.
+**
+**  This Banno service PowerOn allows the user to open a new
+**  share on the main account, add a joint, fund.
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -98,7 +101,7 @@ DEFINE
  [RATE VARIABLES]
  SACDISPLAYRATEFLAG        = CHARACTER
  SACSETFILLINRATESFLAG     = CHARACTER
- 
+
  SACTYPEDIVTYPE            = NUMBER
  SACTYPEDIVRATE            = RATE
  DIVDEFRATESELECT          = NUMBER
@@ -120,7 +123,7 @@ DEFINE
 
  [SHARE TYPES PER GROUP IS LIMITED TO 100]
  SACSHARETYPES             = CHARACTER ARRAY(10,100)
- SACSHARETYPEEXISTS        = NUMBER ARRAY(100) 
+ SACSHARETYPEEXISTS        = NUMBER ARRAY(100)
  SACSHARETYPEEXISTSMAX     = 100
  SACSHARETYPESMAX          = 100
 
@@ -207,7 +210,7 @@ DEFINE
  REPCHR                      = "/"
 
  [JSON CHARACTERS]
- Q                         = CHARACTER    
+ Q                         = CHARACTER
  ERRORCODE                 = CHARACTER
  ERRORMSG                  = CHARACTER
  ERRORDETAIL               = CHARACTER
@@ -243,9 +246,21 @@ DEFINE
  RATEDATALOOP              = NUMBER
  RATEDATAMAX               = 10
  RATEDATAUSED              = NUMBER
+
+ DEBUGMODE              = NUMBER
+  DEBUGMODEON           = 1
+  DEBUGMODEOFF          = 0
+ DATAFILETYPE           = CHARACTER
 END
 
 SETUP
+ DEBUGMODE=DEBUGMODEOFF
+
+ IF DEBUGMODE=DEBUGMODEON THEN
+  DATAFILETYPE="LETTER"
+ ELSE
+  DATAFILETYPE="DATA"
+
  Q=CTRLCHR(34)
 
  PRIMARYSSN = NAME:SSN
@@ -256,17 +271,17 @@ SETUP
  ELSE
   IDVALUEMAX=9999
 
- NAMETYPEDESC(0)  = "Primary" 
- NAMETYPEDESC(1)  = "Joint" 
- NAMETYPEDESC(2)  = "Mailing" 
- NAMETYPEDESC(3)  = "Alt mail" 
+ NAMETYPEDESC(0)  = "Primary"
+ NAMETYPEDESC(1)  = "Joint"
+ NAMETYPEDESC(2)  = "Mailing"
+ NAMETYPEDESC(3)  = "Alt mail"
  NAMETYPEDESC(4)  = "Beneficiary"
  NAMETYPEDESC(5)  = "Custodian"
- NAMETYPEDESC(6)  = "Trustee" 
+ NAMETYPEDESC(6)  = "Trustee"
  NAMETYPEDESC(7)  = "Resp Indiv"
  NAMETYPEDESC(8)  = "Power of Atty"
  NAMETYPEDESC(9)  = "Auth Sig"
- NAMETYPEDESC(10) = "Div Payee" 
+ NAMETYPEDESC(10) = "Div Payee"
  NAMETYPEDESC(11) = "Mat Payee"
  NAMETYPEDESC(12) = "Ed IRA Ben"
  NAMETYPEDESC(13) = "Next of Kin"
@@ -288,9 +303,9 @@ SETUP
  NAMETYPEDESC(29) = "Property Address"
  NAMETYPEDESC(30) = "Successor in Interest"
  NAMETYPEDESC(31) = "Information Only"
- NAMETYPEDESC(50) = "CU Acct" 
- NAMETYPEDESC(51) = "CU Joint" 
- NAMETYPEDESC(52) = "CU Mailing" 
+ NAMETYPEDESC(50) = "CU Acct"
+ NAMETYPEDESC(51) = "CU Joint"
+ NAMETYPEDESC(52) = "CU Mailing"
  NAMETYPEDESC(53) = "CU Alt"
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
  SHARETERMFREQCHR(0)="month"
@@ -301,8 +316,8 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
  SYSTEMMEMOMODE=SYSMEMOMODE
 
- [Check if system is in memomode] 
- IF SYSTEMMEMOMODE=TRUE THEN   
+ [Check if system is in memomode]
+ IF SYSTEMMEMOMODE=TRUE THEN
   DO
    PRINT "{"
    NEWLINE
@@ -328,8 +343,8 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
    ELSE
     DO
      IF @RGSTATE="PRELOADDATA" THEN
-      DO 
-       [QUALIFY MEMBER]   
+      DO
+       [QUALIFY MEMBER]
        CALL QUALIFYMEMBER
        IF INELIGIBLEREASON="" THEN       [MEMBER IS QUALIFIED, GIVE BACK SHARE OPTIONS]
         DO
@@ -365,11 +380,11 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
            CALL JSONCLOSE
           END
          NEWLINE
-        END 
+        END
       END  [PRELOAD STATE]
 
-     IF @RGSTATE="GETTERMSFUNDING" THEN 
-      DO 
+     IF @RGSTATE="GETTERMSFUNDING" THEN
+      DO
        OPENCATEGORY=@RGUSERCHR1
        OPENTYPE=@RGUSERCHR2
 
@@ -413,7 +428,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
           OPENCATEGORY<>"" THEN
           DO
            CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
-          END 
+          END
 
          [GET SHARE TRANSFER FROM OPTIONS]
          GETSHARETRANSFERRUN=TRANSFERRUNFINAL
@@ -423,14 +438,14 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
       END  [GETTERMSFUNDING STATE]
 
      IF @RGSTATE="NAMEPRELOAD" THEN
-      DO 
+      DO
        PRINT "{"
        NEWLINE
        PRINT "  "+Q+"memoMode"+Q+": false,"
        NEWLINE
        PRINT "   "+Q+"canOpenSubShare"+Q+": true,"
        NEWLINE
-       PRINT "  "+Q+"results"+Q+": {" 
+       PRINT "  "+Q+"results"+Q+": {"
        NEWLINE
 
        PRINT "    "+Q+"canAddNames"+Q+": "
@@ -452,21 +467,21 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          NEWLINE
          [Provide existing names at the ACCOUNT LEVEL]
          CALL PROVIDENAMESINFO
-        END [SACNAMEALLOWFLAG="1"]    
+        END [SACNAMEALLOWFLAG="1"]
        PRINT "}"
        NEWLINE
 
       END  [NAMEPRELOAD STATE]
 
-     IF @RGSTATE="CREATESHARE" THEN 
+     IF @RGSTATE="CREATESHARE" THEN
       DO
        CALL GETPASSEDINFO                      [getting the information from Banno call]
        NEWSHAREIRSSSN=NAME:SSN
        IF PASSEDINFOREADERROR="" THEN
         DO
          CALL FUNDSCHECK                       [CHECK FUNDS]
-         IF TRANERRORTEXT="" THEN 
-          DO 
+         IF TRANERRORTEXT="" THEN
+          DO
            CALL GETNEXTID                      [calulate which share ID to use for new share]
            IF NEWSHAREID<>"" THEN
             DO
@@ -481,14 +496,14 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                   DO
                    CALL ADDNAME              [if any names, create them]
                    CALL PERFORMTRANSFER      [if transfer info, do transfer]
- 
+
                    PRINT "{"
                    NEWLINE
                    PRINT "  "+Q+"memoMode"+Q+": false,"
                    NEWLINE
                    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
                    NEWLINE
-  
+
                    PRINT "    "+Q+"results"+Q+": {"
                    NEWLINE
                    PRINT "      "+Q+"funding"+Q+": {"
@@ -549,7 +564,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
               END                              [end interest rate]
             END                                [end get ID]
           END                                  [end check funds]
-        END                                  [end of passed info]                                 
+        END                                  [end of passed info]
       END                                    [end CREATESHARE STATE]
     END [READCONFIGGOOD]
   END  [NOT IN MEMOMODE]
@@ -558,7 +573,7 @@ END   [PRINT SECTION]
 
 PROCEDURE READCONFIGFILESETTINGS
 
- FILEOPEN("LETTER",CONFIGFILENAME,"READ",SACFILENUM,READCONFIGERROR) 
+ FILEOPEN(DATAFILETYPE,CONFIGFILENAME,"READ",SACFILENUM,READCONFIGERROR)
  CFGFILEREADERROR=READCONFIGERROR
 
 [  Parse additional lines for this NT specfile
@@ -712,7 +727,7 @@ PROCEDURE QUALIFYMEMBER
     DO
      PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
      NEWLINE
-     PRINT "  "+Q+"results"+Q+":{"  
+     PRINT "  "+Q+"results"+Q+":{"
      NEWLINE
      INELIGIBLEREASON="EXCLUDED ACCT TYPE"
      ERRORCODE="503"
@@ -724,7 +739,7 @@ PROCEDURE QUALIFYMEMBER
 
 END [QUALIFY MEMBER PROC]
 
-PROCEDURE LOADSUBACCTTERMS 
+PROCEDURE LOADSUBACCTTERMS
 [* Load the appropriate TOC data based upon the share group type
 ** chosen by the member (0-9).  Procedure reads a line and writes a line
 ** from the appropriately named Letter file
@@ -758,7 +773,7 @@ PROCEDURE LOADSUBACCTTERMS
      CALL CLEANUPTEXT
      IF LFLINECOUNT=0 THEN
       DO
-       PRINT "  "+Q+"results"+Q+": {" 
+       PRINT "  "+Q+"results"+Q+": {"
        NEWLINE
        PRINT "    "+Q+"categoryTerms"+Q+":["
        NEWLINE
@@ -778,7 +793,7 @@ PROCEDURE LOADSUBACCTTERMS
 END [PROCEDURE TERMS]
 
 
-PROCEDURE GETMINIMUMDEPOSIT 
+PROCEDURE GETMINIMUMDEPOSIT
 [* Using the share type, get the minimum balance, minimum deposit and,
 ** if applicable, the minimum opening deposit amount set in the parameter
 ** settings. The minimum funding requirement is the greater of the three.
@@ -829,7 +844,7 @@ PROCEDURE PROVIDENAMESINFO
     END
   END
  PRINT "],"
- NEWLINE 
+ NEWLINE
  PRINT "    "+Q+"existingNames"+Q+": ["
 
 
@@ -855,7 +870,7 @@ PROCEDURE PROVIDENAMESINFO
    NEWLINE
    PRINT "       "+Q+"type"+Q+": "+Q+NAMETYPEDESC(NAME:TYPE)+Q
    NEWLINE
-   PRINT "      }" 
+   PRINT "      }"
   END
 
  NEWLINE
@@ -964,7 +979,7 @@ PROCEDURE SHAREOUTPUT
 
  [in defaults, is this share type available]
  FOR I=0 TO SACSHAREGROUPSMAX
-  DO 
+  DO
    FOR J=0 TO SACSHARETYPESMAX
     DO
      IF SACSHARETYPES(I,J)<>"" THEN
@@ -1019,7 +1034,7 @@ PROCEDURE SHAREOUTPUT
          PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
          PRINT Q+","
          NEWLINE
-         
+
          [SHARE DESCRIPTION]
          PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
          NEWLINE
@@ -1081,7 +1096,7 @@ PROCEDURE SHAREOUTPUT
     END
   END [FOR I - GROUPS]
  NEWLINE
-END           
+END
 
 
 PROCEDURE GETSHARERATE
@@ -1228,7 +1243,7 @@ PROCEDURE GETSHARERATE
         DO
          NEWLINE
          PRINT "]"
-        END     
+        END
       END
     END [IF DIVDEFINDEXOPTION=0 AND...]
 
@@ -1277,7 +1292,7 @@ PROCEDURE GETSHARETRANSFERS
          NEWLINE
         END
        PRINT "    {"
-       NEWLINE  
+       NEWLINE
        TMPCHR=TMPSHARENAME
        CALL NLTS
        CALL CLEANUPTEXT
@@ -1291,7 +1306,7 @@ PROCEDURE GETSHARETRANSFERS
        PRINT Q+","
        NEWLINE
        PRINT "      "+Q+"memberAccountNumber"+Q+":"+Q+TMPSHAREID+Q
-       NEWLINE 
+       NEWLINE
        PRINT "    }"
       END
     END
@@ -1349,7 +1364,7 @@ PROCEDURE CHECKSHARETRANSFEROUT
      TEMPMSG=TEMPMSG+"S"+TMPCHR
      TMPSHAREID=TEMPMSG
     END
- 
+
    [ADD avail balance]
    TEMPMSG=TEMPMSG+"|"+FORMAT("$###########9.99+",SHARE:AVAILABLEBALANCE)+"|"
    TMPSHAREAVAIL=SHARE:AVAILABLEBALANCE
@@ -1407,7 +1422,7 @@ PROCEDURE GETPASSEDINFO
  [must have a share type]
  IF IMPORT(1)="" THEN
   DO
-   PASSEDINFOREADERROR="MISSING INFORMATION" 
+   PASSEDINFOREADERROR="MISSING INFORMATION"
 
    PRINT "{"
    NEWLINE
@@ -1443,7 +1458,7 @@ PROCEDURE GETPASSEDINFO
 
        POS=CHARACTERSEARCH(IMPORT(J),";")
        TRANSFERFROMID=SEGMENT(IMPORT(J),1,POS-1)
-       TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID)) 
+       TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID))
        TRANSFERAMOUNT=MONEY(VALUE(SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))))
       END
     END
@@ -1476,7 +1491,7 @@ PROCEDURE GETPASSEDINFO
      IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
 
      POS=CHARACTERSEARCH(IMPORT(J),";")
-     NEWNAMESSN(NUM)=SEGMENT(IMPORT(J),1,POS-1) 
+     NEWNAMESSN(NUM)=SEGMENT(IMPORT(J),1,POS-1)
      IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
 
      NEWNAMEEMAIL(NUM)=UPPERCASE(IMPORT(J))
@@ -1510,11 +1525,11 @@ PROCEDURE GETPASSEDINFO
      IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
 
      POS=CHARACTERSEARCH(IMPORT(J),";")
-     NEWNAMEDOB(NUM)=DATEVALUE(SEGMENT(IMPORT(J),1,POS-1))  
+     NEWNAMEDOB(NUM)=DATEVALUE(SEGMENT(IMPORT(J),1,POS-1))
      IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
 
      POS=CHARACTERSEARCH(IMPORT(J),";")
-     NEWNAMEPHONETYPE(NUM)=VALUE(SEGMENT(IMPORT(J),1,POS-1)) 
+     NEWNAMEPHONETYPE(NUM)=VALUE(SEGMENT(IMPORT(J),1,POS-1))
      IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
 
      NEWNAMEPHONE(NUM)=IMPORT(J)
@@ -1607,7 +1622,7 @@ PROCEDURE GETNEWSHARERATE
    NEWSHAREDIVDEFRATESELECT=0
 
    [INFO FROM SHARE DEFAULTS]
-   NEWSHAREDIVTYPE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),19)  
+   NEWSHAREDIVTYPE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),19)
    NEWSHAREDIVRATE=GETDATARATE(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),20)
    NEWSHAREIRSCODE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),12)
 
@@ -1617,13 +1632,13 @@ PROCEDURE GETNEWSHARERATE
    NEWSHAREDIVDEFFILLINMETHOD=GETDATANUMBER(GETPARAMDIVDEFFILLINRATESELECT,NEWSHAREDIVTYPE)
    NEWSHAREDIVDEFINDEXOPTION=GETDATANUMBER(GETPARAMDIVDEFDIVINDEXOPT,NEWSHAREDIVTYPE)
 
-   IF NEWSHAREDIVDEFDEFINED=0 THEN                                
+   IF NEWSHAREDIVDEFDEFINED=0 THEN
     DO
      GETRATEERROR="INVALID DIV TYPE"     [ DIVTYPE IS NOT DEFINED ]
      NEWLINE
     END
 
-   IF NEWSHAREDIVDEFDEFINED=1 THEN       
+   IF NEWSHAREDIVDEFDEFINED=1 THEN
     DO
      IF NEWSHAREDIVDEFRATESELECT<>1 THEN   [NOT A FILL IN RATE]
       DO
@@ -1660,7 +1675,7 @@ PROCEDURE GETNEWSHARERATE
            RATEDONE=TRUE
           END
 
-         ELSE IF DR=1 AND 
+         ELSE IF DR=1 AND
                  TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN
           DO
            NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
@@ -1934,11 +1949,11 @@ PROCEDURE ADDNAME
 END [PROC ADD NAME]
 
 PROCEDURE PHONENUMBERHANDLING
- NEWMOBILENUMBER="" 
+ NEWMOBILENUMBER=""
  NEWHOMENUMBER=""
  NEWWORKNUMBER=""
 
- IF NEWNAMEPHONETYPE(J)=0 THEN   
+ IF NEWNAMEPHONETYPE(J)=0 THEN
   DO
    NEWMOBILENUMBER=NEWNAMEPHONE(J)
   END
@@ -2101,25 +2116,25 @@ PROCEDURE ERRORHANDLER
   ERRORDETAIL=FORMAT("Account Warning 999 Exists",I)
  ELSE IF ERRORCODE="503" THEN
   ERRORDETAIL=FORMAT("Ineligible Acct Type 9999 found",ACCOUNT:TYPE)
- ELSE IF ERRORCODE="504" THEN       
+ ELSE IF ERRORCODE="504" THEN
   ERRORDETAIL="No eligible shares available to be created"
- ELSE IF ERRORCODE="505" THEN    
+ ELSE IF ERRORCODE="505" THEN
   ERRORDETAIL=FORMAT("Error reading Share group 99 term file:"+TMPCHR,VALUE(OPENCATEGORY))
- ELSE IF ERRORCODE="506" THEN 
+ ELSE IF ERRORCODE="506" THEN
   ERRORDETAIL="No shares with sufficient funds for required transfer"
- ELSE IF ERRORCODE="507" THEN 
+ ELSE IF ERRORCODE="507" THEN
   ERRORDETAIL="Error reading passed name info:"+PASSEDINFOREADERROR
- ELSE IF ERRORCODE="508" THEN 
+ ELSE IF ERRORCODE="508" THEN
   ERRORDETAIL="Next ID calculation error"
- ELSE IF ERRORCODE="509" THEN 
+ ELSE IF ERRORCODE="509" THEN
   ERRORDETAIL="Error getting new share rate"
- ELSE IF ERRORCODE="510" THEN 
+ ELSE IF ERRORCODE="510" THEN
   ERRORDETAIL="Could not Calculate new maturity date"
- ELSE IF ERRORCODE="511" THEN 
-  ERRORDETAIL="Error creating new share:"+SHAREERRORMESSAGE 
- ELSE IF ERRORCODE="512" THEN 
+ ELSE IF ERRORCODE="511" THEN
+  ERRORDETAIL="Error creating new share:"+SHAREERRORMESSAGE
+ ELSE IF ERRORCODE="512" THEN
   ERRORDETAIL="Error creating new name record(s):"+TMPNAMEERROR
- ELSE IF ERRORCODE="513" THEN 
+ ELSE IF ERRORCODE="513" THEN
   ERRORDETAIL="Transfer funding error:"+TRANERRORTEXT
 
  ERRORCODE="500" [Per new JSON Specs, force all errors to "500"]
@@ -2129,7 +2144,7 @@ PROCEDURE ERRORHANDLER
  PRINT "    "+Q+ERRORMSG+Q+": "+
             Q+ERRORDETAIL+Q
  NEWLINE
-END [PROCEDURE] 
+END [PROCEDURE]
 
 PROCEDURE JSONOPEN
  PRINT "{"
