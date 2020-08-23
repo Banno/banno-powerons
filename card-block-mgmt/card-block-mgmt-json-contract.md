@@ -38,13 +38,13 @@ the system be in memo mode, program processing will end and error code
 				"index": "001",
 				"location": "Colorado",
 				"blocked": true,
-				"expiration": "--/--/--"
+				"expiration": null
 			},
 			{
 				"index": "002",
 				"location": "New Mexico",
 				"blocked": true,
-				"expiration": "--/--/--"
+				"expiration": null
 			},
    {
 				"index": "002",
@@ -83,7 +83,8 @@ the system be in memo mode, program processing will end and error code
 ## PROCESSDATA STATE
 
 ### Client Request  (PROCESSDATA)
-#### The member has made their selctions for the PowerOn to process
+#### The member has made their selections for the PowerOn to process
+
 ```json
 
 {
