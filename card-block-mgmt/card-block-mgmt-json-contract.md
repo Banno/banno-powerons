@@ -34,6 +34,15 @@ the system be in memo mode, program processing will end and error code
 {
 	"results": {
  "maximumDays": 14,
+ "activeCards": [{
+     "name" : "MY WONDERFUL ATM CARD",
+     "last4" : "8537"
+     },
+     {
+     "name" : "MY ONE AND ONLY VISA CARD",
+     "last4" : "2334"
+     }
+     ],
 	"currentStatus": [{
 				"index": "001",
 				"location": "Colorado",
@@ -77,6 +86,15 @@ the system be in memo mode, program processing will end and error code
 {
   "errorCode": 502,
   "loggingErrorMessage": "Ineligible account [warning xx or type xx]"
+}
+```
+
+#### Member has no active, issued Cards:
+
+```json
+{
+  "errorCode": 504,
+  "loggingErrorMessage": "Mbr has no active, issued cards"
 }
 ```
 
@@ -146,3 +164,4 @@ the system be in memo mode, program processing will end and error code
 | 501    | CFG Letterfile processing error    |
 | 502    | Ineligible Account (type/warning)  |
 | 503    | Error processing requested changes |
+| 504    | Mbr has no active, issued cards    |
