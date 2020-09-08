@@ -7,6 +7,8 @@
 **
 **  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
+**  09/01/2020: TKainz - Corrected JSON output when Display Rates
+**              flag was set to 'off'.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -1024,7 +1026,12 @@ PROCEDURE SHAREOUTPUT
           SACSHARETYPES(I,J)<>"" THEN
         DO
          IF J>0 THEN
-          PRINT ","
+          DO
+           IF SACSHARETYPES(I,J-1)<>"" OR
+              SACSHARETYPEEXISTS(J-1)=TRUE THEN
+            PRINT ","
+          END
+
          NEWLINE
          PRINT "          {"                            [new share type]
          NEWLINE
@@ -1071,7 +1078,9 @@ PROCEDURE SHAREOUTPUT
          TMPCHR=FORMAT("######9.99",SHAREMINIMUMBALANCE)
          CALL NLS
          PRINT TMPCHR
-         PRINT Q+","
+         PRINT Q
+         IF SACDISPLAYRATEFLAG="1" THEN
+          PRINT ","
          NEWLINE
 
          [RATES]
@@ -1079,10 +1088,9 @@ PROCEDURE SHAREOUTPUT
           DO
            CALL GETSHARERATE
            NEWLINE
-
-           [END A SHARE TYPE]
-           PRINT "          }"
           END
+        [END A SHARE TYPE]
+         PRINT "          }"
         END
 
       END [FOR J SHARE TYPES]
