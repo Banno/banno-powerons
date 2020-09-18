@@ -81,45 +81,47 @@ If the request is successful, the poweron should respond with:
 ```
 
 ### Errors
-If the request is not successful, the poweron should respond with:
+If the request is not successful, the poweron should respond with one of the following errors:
 
+If there was an issue opening or reading the configuration Letter file
 ```json
 {
   "errorCode": 500,
-  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+  "loggingErrorMessage": "Error [opening/reading] Letter file: +[error returned]"
 }
 ```
 
-If the request is not successful due to insufficient funds, the poweron should respond with:
+If the request is not successful due to insufficient funds, the poweron should respond with the
+following and the client may try request again with a lesser amount:
 
 ```json
 {
   "errorCode": 501,
-  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+  "loggingErrorMessage": "Amount req. ###,##9.99 exceeds avail. ###,##9.99"
 }
 ```
+In the case of insufficient funds, the client may try request again with a lesser amount.
 
-If the request is not successful due to a missing address, the poweron should respond with:
+Should the program determine that the member's address is insufficient to mail a check, the
+response would be as follows:
 
 ```json
 {
   "errorCode": 502,
-  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+  "loggingErrorMessage": "Invalid address"
 }
 ```
 
-If the request is not successful due to an invalid loan/share, the poweron should respond with:
+If the request is not successful due to an invalid account, loan or share, the poweron would respond with:
 
 ```json
 {
   "errorCode": 503,
-  "loggingErrorMessage": "TRANPERFORM Error:+TRANERROR"
+  "loggingErrorMessage": "[Account Not Found/Account Warning Found/Share Not Found/Loan Not Found/Share Warning Found/Loan Warning Found]"
 }
 ```
 
-In the case of insufficient funds, the client may try request again with a lesser amount.
-
-If the request is not successful to Reg D Limits, the poweron should respond wiht:
+If the request is not successful due to Reg D Limits, the response will be:
 ```json
 {
   "errorCode": 504,
@@ -127,11 +129,21 @@ If the request is not successful to Reg D Limits, the poweron should respond wih
 }
 ```
 
+If the member attempts to make a WD from a cross account, the poweron will respond with:.
+
+```json
+{
+  "errorCode": 505,
+  "loggingErrorMessage": "Cross Account WD Attempted"
+}
+```
+
 ### Error codes
-| Code   | Description         |
-|--------|---------------------|
-| 500    | Generic Error       |
-| 501    | Try again           |
-| 502    | Missing address     |
-| 503    | Invalid loan/share  |
-| 504    | Reg D Limit         |
+| Code   | Description              |
+|--------|--------------------------|
+| 500    | CFG file error           |
+| 501    | Insufficient Funds       |
+| 502    | Invalid address          |
+| 503    | Invalid Acct/loan/share  |
+| 504    | Reg D Limit              |
+| 505    | X-Acct Error             |
