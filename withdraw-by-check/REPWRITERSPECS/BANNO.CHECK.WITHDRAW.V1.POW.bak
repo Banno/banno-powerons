@@ -8,8 +8,6 @@
 **  05/14/2020: corrected error condition when no terms and conditions
 **              defined in the parameter file.
 **  08/12/2020: corrected TOC end of line spacing issue
-**  09/18/2020: Added check for attempted cross account access and return
-**              error code 505 if true. Updated TOC line spacing logic.
 **
 **  This Banno service PowerOn allows the user to request
 **  withdraw by check from an eligible share or loan
@@ -149,115 +147,95 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
    IF @RGSTATE=STATESTART THEN
     DO
      CALL GETRGVALUES
-     IF MEMBERNUM<>ACCOUNT:NUMBER THEN
-      DO
-       ERRORCODE="505"
-       ERRORMSG="loggingErrorMessage"
-       ERRORDETAIL="Cross Account WD Attempted"
-       CALL ERRORHANDLER
-      END
+     CALL FINDACCOUNT
+     IF VALIDACCT=TRUE THEN
+      CALL RETURNVALIDACCT
      ELSE
-      DO
-       CALL FINDACCOUNT
-       IF VALIDACCT=TRUE THEN
-        CALL RETURNVALIDACCT
-       ELSE
-        CALL RETURNINVALIDACCT
-      END
+      CALL RETURNINVALIDACCT
     END
    ELSE IF @RGSTATE=STATEPERFORMWITHDRAW THEN
     DO
      CALL GETRGVALUES
-     IF MEMBERNUM<>ACCOUNT:NUMBER THEN
+     CALL FINDACCOUNT
+     IF VALIDACCT=FALSE THEN
+      CALL RETURNINVALIDACCT
+     ELSE IF WDAMOUNT<=$0.00 OR
+             WDAMOUNT>SLAVAILABLEBAL THEN
       DO
-       ERRORCODE="505"
+       ERRORCODE="501"
        ERRORMSG="loggingErrorMessage"
-       ERRORDETAIL="Cross Account WD Attempted"
+       TMPCHR=FORMAT(" ###,##9.99",WDAMOUNT)
+       CALL NLS
+       ERRORDETAIL="Amount req. "+TMPCHR
+       TMPCHR=FORMAT(" ###,##9.99",SLAVAILABLEBAL)
+       CALL NLS
+       ERRORDETAIL=ERRORDETAIL+" exceeds avail. "+TMPCHR
        CALL ERRORHANDLER
       END
      ELSE
       DO
-       CALL FINDACCOUNT
-       IF VALIDACCT=FALSE THEN
-        CALL RETURNINVALIDACCT
-       ELSE IF WDAMOUNT<=$0.00 OR
-               WDAMOUNT>SLAVAILABLEBAL THEN
+       IF SLTYPE="S" AND
+          PARAMREGD=TRUE THEN
+        REGDCHKCODE=1
+       ELSE
+        REGDCHKCODE=0
+
+       IF SLTYPE="S" THEN
         DO
-         ERRORCODE="501"
-         ERRORMSG="loggingErrorMessage"
-         TMPCHR=FORMAT(" ###,##9.99",WDAMOUNT)
-         CALL NLS
-         ERRORDETAIL="Amount req. "+TMPCHR
-         TMPCHR=FORMAT(" ###,##9.99",SLAVAILABLEBAL)
-         CALL NLS
-         ERRORDETAIL=ERRORDETAIL+" exceeds avail. "+TMPCHR
-         CALL ERRORHANDLER
+         TRANPERFORM WK (1,TRANSEQ1,TRANSEQ2,TRANCHKACCTCD,TRANCHKNUMBER,
+                         TRANERROR)
+          DO
+           SET FMACCT TO MEMBERNUM
+           SET FMTYPE TO SLTYPE
+           SET FMID TO SLID
+           SET AMOUNT TO WDAMOUNT
+           SET ISSUE TO "S"
+           SET REGDCHK TO REGDCHKCODE
+           SET CHECKTYPE TO 0
+          END
         END
        ELSE
         DO
-         IF SLTYPE="S" AND
-            PARAMREGD=TRUE THEN
-          REGDCHKCODE=1
+         TRANPERFORM AK (1,TRANSEQ1,TRANSEQ2,TRANCHKACCTCD,TRANCHKNUMBER,
+                         TRANERROR)
+          DO
+           SET FMACCT TO MEMBERNUM
+           SET FMTYPE TO SLTYPE
+           SET FMID TO SLID
+           SET AMOUNT TO WDAMOUNT
+           SET ISSUE TO "S"
+           SET REGDCHK TO REGDCHKCODE
+           SET CHECKTYPE TO 0
+          END
+        END
+       IF TRANERROR="" THEN
+        DO
+         PRINT "{"
+         NEWLINE
+         PRINT "  "+Q+"results"+Q+": {"
+         NEWLINE
+         PRINT "    "+Q+"success"+Q+": true,"
+         NEWLINE
+         PRINT "    "+Q+"memoMode"+Q+": "
+         IF SYSMEMOMODE=0 THEN
+          PRINT "false"
          ELSE
-          REGDCHKCODE=0
-
-         IF SLTYPE="S" THEN
-          DO
-           TRANPERFORM WK (1,TRANSEQ1,TRANSEQ2,TRANCHKACCTCD,TRANCHKNUMBER,
-                           TRANERROR)
-            DO
-             SET FMACCT TO MEMBERNUM
-             SET FMTYPE TO SLTYPE
-             SET FMID TO SLID
-             SET AMOUNT TO WDAMOUNT
-             SET ISSUE TO "S"
-             SET REGDCHK TO REGDCHKCODE
-             SET CHECKTYPE TO 0
-            END
-          END
+          PRINT "true"
+         PRINT "  }"
+         NEWLINE
+         PRINT "}"
+        END
+       ELSE
+        DO
+         IF CHARACTERSEARCH(UPPERCASE(TRANERROR),"REG D")>0 THEN
+          ERRORCODE="504"
+         ELSE IF TRANERROR="NSF" THEN
+          ERRORCODE="501"
          ELSE
-          DO
-           TRANPERFORM AK (1,TRANSEQ1,TRANSEQ2,TRANCHKACCTCD,TRANCHKNUMBER,
-                           TRANERROR)
-            DO
-             SET FMACCT TO MEMBERNUM
-             SET FMTYPE TO SLTYPE
-             SET FMID TO SLID
-             SET AMOUNT TO WDAMOUNT
-             SET ISSUE TO "S"
-             SET REGDCHK TO REGDCHKCODE
-             SET CHECKTYPE TO 0
-            END
-          END
-         IF TRANERROR="" THEN
-          DO
-           PRINT "{"
-           NEWLINE
-           PRINT "  "+Q+"results"+Q+": {"
-           NEWLINE
-           PRINT "    "+Q+"success"+Q+": true,"
-           NEWLINE
-           PRINT "    "+Q+"memoMode"+Q+": "
-           IF SYSMEMOMODE=0 THEN
-            PRINT "false"
-           ELSE
-            PRINT "true"
-           PRINT "  }"
-           NEWLINE
-           PRINT "}"
-          END
-         ELSE
-          DO
-           IF CHARACTERSEARCH(UPPERCASE(TRANERROR),"REG D")>0 THEN
-            ERRORCODE="504"
-           ELSE IF TRANERROR="NSF" THEN
-            ERRORCODE="501"
-           ELSE
-            ERRORCODE="500"
-           ERRORMSG="loggingErrorMessage"
-           ERRORDETAIL="TRANPERFORM Error: "+TRANERROR
-           CALL ERRORHANDLER
-          END
+          ERRORCODE="500"
+         ERRORMSG="loggingErrorMessage"
+         ERRORDETAIL="TRANPERFORM Error: "+TRANERROR
+         CALL ERRORHANDLER
         END
       END
     END
@@ -318,9 +296,7 @@ PROCEDURE RETURNVALIDACCT
    CALL NTS
    PRINT "   "
    PRINT Q
-   IF TMPLOOP>1 AND
-      TMPCHR<>"" AND
-      PARAMCUSTOMTERMS(TMPLOOP-1)<>"" THEN
+   IF TMPLOOP>1 THEN
     PRINT " "
    PRINT TMPCHR+Q
    IF TMPLOOP<PARAMCUSTOMTERMLINES THEN
