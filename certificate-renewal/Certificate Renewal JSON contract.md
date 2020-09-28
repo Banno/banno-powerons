@@ -30,42 +30,42 @@
       "minimumBalance": 12345.67,
       "currentStatus": "Renew",
       "transferSLId": "1234567890S0010",
-      "TransferAmount": 12345.67
+      "transferAmount": "12345.67"
     },
     "options": [{
         "name": "Increase certificate balance",
-        "value": 1
+        "id": 1
       },
       {
         "name": "Change certificate term",
-        "value": 2
+        "id": 2
       },
       {
         "name": "Transfer certificate balance",
-        "value": 3
+        "id": 3
       },
       {
         "name": "Renew",
-        "value": 4
+        "id": 4
       },
       {
         "name": "Disburse funds by check",
-        "value": 5
+        "id": 5
       },
       {
         "name": "Suspend",
-        "value": 6
+        "id": 6
       }
     ],
     "transferShares": [{
         "shareLoanId": "S0000",
         "shareLoanName": "MY PRIME SHARE",
-        "shareBal": 1234.56
+        "shareLoanBal": "1234.56"
       },
       {
         "shareLoanId": "S0001",
         "shareLoanName": "MY SECONDARY SAVINGS",
-        "shareLoanBal": 20000.00
+        "shareLoanBal": "20000.00"
       }
     ]
   }
@@ -105,18 +105,11 @@
   "rgState": "PROCESSDATA",
   "powerOnFileName": "BANNO.CD.RENEW.V1.POW",
   "userChrList":[
-    {"id": 1, "value": "0123456789S0123"},
-    {"id": 2, "value": ""},
-    {"id": 3, "value": ""},
-    {"id": 4, "value": ""},
-    {"id": 5, "value": ""}
+    {"id": 1, "value": "0123456789S0123"}
   ],
   "userNumList": [
     {"id": 1, "value": 1},
-    {"id": 2, "value": 123456.78},
-    {"id": 3, "value": null},	
-    {"id": 4, "value": null},	
-    {"id": 5, "value": null}	
+    {"id": 2, "value": "123456.78"}
 ],
   "rgSession": 1
 }
@@ -131,15 +124,16 @@
 ## Successful Response:
 ```json
 {
-  "results":  "success",
-    "updatedState": {
-      "name": "My Wonderful CD",
-      "maturityDate": "01/01/21",
-      "newStatus": "Renew",
-      "transferSLId": "1234567890S0010",
-      "amount": "12,345.67"
-    }
+  "results": "success",
+  "updatedState": {
+    "name": "My Wonderful CD",
+    "maturityDate": "01/01/21",
+    "minimumBalance": 12345.67,
+    "currentStatus": "Transfer",
+    "transferSLId": "1234567890S0010",
+    "transferAmount": "12345.67"
   }
+}
 ```
  - ***updatedState***
   	 - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
@@ -157,7 +151,7 @@ If any request is not successful for any number of reasons, or the desired actio
 
 ```json
 {
-  "errorCode": XXX,
+  "errorCode": "XXX",
   "loggingErrorMessage": "[error code detail]"
 }
 ```
@@ -170,4 +164,6 @@ If any request is not successful for any number of reasons, or the desired actio
 | 502         | Invalid account or share (based on account type/share warning)  |
 | 503         | Maturity selection previously made - contact CU                 |
 | 504         | Processing Error                                                |
+| 505         | Cross account access attempt                                    |
+
 
