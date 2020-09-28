@@ -34,27 +34,27 @@
     },
     "options": [{
         "name": "Increase certificate balance",
-        "id": 1
+        "value": 1
       },
       {
         "name": "Change certificate term",
-        "id": 2
+        "value": 2
       },
       {
         "name": "Transfer certificate balance",
-        "id": 3
+        "value": 3
       },
       {
         "name": "Renew",
-        "id": 4
+        "value": 4
       },
       {
         "name": "Disburse funds by check",
-        "id": 5
+        "value": 5
       },
       {
         "name": "Suspend",
-        "id": 6
+        "value": 6
       }
     ],
     "transferShares": [{
