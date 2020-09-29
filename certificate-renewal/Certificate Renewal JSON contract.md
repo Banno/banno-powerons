@@ -25,6 +25,7 @@
       "maturityDate": "01/01/21",
       "minimumBalance": "12345.67",
       "currentStatus": "Renew",
+      "currentTerm": "24 months",
       "transferSLId": "1234567890S0010",
       "transferAmount": "12345.67"
     },
@@ -104,8 +105,9 @@
   	 - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   	 - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
   	 - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
-  	 - 5-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  	 - 6-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+  	 - 5-**currentTerm**: The current term of the targeted certificate/club.
+  	 - 6-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+  	 - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
   - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.			 
 	 - 1-**Increase certificate balance**:  Add additional funds to the certificate and renew.
@@ -136,21 +138,21 @@
   "rgState": "PROCESSDATA",
   "powerOnFileName": "BANNO.CD.RENEW.V1.POW",
   "userChrList":[
-    {"id": 1, "value": "0123456789S0123"}
+    {"id": 1, "value": "0123456789S0123"},
+    {"id": 2, "value": "123456.78"}
   ],
   "userNumList": [
-    {"id": 1, "value": 1},
-    {"id": 2, "value": "123456.78"}
+    {"id": 1, "value": 1}
 ],
   "rgSession": 1
 }
 ```
- - userNumList[1]: User selected option
-	 - Represents the CD renewal option the member selected.
- - userNumList[2]: User selected option
-	 - The transfer in/out amount
  - userCharList[1]: 10-digit account number, 'S' or 'L' and 4-digit share/Loan ID
 	 - Represents the source or target share/loan of the transfer
+ - userCharList[2]: User selected option
+	 - The transfer in/out amount
+ - userNumList[1]: User selected option
+	 - Represents the CD renewal option the member selected.
 
 ## Successful Response:
 ```json
@@ -161,6 +163,7 @@
     "maturityDate": "01/01/21",
     "minimumBalance": "12345.67",
     "currentStatus": "Transfer",
+    "currentTerm": "24 months",
     "transferSLId": "1234567890S0010",
     "transferAmount": "12345.67"
   }
@@ -171,8 +174,9 @@
   	 - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   	 - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
   	 - 4-**currentStatus**: The new maturity option set for the targeted certificate/club.
-  	 - 5-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  	 - 6-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+  	 - 5-**currentTerm**: The new term of the targeted certificate/club.
+  	 - 6-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+  	 - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
 ## Unsuccessful Response:
 If any request is not successful for any number of reasons, or the desired action results in an error condition, the PowerOn will respond with the following error structure:
