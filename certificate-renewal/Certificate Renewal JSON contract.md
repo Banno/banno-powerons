@@ -26,8 +26,22 @@
       "minimumBalance": "12345.67",
       "currentStatus": "Renew",
       "currentTerm": "24 months",
-      "transferSLId": "1234567890S0010",
-      "transferAmount": "12345.67"
+      "transfers": [{
+          "transferSLId": "0000800005S0002",
+          "transferAmount": "null",
+          "transferPercent": "50.000"
+        },
+        {
+          "transferSLId": "0000800005S0010",
+          "transferAmount": "500.00",
+          "transferPercent": "null"
+        },
+        {
+          "transferSLId": "0000800005S0000",
+          "transferAmount": "0.00",
+          "transferPercent": "null"
+        }
+      ]
     },
     "options": [{
         "name": "Increase certificate balance",
@@ -55,12 +69,12 @@
       }
     ],
     "transferInOut": [{
-        "shareLoanId": "S0000",
+        "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
       },
       {
-        "shareLoanId": "S0001",
+        "shareLoanId": "1234567890S0001",
         "shareLoanName": "MY SECONDARY SAVINGS",
         "shareLoanBal": "20000.00"
       }
@@ -124,7 +138,7 @@
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
 
- - ***payeeAddress***:  Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a  system calculated value containing from 1 to 6 Payee lines.
+ - ***payeeAddress***:  Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a  system calculated value containing from 1 to 6 Payee lines. "null" indicates an invalid address.
 
  - ***payeeTerms***:  CU customizable terms to be displayed should the member elect the 'Disburse funds by check' option. Optional. May contain from 0 to 9 lines.
 
@@ -143,7 +157,7 @@
   ],
   "userNumList": [
     {"id": 1, "value": 1}
-],
+  ],
   "rgSession": 1
 }
 ```
