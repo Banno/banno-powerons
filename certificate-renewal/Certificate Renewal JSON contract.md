@@ -15,7 +15,6 @@
  - userCharList[1]: 10-digit account number, 'S' and 4-digit share ID
 	 - Represents the certificate or club share being updated by the member
 
-
 ## Successful Response:
 ```json
 {
@@ -71,7 +70,7 @@
         "value": 6
       }
     ],
-    "transferIn": [{
+    "transferTo": [{
         "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
@@ -82,7 +81,7 @@
         "shareLoanBal": "20000.00"
       }
     ],
-    "transferOut": [{
+    "transferFrom": [{
         "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
