@@ -191,7 +191,7 @@
  - userCharList[2]: 10-digit account number, 'S' or 'L' and 4-digit share/Loan ID
 	 - Represents the source or target share/loan of the transfer
  - userCharList[3]: User selected option
-	 - The transfer in/out amount
+	 - The transfer out amount
  - userNumList[1]: User selected option
 	 - Represents the CD renewal option the member selected.
 
