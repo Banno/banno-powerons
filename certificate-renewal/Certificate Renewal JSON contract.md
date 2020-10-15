@@ -70,7 +70,7 @@
         "value": 6
       }
     ],
-    "transferTo": [{
+    "transferFrom": [{
         "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
@@ -81,7 +81,7 @@
         "shareLoanBal": "20000.00"
       }
     ],
-    "transferFrom": [{
+    "transferTo": [{
         "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
@@ -151,12 +151,12 @@
 	 - 5-**Disburse funds by check**: Withdraw balance by check, close certificate.
 	 - 6-**Suspend**: Suspend certificate activity - funds retained in share.
 
- - ***transferIn***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.) 
+ - ***transferFrom***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.) 
 	 - 1-**shareLoanId**: 4-character share or loan ID
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
 
- - ***transferOut***: A list of shares eligible for transferring certificate balance into upon maturity.
+ - ***transferTo***: A list of shares eligible for transferring certificate balance into upon maturity.
 	 - 1-**shareLoanId**: 4-character share or loan ID
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
