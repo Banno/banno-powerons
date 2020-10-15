@@ -13,7 +13,7 @@
 }
 ```
  - userCharList[1]: 10-digit account number, 'S' and 4-digit share ID
-	 - Represents the target certificate or club share
+	 - Represents the certificate or club share being updated by the member
 
 
 ## Successful Response:
@@ -28,16 +28,19 @@
       "currentTerm": "24 months",
       "transfers": [{
           "transferSLId": "0000800005S0002",
+          "transferName":"REGULAR CHECKING",
           "transferAmount": "null",
           "transferPercent": "50.000"
         },
         {
           "transferSLId": "0000800005S0010",
+          "transferName":"SUMMER SAVER",
           "transferAmount": "500.00",
           "transferPercent": "null"
         },
         {
           "transferSLId": "0000800005S0000",
+          "transferName":"REGULAR SHARE",
           "transferAmount": "0.00",
           "transferPercent": "null"
         }
@@ -68,7 +71,7 @@
         "value": 6
       }
     ],
-    "transferInOut": [{
+    "transferIn": [{
         "shareLoanId": "1234567890S0000",
         "shareLoanName": "MY PRIME SHARE",
         "shareLoanBal": "1234.56"
@@ -76,6 +79,22 @@
       {
         "shareLoanId": "1234567890S0001",
         "shareLoanName": "MY SECONDARY SAVINGS",
+        "shareLoanBal": "20000.00"
+      }
+    ],
+    "transferOut": [{
+        "shareLoanId": "1234567890S0000",
+        "shareLoanName": "MY PRIME SHARE",
+        "shareLoanBal": "1234.56"
+      },
+      {
+        "shareLoanId": "1234567890S0001",
+        "shareLoanName": "MY SECONDARY SAVINGS",
+        "shareLoanBal": "20000.00"
+      },
+      {
+        "shareLoanId": "1234567890S0030",
+        "shareLoanName": "MY 30 MONTH CERTIFICATE",
         "shareLoanBal": "20000.00"
       }
     ],
@@ -133,7 +152,12 @@
 	 - 5-**Disburse funds by check**: Withdraw balance by check, close certificate.
 	 - 6-**Suspend**: Suspend certificate activity - funds retained in share.
 
- - ***transferInOut***: A list of shares eligible for transferring certificate balance into or out of shares and loans as a source of funds for increasing certificate balance 
+ - ***transferIn***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.) 
+	 - 1-**shareLoanId**: 4-character share or loan ID
+     - 2-**shareLoanName**: share nickname if available otherwise the share description
+	 - 3-**shareLoanBal**: the current share available balance
+
+ - ***transferOut***: A list of shares eligible for transferring certificate balance into upon maturity.
 	 - 1-**shareLoanId**: 4-character share or loan ID
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
@@ -153,7 +177,8 @@
   "powerOnFileName": "BANNO.CD.RENEW.V1.POW",
   "userChrList":[
     {"id": 1, "value": "0123456789S0123"},
-    {"id": 2, "value": "123456.78"}
+    {"id": 2, "value": "0123456789S0123"},
+    {"id": 3, "value": "123456.78"}
   ],
   "userNumList": [
     {"id": 1, "value": 1}
@@ -162,8 +187,10 @@
 }
 ```
  - userCharList[1]: 10-digit account number, 'S' or 'L' and 4-digit share/Loan ID
+	 - Represents the certificate or club share being updated by the member
+ - userCharList[2]: 10-digit account number, 'S' or 'L' and 4-digit share/Loan ID
 	 - Represents the source or target share/loan of the transfer
- - userCharList[2]: User selected option
+ - userCharList[3]: User selected option
 	 - The transfer in/out amount
  - userNumList[1]: User selected option
 	 - Represents the CD renewal option the member selected.
