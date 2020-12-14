@@ -1,7 +1,5 @@
 # CD Renewal
-The CD Renewal PowerOn allows the end-user the ability to decide what they want to to with the accountn when it reaches maturity. 
-
-The CD Renewal PowerOn allows the end-user to: 
+The CD Renewal PowerOn gives the end-user the following options at maturity: 
 * Renew the CD with existing terms
 * Transfer certificate balance
 * Increase certificate balance
