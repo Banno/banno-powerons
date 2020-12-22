@@ -9,7 +9,18 @@
 **              resides in LETTTERSPECS else in DATAFILES dir.
 **  09/01/2020: TKainz - Corrected JSON output when Display Rates
 **              flag was set to 'off'.
-**
+**  12/17/2020: TKainz:
+**              1. Updated JSON output for Memo Mode
+**              2. Updated JSON output when a share group has been
+**                 printed
+**              3. Modified to remove share group(s) from those
+**                 available if funding is required and member does
+**                 not have sufficient funds available
+**              4. Updated maturity date calculation for clubs
+**              5. Updated error handling note record output
+**              6. Corrected misspelling of 'sufficient'
+**  12/21/2020 CSimms:
+**              1. Updated Share Div Rate fetch.
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
 **
@@ -253,6 +264,18 @@ DEFINE
   DEBUGMODEON           = 1
   DEBUGMODEOFF          = 0
  DATAFILETYPE           = CHARACTER
+
+ ERROR1                 = CHARACTER
+ ERROR2                 = CHARACTER
+ SHAREGROUPPRINTED      = NUMBER
+ SHARETYPEPRINTED       = NUMBER
+ FOUND                  = NUMBER
+ MEMBERMAXAVAILABLE     = MONEY
+
+ TMPTYPE                = NUMBER
+ TMPMONEY               = MONEY
+ TMPMINBAL              = MONEY
+ TMPMINDEPOSIT          = MONEY
 END
 
 SETUP
@@ -318,20 +341,28 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
  SYSTEMMEMOMODE=SYSMEMOMODE
 
+
  [Check if system is in memomode]
  IF SYSTEMMEMOMODE=TRUE THEN
   DO
    PRINT "{"
    NEWLINE
-   PRINT "  "+Q+"memoMode"+Q+": true,"
+   PRINT "  "+Q+"memoMode"+Q+": true"
    NEWLINE
-   ERRORCODE="500"
-   CALL ERRORHANDLER
-   CALL JSONCLOSE
+   PRINT "}"
+   NEWLINE
+
+   ERROR1="Program run attempt while in memo mode"
+   ERROR2=FORMAT("99/99/99",SYSACTUALDATE)+
+          FORMAT("  99:99",SYSACTUALTIME)
+   CALL CREATENOTERECORD
   END
 
  ELSE [SYSTEM IS NOT IN MEMO MODE]
   DO
+
+   GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
+   CALL GETSHARETRANSFERS
    CALL READCONFIGFILESETTINGS
    IF CFGFILEREADERROR<>"" THEN
     DO
@@ -382,7 +413,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
            CALL JSONCLOSE
           END
          NEWLINE
-        END
+        END  [IF INELIGIBLEREASON="" THEN ...]
       END  [PRELOAD STATE]
 
      IF @RGSTATE="GETTERMSFUNDING" THEN
@@ -514,7 +545,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                     DO
                      PRINT "        "+Q+"type"+Q+": "+Q+"electronic"+Q+","
                      NEWLINE
-                     TMPCHR=FORMAT("######9.99",TRANSFERAMOUNT)
+                     TMPCHR=FORMAT("#########9.99",TRANSFERAMOUNT)
                      CALL NLS
                      PRINT "        "+Q+"amount"+Q+": "+Q+TMPCHR+Q+","
                      NEWLINE
@@ -902,37 +933,63 @@ PROCEDURE CHECKSHAREIDS
       DO
        IF SACSHARETYPES(I,J)<>"" THEN
         DO
-         SHAREIDAVAILABLE=FALSE
-         TMPPOS=CHARACTERSEARCH(SACSHARETYPES(I,J),":")
-         TMPCHR=SEGMENT(SACSHARETYPES(I,J),TMPPOS+1,LENGTH(SACSHARETYPES(I,J)))
-         LELISTINPUT=TMPCHR
-         CALL LISTEXPAND
-         FOR TMPLOOP=0 TO IDVALUEMAX
-          DO
-           TESTLOOP(TMPLOOP)=LELIST(TMPLOOP)
-           IF TESTLOOP(TMPLOOP)=TRUE THEN
-            DO
-             TMPSID=SEGMENT(FORMAT("9999",TMPLOOP),4-(IDLENGTH-1),4)
-             SHAREIDFOUND=FALSE
-             FOR ACCOUNT ACCOUNT:NUMBER
-              DO
-               FOR EACH SHARE WITH(SHARE:ID=TMPSID)
-                DO
-                 SHAREIDFOUND=TRUE
-                END
-              END
-             IF SHAREIDFOUND=FALSE THEN
-              DO
-               SHAREIDAVAILABLE=TRUE
-               TMPLOOP=IDVALUEMAX
-              END
-            END
-          END
-         IF SHAREIDAVAILABLE=FALSE THEN
+
+[* Determine the min requirement for share opening deposit
+** if member does not have enough funds avail for min
+** share opening deposit, then clear share type, else run
+** next section to test for valid IDs
+*]
+         TMPTYPE=VALUE(SEGMENT(SACSHARETYPES(I,J),1,4))
+         TMPMONEY=$0.00
+         TMPMINBAL=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,31) [Min. balance]
+         TMPMINDEPOSIT=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,35) [Min. deposit]
+
+         TMPMONEY=SACFUNDMINAMT
+         IF TMPMINBAL>TMPMONEY THEN
+          TMPMONEY=TMPMINBAL
+         IF TMPMINDEPOSIT>TMPMONEY THEN
+          TMPMONEY=TMPMINDEPOSIT
+
+         IF VALUE(SACFUNDREQUIREFLAG)>0 AND
+            MEMBERMAXAVAILABLE<TMPMONEY THEN
           DO
            SACSHARETYPES(I,J)=""
           END
-        END
+         ELSE
+          DO
+
+           SHAREIDAVAILABLE=FALSE
+           TMPPOS=CHARACTERSEARCH(SACSHARETYPES(I,J),":")
+           TMPCHR=SEGMENT(SACSHARETYPES(I,J),TMPPOS+1,LENGTH(SACSHARETYPES(I,J)))
+           LELISTINPUT=TMPCHR
+           CALL LISTEXPAND
+           FOR TMPLOOP=0 TO IDVALUEMAX
+            DO
+             TESTLOOP(TMPLOOP)=LELIST(TMPLOOP)
+             IF TESTLOOP(TMPLOOP)=TRUE THEN
+              DO
+               TMPSID=SEGMENT(FORMAT("9999",TMPLOOP),4-(IDLENGTH-1),4)
+               SHAREIDFOUND=FALSE
+               FOR ACCOUNT ACCOUNT:NUMBER
+                DO
+                 FOR EACH SHARE WITH(SHARE:ID=TMPSID)
+                  DO
+                   SHAREIDFOUND=TRUE
+                  END
+                END
+               IF SHAREIDFOUND=FALSE THEN
+                DO
+                SHAREIDAVAILABLE=TRUE
+                 TMPLOOP=IDVALUEMAX
+                END
+              END
+            END
+           IF SHAREIDAVAILABLE=FALSE THEN
+            DO
+             SACSHARETYPES(I,J)=""
+            END
+          END
+        END  [IF SACSHARETYPES(I,J)<>"" THEN...]
       END  [OF J]
     END
   END
@@ -1007,9 +1064,15 @@ PROCEDURE SHAREOUTPUT
   DO
    IF SACSHAREGROUPEXISTS(I)=TRUE THEN
     DO
-     IF I>0 THEN
-      PRINT ","
-     NEWLINE
+
+     IF SHAREGROUPPRINTED=TRUE THEN
+      DO
+       IF I>0 THEN
+        PRINT ","
+       NEWLINE
+      END
+     SHAREGROUPPRINTED=TRUE
+     SHARETYPEPRINTED=FALSE
      PRINT "      {"
      NEWLINE
      PRINT "        "+Q+"name"+Q+": "+Q+SACSHAREGROUPNAMES(I)+Q+","
@@ -1019,23 +1082,28 @@ PROCEDURE SHAREOUTPUT
      PRINT Q+","
      NEWLINE
      PRINT "        "+Q+"accountTypes"+Q+":["
-[     NEWLINE]
+
      FOR J=0 TO SACSHARETYPESMAX
       DO
+
        IF SACSHARETYPEEXISTS(J)=TRUE AND
           SACSHARETYPES(I,J)<>"" THEN
         DO
          IF J>0 THEN
           DO
-           IF SACSHARETYPES(I,J-1)<>"" OR
-              SACSHARETYPEEXISTS(J-1)=TRUE THEN
-            PRINT ","
+           IF SACSHARETYPEEXISTS(J-1)=TRUE THEN
+            DO
+             IF SHARETYPEPRINTED=TRUE THEN
+              DO
+               PRINT ","
+              END
+            END
           END
 
          NEWLINE
          PRINT "          {"                            [new share type]
          NEWLINE
-
+         SHARETYPEPRINTED=TRUE
          [SHARE TYPE NUMBER]
          PRINT "            "+Q+"shareType"+Q+": "+Q
          PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
@@ -1277,6 +1345,7 @@ PROCEDURE GETSHARETRANSFERS
 ** transfer shares found
 *]
  XFERSHAREFOUND=0
+ MEMBERMAXAVAILABLE=$0.00
  FOR EACH SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
                       SHARE:CHARGEOFFDATE='--/--/--' AND
                       SHARE:AVAILABLEBALANCE>$0.00)
@@ -1286,6 +1355,9 @@ PROCEDURE GETSHARETRANSFERS
    IF TEMPMSG<>"" THEN
     DO
      XFERSHAREFOUND=XFERSHAREFOUND+1
+
+     IF SHARE:AVAILABLEBALANCE>MEMBERMAXAVAILABLE THEN
+      MEMBERMAXAVAILABLE=SHARE:AVAILABLEBALANCE
 
      IF GETSHARETRANSFERRUN=TRANSFERRUNFINAL THEN
       DO
@@ -1618,9 +1690,13 @@ PROCEDURE LOADEXISTINGSHAREIDS
 
 END [PROCEDURE LOAD EXISTING SHARE IDS]
 
-PROCEDURE GETNEWSHARERATE
+PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
 
- IF SACDISPLAYRATEFLAG="1" THEN
+ IF SACSETFILLINRATESFLAG="0" THEN
+  DO
+   RATEDONE=TRUE
+  END
+ IF SACSETFILLINRATESFLAG="1" THEN
   DO
    NEWSHARERATE=0.000%                   [ASSIGNED IN THIS PROCESS]
 
@@ -1660,10 +1736,9 @@ PROCEDURE GETNEWSHARERATE
        RATEDONE=TRUE
       END
 
-     ELSE IF NEWSHAREDIVDEFRATESELECT=1 AND
+     ELSE IF NEWSHAREDIVDEFRATESELECT=1 AND              [FILL IN FROM DIV DEFINITIONS]
              NEWSHAREDIVDEFFILLINMETHOD=1 AND
-             NEWSHAREDIVDEFINDEXOPTION=0 AND
-             TRANSFERAMOUNT>$0.00 THEN
+             NEWSHAREDIVDEFINDEXOPTION=0 THEN
       DO
        DR=1
        RATEDONE=FALSE
@@ -1671,47 +1746,44 @@ PROCEDURE GETNEWSHARERATE
        NEWSHAREDIVDEFBALCUTOFF     = $0.00
        NEWSHAREDIVDEFPREVBALCUTOFF = $0.00
 
-       WHILE DR<10 AND DONE=FALSE
+       WHILE DR<10 AND RATEDONE=FALSE
         DO
          NEWSHAREDIVDEFRATE=GETDATARATE(GETPARAMDIVDEFRATE,NEWSHAREDIVTYPE,DR)           [GET RATE]
          NEWSHAREDIVDEFBALCUTOFF=GETDATAMONEY(GETPARAMDIVDEFBALCUTOFF,NEWSHAREDIVTYPE,DR)[GET BAL CUTOFF]
 
-         IF DR=1 AND
+         IF DR=1 AND                                    [1st time & orig.bal less than first cutoff]
             TRANSFERAMOUNT<NEWSHAREDIVDEFBALCUTOFF THEN
           DO
            NEWSHARERATE=NEWSHAREDIVDEFRATE
            RATEDONE=TRUE
           END
 
-         ELSE IF DR=1 AND
+         IF DR=1 AND                                    [1st time, establish low range]
                  TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN
           DO
            NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
           END
 
-         ELSE IF DR>1 AND
+         IF DR>1 AND
                  NEWSHAREDIVDEFRATE<>0.000% AND
                  NEWSHAREDIVDEFBALCUTOFF>$0.00 THEN
           DO
-           IF TRANSFERAMOUNT>=NEWSHAREDIVDEFPREVBALCUTOFF AND
+           IF TRANSFERAMOUNT>=NEWSHAREDIVDEFPREVBALCUTOFF AND  [is xfr amount between last and now]
               TRANSFERAMOUNT<NEWSHAREDIVDEFBALCUTOFF THEN
             DO
              NEWSHARERATE=NEWSHAREDIVDEFRATE
-             RATEDONE=TRUE
+             RATEDONE=TRUE               [r u sure]
             END
            ELSE
             NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
           END
 
-         ELSE IF DR>1 AND
+         IF DR>1 AND                                      [is xfr amt above last rate]
                  NEWSHAREDIVDEFRATE<>0.000% AND
                  NEWSHAREDIVDEFBALCUTOFF=$0.00 THEN
           DO
-           IF TRANSFERAMOUNT>=NEWSHAREDIVDEFPREVBALCUTOFF THEN
-            DO
              NEWSHARERATE=NEWSHAREDIVDEFRATE
              RATEDONE=TRUE
-            END
           END
 
           DR=DR+1
@@ -1740,8 +1812,7 @@ PROCEDURE GETNEWMATURITYDATE
   END
 
 
- IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=2 OR               [CLUB OR CERTIFICATE]
-    GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=3 THEN
+ IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=2 THEN             [CERTIFICATE]
   DO
    NEWSHAREMATURITYDATE='--/--/--'
    IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),52)=1 THEN           [X DAYS]
@@ -1754,6 +1825,29 @@ PROCEDURE GETNEWMATURITYDATE
     DO
      NEWSHAREMATURITYDATE=DATEOFFSET(SYSTEMDATE,+GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),53),0)
      MATUREDATEDONE=TRUE
+    END
+  END
+ IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=3 THEN               [CLUB]
+  DO
+   NEWSHAREMATURITYDATE='--/--/--'
+   IF GETDATADATE(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),51)<>DATENULL AND
+      GETDATADATE(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),51)>SYSTEMDATE THEN
+    DO
+     NEWSHAREMATURITYDATE=GETDATADATE(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),51)
+     MATUREDATEDONE=TRUE
+    END
+   ELSE
+    DO
+     IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),52)=1 THEN           [X DAYS]
+      DO
+       NEWSHAREMATURITYDATE=SYSTEMDATE+GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),53)
+       MATUREDATEDONE=TRUE
+      END
+     ELSE IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),52)=0 THEN           [X MONTHS]
+      DO
+       NEWSHAREMATURITYDATE=DATEOFFSET(SYSTEMDATE,+GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),53),0)
+       MATUREDATEDONE=TRUE
+      END
     END
   END
  IF MATUREDATEDONE=FALSE THEN
@@ -1792,7 +1886,7 @@ PROCEDURE CREATESHARE
     END
   END
 
-IF IRSERRORMESSAGE<>"" THEN   [CMS - NO JSON, BUT WRITE TO NOTE]
+IF IRSERRORMESSAGE<>"" THEN
  PRINT IRSERRORMESSAGE
 
  IF SHAREERRORMESSAGE<>"" THEN
@@ -2106,11 +2200,11 @@ PROCEDURE ERRORHANDLER
 **  503 - Ineligible account type
 **  504 - No eligible shares to be created
 **  505 - Error reading ToC for group
-**  506 - No Shares with sufficiend funds to xfer
+**  506 - No Shares with sufficient funds to xfer
 **  507 - Error reading passed name info
 **  508 - Next ID calculation error
 **  509 - Error getting new share rate
-**  510 - Could not Calculate new maturity date
+**  510 - Could not calculate new maturity date
 **  511 - Error creating new share
 **  512 - Error creating new name record(s)
 **  513 - Transfer funding error
@@ -2137,13 +2231,14 @@ PROCEDURE ERRORHANDLER
  ELSE IF ERRORCODE="509" THEN
   ERRORDETAIL="Error getting new share rate"
  ELSE IF ERRORCODE="510" THEN
-  ERRORDETAIL="Could not Calculate new maturity date"
+  ERRORDETAIL="Could not calculate new maturity date"
  ELSE IF ERRORCODE="511" THEN
   ERRORDETAIL="Error creating new share:"+SHAREERRORMESSAGE
  ELSE IF ERRORCODE="512" THEN
   ERRORDETAIL="Error creating new name record(s):"+TMPNAMEERROR
  ELSE IF ERRORCODE="513" THEN
   ERRORDETAIL="Transfer funding error:"+TRANERRORTEXT
+ CALL CUERRORHANDLING
 
  ERRORCODE="500" [Per new JSON Specs, force all errors to "500"]
 
@@ -2164,4 +2259,42 @@ PROCEDURE JSONCLOSE
  NEWLINE
 END [PROCEDURE]
 
+PROCEDURE CUERRORHANDLING
+
+ [CHECK ERROR TEXT LENGTH]
+ IF LENGTH(ERRORDETAIL)<=40 THEN
+  ERROR1=ERRORDETAIL
+ ELSE
+  DO
+   POS=40
+   FOUND=FALSE
+   WHILE (POS>0 AND FOUND=FALSE)
+    DO
+     IF SEGMENT(ERRORDETAIL,POS,POS)=" " THEN
+      FOUND=TRUE
+     ELSE
+      POS=POS-1
+    END
+   ERROR1=SEGMENT(ERRORDETAIL,1,POS-1)
+   ERROR2=SEGMENT(ERRORDETAIL,POS+1,LENGTH(ERRORDETAIL))
+  END
+
+ CALL CREATENOTERECORD
+END
+
+PROCEDURE CREATENOTERECORD
+ FMPERFORM CREATE NOTE LOC BEFOREFIRST
+                     (0,0,NOTELOC,NOTEERROR)
+  DO
+   SET CODE TO 8000+VALUE(ERRORCODE)
+   SET TEXT:1 TO "Banno sub account create error"
+   SET TEXT:2 TO "Error: "+ERRORCODE
+   SET TEXT:3 TO ERROR1
+   SET TEXT:4 TO ERROR2
+   SET EXPIRATIONDATE TO SYSTEMDATE+30
+  END
+END
+
+
 #INCLUDE "RB.LISTEXPAND"
+
