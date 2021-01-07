@@ -18,6 +18,8 @@
 **  06/10/20 - TKainz
 **    corrected issue with vehicle collateral, boat collateral
 **    display
+**  01/07/21 - TKainz
+**    Added Newline to end of program to allow for install
 *]
 
 SYMCONNECT
