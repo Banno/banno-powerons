@@ -21,6 +21,10 @@
 **              6. Corrected misspelling of 'sufficient'
 **  12/21/2020 CSimms:
 **              1. Updated Share Div Rate fetch.
+**
+**  01/13/2021 JuCarson:
+**              1. Updated to pull correct SymX client and Service number.
+**
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
 **
@@ -335,6 +339,8 @@ SETUP
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
  SHARETERMFREQCHR(0)="month"
  SHARETERMFREQCHR(1)="day"
+ SYMXINSTANCE  = @SYMXINSTANCEID
+ SYMXCLIENTNUM = @CLIENTNUMBER
 END
 
 PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
