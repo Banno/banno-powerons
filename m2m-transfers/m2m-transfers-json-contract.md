@@ -22,7 +22,7 @@ PowerOn response - list of eligible shares, list of scheduled transfers, list of
 
 ```json
 {
-  "transfers": [
+  "availableShares": [
     {
       "transferSLId": "0000800005S0002",
       "transferName": "SUMMER SAVER",
@@ -42,44 +42,50 @@ PowerOn response - list of eligible shares, list of scheduled transfers, list of
       "transferPercent": "null"
     }
   ],
-  "scheduledTransfers": [
-    {
-      "shareId": "1234567890L0020",
-      "accountName": "CHECKING",
-      "transferAmt": "120.00",
-      "recipientName": "Emily Fitch",
-      "recipientMemberId": "9876543210",
-      "recipientShareId": "9876543210L0001",
-      "recipientNickname": "Emmy",
-      "transferDate": "08/31/2020",
-      "transferFrequency": "weekly"
-    },
-    {
-      "shareId": "1234567890L0001",
-      "accountName": "SAVINGS",
-      "transferAmt": "120.00",
-      "recipientName": "Howard Cleo",
-      "recipientMemberId": "9876543210",
-      "recipientShareId": "9876543210L0001",
-      "recipientNickname": "Howie",
-      "transferDate": "12/31/2025",
-      "transferFrequency": "once"
-    }
-  ],
-  "savedRedipients": [
-    {
-      "recipientName": "Binsy Flomor",
-      "recipientMemberId": "9876543210",
-      "recipientShareId": "9876543210L0001",
-      "recipientNickname": "Binsy"
-    },
-    {
-      "recipientName": "Kylie Crenshaw",
-      "recipientMemberId": "9876543210",
-      "recipientShareId": "9876543210L0001",
-      "recipientNickname": "KC"
-    }
-  ]
+  "currentState": {
+    "scheduledTransfers": [
+      {
+        "ID": "5431432543",
+        "shareId": "1234567890L0020",
+        "accountName": "CHECKING",
+        "transferAmt": "120.00",
+        "recipientName": "Emily Fitch",
+        "recipientMemberId": "9876543210",
+        "recipientShareId": "9876543210L0001",
+        "recipientNickname": "Emmy",
+        "transferDate": "08/31/2020",
+        "transferFrequency": "weekly"
+      },
+      {
+        "ID": "453254325",
+        "shareId": "1234567890L0001",
+        "accountName": "SAVINGS",
+        "transferAmt": "120.00",
+        "recipientName": "Howard Cleo",
+        "recipientMemberId": "9876543210",
+        "recipientShareId": "9876543210L0001",
+        "recipientNickname": "Howie",
+        "transferDate": "12/31/2025",
+        "transferFrequency": "once"
+      }
+    ],
+    "savedRedipients": [
+      {
+        "ID": "5443231543",
+        "recipientName": "Binsy Flomor",
+        "recipientMemberId": "9876543210",
+        "recipientShareId": "9876543210L0001",
+        "recipientNickname": "Binsy"
+      },
+      {
+        "ID": "5431543",
+        "recipientName": "Kylie Crenshaw",
+        "recipientMemberId": "9876543210",
+        "recipientShareId": "9876543210L0001",
+        "recipientNickname": "KC"
+      }
+    ]
+  }
 }
 ```
 
@@ -110,20 +116,59 @@ PowerOn response - If shares(s) not found:
 }
 ```
 
-## AUTHORIZEPAYMENT, PERFORMPAYMENT
-
-Because the Specfile functionality is basically the same in both of these states,
-the same returns will apply to each state. The state name will indicate whether
-the transaction will be performed as a pre-auth or as a final transaction.
+## SCHEDULEDEDITSAVED
 
 ```json
 {
-  "rgState": "[AUTHORIZEPAYMENT,PERFORMPAYMENT]",
+  "rgState": "[SCHEDULEDEDITSAVED]",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890L0010" }, // 10-digit account+'L'+LOAN:ID
-    { "id": 2, "value": "1234567.89" }, // payment amount
-    { "id": 3, "value": "" }, // userchar3-5 is unused
+    { "id": 1, "value": "5431543" }, // id
+    { "id": 2, "value": "" }, // changes made to ...
+    { "id": 3, "value": "" }, // changes made to ...
+    { "id": 4, "value": "" }, // changes made to ...
+    { "id": 5, "value": "" } // changes made to ...
+  ],
+  "userNumList": [], //  usernum1-5 is unused
+  "rgSession": 1
+}
+```
+
+Poweron response - successful / unsuccessful:
+
+```json
+{
+  "results": {
+    "memoMode": [true, false],
+   "currentState": {
+    "scheduledTransfers": [
+      {
+        "ID": "5431432543",
+        "shareId": "1234567890L0020",
+        "accountName": "CHECKING",
+        "transferAmt": "120.00",
+        "recipientName": "Emily Fitch",
+        "recipientMemberId": "9876543210",
+        "recipientShareId": "9876543210L0001",
+        "recipientNickname": "Emmy",
+        "transferDate": "10/31/2020",
+        "transferFrequency": "weekly"
+      }
+    ]
+  }
+}
+```
+
+## EDITEDSAVEDRECIPIENTEDITSAVED
+
+```json
+{
+  "rgState": "[EDITEDSAVEDRECIPIENTEDITSAVED]",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [
+    { "id": 1, "value": "5443231543" }, // id
+    { "id": 2, "value": "" }, // saved recipient edited object
+    { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
@@ -138,7 +183,46 @@ Poweron response - successful / unsuccessful:
 {
   "results": {
     "memoMode": [true, false],
-    "memberTransfer": {
+    "currentState": {
+      "savedRedipients": [
+        {
+          "ID": "5443231543",
+          "recipientName": "Binsy Martin",
+          "recipientMemberId": "9876543210",
+          "recipientShareId": "9876543210L0001",
+          "recipientNickname": "Binsy"
+        }
+      ]
+    }
+  }
+}
+```
+
+## NEWM2MTRANSFER
+
+```json
+{
+  "rgState": "[NEWM2MTRANSFER]",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [
+    { "id": 1, "value": "" }, // new m2m transfer info
+    { "id": 2, "value": "" }, //
+    { "id": 3, "value": "" }, //
+    { "id": 4, "value": "" },
+    { "id": 5, "value": "" }
+  ],
+  "userNumList": [], //  usernum1-5 is unused
+  "rgSession": 1
+}
+```
+
+Poweron response - successful / unsuccessful:
+
+```json
+{
+  "results": {
+    "memoMode": [true, false],
+    "newM2MTransfer": {
       "shareId": "1234567890L0001",
       "accountName": "SAVINGS",
       "transferAmt": "120.00",
