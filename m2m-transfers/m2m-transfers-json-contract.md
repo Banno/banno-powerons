@@ -1,6 +1,7 @@
 #JSON contract for BANNO.M2MTRANSFERS.V1.POW
 
-## PRELOADDATA
+## GET PRELOADDATA STATE
+### Client Request (PRELOADDATA)
 
 ```json
 {
@@ -18,87 +19,102 @@
 }
 ```
 
-PowerOn response - list of eligible shares, list of scheduled transfers, list of saved recipients
+### PowerOn Successful Response (PRELOADDATA)
+list of institution and member limits, eligible shares, list of scheduled transfers, list of saved recipients
 
 ```json
 {
-  "availableShares": [
-    {
-      "transferSLId": "0000800005S0002",
-      "transferName": "SUMMER SAVER",
-      "transferAmount": "null",
-      "transferPercent": "50.000"
-    },
-    {
-      "transferSLId": "0000800005S0010",
-      "transferName": "REGULAR CHECKING",
-      "transferAmount": "500.00",
-      "transferPercent": "null"
-    },
-    {
-      "transferSLId": "0000800005S0015",
-      "transferName": "ULTIMATE CHECKING (10)",
-      "transferAmount": "0.00",
-      "transferPercent": "null"
-    }
-  ],
-  "currentState": {
-    "scheduledTransfers": [
-      {
-        "ID": "5431432543",
-        "shareId": "1234567890L0020",
-        "accountName": "CHECKING",
-        "transferAmt": "120.00",
-        "recipientName": "Emily Fitch",
-        "recipientMemberId": "9876543210",
-        "recipientShareId": "9876543210L0001",
-        "recipientNickname": "Emmy",
-        "transferDate": "08/31/2020",
-        "transferFrequency": "weekly"
-      },
-      {
-        "ID": "453254325",
-        "shareId": "1234567890L0001",
-        "accountName": "SAVINGS",
-        "transferAmt": "120.00",
-        "recipientName": "Howard Cleo",
-        "recipientMemberId": "9876543210",
-        "recipientShareId": "9876543210L0001",
-        "recipientNickname": "Howie",
-        "transferDate": "12/31/2025",
-        "transferFrequency": "once"
-      }
-    ],
-    "savedRedipients": [
-      {
-        "ID": "5443231543",
-        "recipientName": "Binsy Flomor",
-        "recipientMemberId": "9876543210",
-        "recipientShareId": "9876543210L0001",
-        "recipientNickname": "Binsy"
-      },
-      {
-        "ID": "5431543",
-        "recipientName": "Kylie Crenshaw",
-        "recipientMemberId": "9876543210",
-        "recipientShareId": "9876543210L0001",
-        "recipientNickname": "KC"
-      }
-    ]
-  }
+	"currentState": {
+		"enforceLimits": true,
+		"transferLimits": [{
+			"institutionCount": "5",
+			"institutionAmount": "10000.00",
+			"memberLimitCount": "3",
+			"memberLimitAmount": "5000.00",
+			"memberActualCount": "1",
+			"memberActualAmount": "500.00"
+		}],
+		"availableShares": [{
+				"transferSLId": "0000800005S0002",
+				"transferName": "SUMMER SAVER",
+				"available": "50.00"
+			},
+			{
+				"transferSLId": "0000800005S0010",
+				"transferName": "REGULAR CHECKING",
+				"available": "500.00"
+			},
+			{
+				"transferSLId": "0000800005S0015",
+				"transferName": "ULTIMATE CHECKING (10)",
+				"available": "0.00"
+			}
+		],
+
+		"scheduledTransfers": [{
+				"trnsferLoc": "215",
+				"sourceAccount": "1234567890S0020",
+				"accountName": "CHECKING",
+				"transferAmt": "120.00",
+				"recipientName": "Emily Fitch",
+				"recipientMemberId": "9876543210",
+				"recipientAccount": "[9876543210L0001,savings,checking]",
+				"recipientNickname": "Emmy",
+				"startDate":"07/31/21",
+				"endDate":"12/31/2021",
+				"transferFrequency": "weekly",
+				"day1": "",
+				"day2": "",
+				"saveRecipient": false
+			},
+			{
+				"transferLoc": "395",
+				"sourceAccount": "1234567890S0001",
+				"accountName": "SAVINGS",
+				"transferAmt": "120.00",
+				"recipientName": "Howard Cleo",
+				"recipientMemberId": "9876543210",
+				"recipientShareId": "9876543210L0001",
+				"recipientNickname": "Howie",
+				"nextTransferDate": "12/15/2020",
+				"startDate":"07/03/21",
+				"endDate":"12/31/2025",
+				"transferFrequency": "semi-monthly",
+				"day1": "3",
+				"day2": "31",
+				"saveRecipient": false
+			}
+		],
+		"savedRedipients": [{
+				"recipientLoc": "5443231543",
+				"recipientName": "Binsy Flomor",
+				"recipientSLId": "9876543210L0001"
+			},
+			{
+				"recipientLoc": "5431543",
+				"recipientName": "Kylie Crenshaw",
+				"recipientSLId": "9876543210L0001"
+			}
+		]
+	}
 }
 ```
-
-Poweron response - Configuration File read error:
-
+### PowerOn Error Responses (PRELOADDATA)
+#### PowerOn response - Configuration File read error:
 ```json
 {
   "errorCode": "501",
-  "loggingErrorMessage": "Error reading from config file"
+  "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
 }
 ```
-
-PowerOn response - Invalid Account (by Account Warning):
+#### PowerOn response - Configuration File read error:
+```json
+{
+  "errorCode": "501",
+  "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
+}
+```
+### PowerOn response - Invalid Account (by Account Warning):
 
 ```json
 {
@@ -106,8 +122,7 @@ PowerOn response - Invalid Account (by Account Warning):
   "loggingErrorMessage": "Invalid Account - account warning xxx"
 }
 ```
-
-PowerOn response - If shares(s) not found:
+### PowerOn response - No Eligible Share(s) found:
 
 ```json
 {
@@ -115,128 +130,63 @@ PowerOn response - If shares(s) not found:
   "loggingErrorMessage": "No eligible shares found"
 }
 ```
-
-## SCHEDULEDEDITSAVED
+## PROCESS REQUEST STATE
+### Client Request (PROCESS)
 
 ```json
 {
-  "rgState": "[SCHEDULEDEDITSAVED]",
+  "rgState": "PROCESS",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "5431543" }, // id
-    { "id": 2, "value": "" }, // changes made to ...
-    { "id": 3, "value": "" }, // changes made to ...
-    { "id": 4, "value": "" }, // changes made to ...
-    { "id": 5, "value": "" } // changes made to ...
-  ],
-  "userNumList": [], //  usernum1-5 is unused
-  "rgSession": 1
-}
-```
-
-Poweron response - successful / unsuccessful:
-
-```json
-{
-  "results": {
-    "memoMode": [true, false],
-   "currentState": {
-    "scheduledTransfers": [
-      {
-        "ID": "5431432543",
-        "shareId": "1234567890L0020",
-        "accountName": "CHECKING",
-        "transferAmt": "120.00",
-        "recipientName": "Emily Fitch",
-        "recipientMemberId": "9876543210",
-        "recipientShareId": "9876543210L0001",
-        "recipientNickname": "Emmy",
-        "transferDate": "10/31/2020",
-        "transferFrequency": "weekly"
-      }
-    ]
-  }
-}
-```
-
-## EDITEDSAVEDRECIPIENTEDITSAVED
-
-```json
-{
-  "rgState": "[EDITEDSAVEDRECIPIENTEDITSAVED]",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [
-    { "id": 1, "value": "5443231543" }, // id
-    { "id": 2, "value": "" }, // saved recipient edited object
+    { "id": 1, "value": "[request type]:[data]|[data]|[data]|[data]|[data]|[data]" },
+    { "id": 2, "value": "[data]|[data]|[data]|[data]|[data]|[data]" },
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
-  "userNumList": [], //  usernum1-5 is unused
+  "userNumList": [], //  usernum[1-5] is unused
   "rgSession": 1
 }
 ```
+Request Type, Required data:
+* CREATERECIP - Create new recipient
+	* Account Name (nickname), Account (10-digit member number, S or L, SL ID)
+* DELETERECIP - Delete existing recipient
+	* recipientLoc
+* CREATETRAN - Create new transfer with new or existing recipient
+	* Existing Recipient:  recipientLoc
+	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), save:[T/F]
+	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2,
+* EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
+	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2,
+* DELETETRAN
+	* transferLoc,
 
-Poweron response - successful / unsuccessful:
-
+### PowerOn Successful Response (PROCESS)
 ```json
 {
-  "results": {
-    "memoMode": [true, false],
-    "currentState": {
-      "savedRedipients": [
-        {
-          "ID": "5443231543",
-          "recipientName": "Binsy Martin",
-          "recipientMemberId": "9876543210",
-          "recipientShareId": "9876543210L0001",
-          "recipientNickname": "Binsy"
-        }
-      ]
-    }
-  }
+	"results": "success",
+	[PRELOADDATA]
 }
 ```
-
-## NEWM2MTRANSFER
-
+### PowerOn Error Response (PROCESS)
 ```json
 {
-  "rgState": "[NEWM2MTRANSFER]",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [
-    { "id": 1, "value": "" }, // new m2m transfer info
-    { "id": 2, "value": "" }, //
-    { "id": 3, "value": "" }, //
-    { "id": 4, "value": "" },
-    { "id": 5, "value": "" }
-  ],
-  "userNumList": [], //  usernum1-5 is unused
-  "rgSession": 1
-}
+	"results": [
+		"errorCode",
+		"5xx",
+		"error code description"
+	],
+	[PRELOADDATA]
 ```
 
-Poweron response - successful / unsuccessful:
-
-```json
-{
-  "results": {
-    "memoMode": [true, false],
-    "newM2MTransfer": {
-      "shareId": "1234567890L0001",
-      "accountName": "SAVINGS",
-      "transferAmt": "120.00",
-      "recipientName": "Howard Cleo",
-      "recipientMemberId": "9876543210",
-      "recipientShareId": "9876543210L0001",
-      "recipientNickname": "Howie",
-      "transferDate": "12/31/2025",
-      "transferFrequency": "once"
-    }
-  }
-}
-```
-
-Error Codes
+### Error Codes
+500 - System in Memo Mode
 501 - Config file read / validation error
-502 - Invalid Account
+502 - Invalid source account
+503 - Invalid recipient account
+504 - Insufficient information
+505 - Invalid input
+506 - Error creating/deleting recipient
+507 - Error creating/updating/deleting transfer
+506 - Undefined error
