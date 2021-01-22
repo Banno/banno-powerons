@@ -65,7 +65,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 				"transferFrequency": "weekly",
 				"day1": "",
 				"day2": "",
-				"saveRecipient": false
+				"saveRecipient": false,
+				"memo": "Internal Note created by member"
 			},
 			{
 				"transferLoc": "395",
@@ -82,7 +83,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 				"transferFrequency": "semi-monthly",
 				"day1": "3",
 				"day2": "31",
-				"saveRecipient": false
+				"saveRecipient": false,
+				"memo": "Internal Note created by member"
 			}
 		],
 		"savedRedipients": [{
