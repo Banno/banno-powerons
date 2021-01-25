@@ -90,12 +90,14 @@ list of institution and member limits, eligible shares, list of scheduled transf
 		"savedRedipients": [{
 				"recipientLoc": "5443231543",
 				"recipientName": "Binsy Flomor",
-				"recipientSLId": "9876543210L0001"
+				"recipientSLId": "9876543210L0001",
+				"recipientNickName": "Zeke's Future"
 			},
 			{
 				"recipientLoc": "5431543",
 				"recipientName": "Kylie Crenshaw",
-				"recipientSLId": "9876543210L0001"
+				"recipientSLId": "9876543210L0001",
+				"recipientNickName": "Sally Martin"
 			}
 		]
 	}
@@ -157,10 +159,10 @@ Request Type, Required data:
 	* recipientLoc
 * CREATETRAN - Create new transfer with new or existing recipient
 	* Existing Recipient:  recipientLoc
-	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), save:[T/F]
-	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2,
+	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname, save:[T/F]
+	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2, memo
 * EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
-	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2,
+	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2, memo
 * DELETETRAN
 	* transferLoc,
 
