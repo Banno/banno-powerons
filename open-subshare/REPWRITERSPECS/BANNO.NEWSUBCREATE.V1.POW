@@ -25,6 +25,10 @@
 **  01/13/2021 JuCarson:
 **              1. Updated to pull correct SymX client and Service number.
 **
+**  01/19/2021 TKainz:
+**              1. Updated Next ID calculation process to handle
+**                 share ID 0000
+**
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
 **
@@ -189,7 +193,19 @@ DEFINE
  SHARETRACKINGERRORTEXT      = CHARACTER
  TEMPTYPE                    = CHARACTER
 
- EXISTINGIDS                 = CHARACTER(4) ARRAY(9999)
+ EXISTINGIDS                 = CHARACTER(4) ARRAY(9999,3)   [9999,0 = id]
+ IDRANGE                     = CHARACTER(4) ARRAY(9999)
+ SFSEARCHLIST                = CHARACTER
+ NEXTIDFLAG                  = NUMBER
+ IDSET                       = NUMBER
+ NEXTID                      = CHARACTER
+
+ SFCURPOS                    = NUMBER
+ SFHIGHID                    = NUMBER
+ SFLOWID                     = NUMBER
+ SFNUMFOUND                  = NUMBER
+ SFSEARCHPOS                 = NUMBER
+ SFDELIMCHAR                 = CHARACTER
 
  NEWSHAREDIVDEFDEFINED       = NUMBER
  NEWSHAREDIVDEFRATESELECT    = NUMBER
@@ -208,6 +224,7 @@ DEFINE
  MATUREDATEDONE              = NUMBER
  NEWSHARERATE                = RATE
  NEWSHARETYPE                = CHARACTER
+ TYPEFOUND                   = NUMBER
  NEWSHAREIRSCODE             = NUMBER
  NEWSHAREIRSSSN              = CHARACTER
 
@@ -1632,41 +1649,64 @@ PROCEDURE GETNEXTID
 **                    blank if none available.
 *]
 
+ NEXTID=""
+ NEWSHAREID=""
  CALL LOADEXISTINGSHAREIDS
 
+[Load ID range into array for selected type]
+ TYPEFOUND=FALSE
  FOR I=0 TO SACSHAREGROUPSMAX
   DO
    FOR J=0 TO SACSHARETYPESMAX
     DO
      IF SACSHARETYPES(I,J)<>"" THEN
       DO
-       IF NEWSHARETYPE=SEGMENT(SACSHARETYPES(I,J),1,4) THEN
+       IF SEGMENT(SACSHARETYPES(I,J),1,4)<>"" AND
+          SEGMENT(SACSHARETYPES(I,J),1,4)=NEWSHARETYPE THEN
         DO
-         IF SEGMENT(SACSHARETYPES(I,J),6,LENGTH(SACSHARETYPES(I,J)))<>"" THEN
-          LELISTINPUT=SEGMENT(SACSHARETYPES(I,J),6,LENGTH(SACSHARETYPES(I,J)))
-         CALL LISTEXPAND
+         TYPEFOUND=TRUE
+         SFSEARCHLIST=SEGMENT(SACSHARETYPES(I,J),6,LENGTH(SACSHARETYPES(I,J)))
+         IF SFSEARCHLIST="" THEN [Use next available ID]
+          NEXTIDFLAG=TRUE
+         ELSE
+          CALL LOADFILETOARRAY
         END
       END
     END
   END
 
- NEWSHAREID=""
- FOR I=0 TO IDVALUEMAX
+ IF TYPEFOUND=TRUE THEN                 [Find next available ID]
   DO
-   IF NEWSHAREID="" AND
-      LELIST(I)=TRUE THEN
-    DO
-     IF LELIST(I)<>VALUE(EXISTINGIDS(I)) AND
-        LELIST(I)>VALUE(EXISTINGIDS(I)) THEN
+   IDSET=FALSE
+   NEXTID=""
+   I=0
+   WHILELIMIT=100000
+   WHILE I<=IDVALUEMAX AND
+         IDSET=FALSE
+    DO                                  [Get NEXTID Based on NEXTIDFLAG]
+     IF NEXTIDFLAG=TRUE THEN            [TRUE = IGNORE RANGES DEFINED IN CUINFO]
       DO
-       IF IDVALUEMAX=9999 THEN
-        NEWSHAREID=FORMAT("9999",I)
-       IF IDVALUEMAX=99 THEN
-        NEWSHAREID=FORMAT("99",I)
+       IF EXISTINGIDS(I,0)="" THEN
+        DO
+         IDSET=TRUE
+         NEXTID=FORMAT(REPEATCHR("9",IDLENGTH),I)
+         EXISTINGIDS(I,0)=NEXTID
+        END
       END
+     ELSE IF NEXTIDFLAG=FALSE THEN      [FALSE = use ranges defined in CUINFO]
+      DO                                [ID is available, use it]
+       IF IDRANGE(I)<>"" AND EXISTINGIDS(I,0)="" THEN
+        DO
+         IDSET=TRUE
+         EXISTINGIDS(I,0)=IDRANGE(I)
+         NEXTID=IDRANGE(I)
+        END
+      END
+     I=I+1
     END
   END
 
+ NEWSHAREID=NEXTID
  IF NEWSHAREID="" THEN
   DO
    PRINT "{"
@@ -1685,13 +1725,13 @@ PROCEDURE LOADEXISTINGSHAREIDS
 
  FOR I=0 TO IDVALUEMAX
   DO
-   EXISTINGIDS(I)=""
+   EXISTINGIDS(I,0)=""
   END
 
  FOR EACH SHARE
   DO
    IF VALUE(SHARE:ID)<IDVALUEMAX THEN
-    EXISTINGIDS(VALUE(SHARE:ID))=SHARE:ID
+    EXISTINGIDS(VALUE(SHARE:ID),0)=SHARE:ID
   END
 
 END [PROCEDURE LOAD EXISTING SHARE IDS]
@@ -2123,6 +2163,78 @@ PROCEDURE PERFORMTRANSFER
      END
   END
 END [PROC PERFORM TRANSFER]
+
+PROCEDURE LOADFILETOARRAY
+[* Get the valid ID Range(s) for the specific share type snd
+** seed the IDRANGE array with the valid IDs
+*]
+[Array must be cleared]
+ FOR J=0 TO IDVALUEMAX
+  DO
+   IDRANGE(J)=""
+  END
+
+ SFCURPOS=1
+ WHILE SFCURPOS<=LENGTH(SFSEARCHLIST)
+  DO
+   CALL GETFIELDORSERIES
+   IF SFHIGHID>0 THEN
+    DO
+     FOR J=SFLOWID TO SFHIGHID
+      DO
+       IF J<=IDVALUEMAX THEN
+        IDRANGE(J)=FORMAT(REPEATCHR("9",IDLENGTH),J)
+      END
+    END
+   ELSE
+    DO
+     IF SFLOWID<=IDVALUEMAX THEN
+      IDRANGE(SFLOWID)=FORMAT(REPEATCHR("9",IDLENGTH),SFLOWID)
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE GETFIELDORSERIES
+[* This procedure finds the next field or series of fields in a list of
+** numbers separated by comas and/or dashes. The list must be stored in
+** SFSEARCHLIST and the starting position passed in CURPOS. The starting
+** ID, or single ID, is stored in SFLOWID and the ending ID, or zero, is
+** stored in SFHIGHID.
+]
+ SFLOWID=0
+ SFHIGHID=0
+ CALL FINDNEXTSEPARATOR
+ SFLOWID=SFNUMFOUND
+ IF SFSEARCHPOS<LENGTH(SFSEARCHLIST) AND SFDELIMCHAR="-" THEN
+  DO
+   SFCURPOS=SFSEARCHPOS+1
+   CALL FINDNEXTSEPARATOR
+   SFHIGHID=SFNUMFOUND
+  END
+ SFCURPOS=SFSEARCHPOS+1
+END [PROCEDURE]
+
+PROCEDURE FINDNEXTSEPARATOR
+[* Procedure expects a string called SFSEARCHLIST has been loaded with
+** numbers separated by commas and/or dashes. It also expects you will
+** set the starting point to search in the number variable called
+** SFCURPOS.  The following will be returned:
+**
+**  SFDELIMCHAR - The separating character
+**  SFNUMFOUND  - The number preceding the delimiter
+**  SFSEARCHPOS - The position of the delimiter character
+*]
+  SFSEARCHPOS=SFCURPOS
+  SFDELIMCHAR=SEGMENT(SFSEARCHLIST,SFSEARCHPOS,SFSEARCHPOS)
+  WHILE SFDELIMCHAR>="0" AND SFDELIMCHAR<="9" AND
+        SFDELIMCHAR<>CTRLCHR(32) AND
+        SFSEARCHPOS<LENGTH(SFSEARCHLIST)
+   DO
+    SFSEARCHPOS=SFSEARCHPOS+1
+    SFDELIMCHAR=SEGMENT(SFSEARCHLIST,SFSEARCHPOS,SFSEARCHPOS)
+   END
+  SFNUMFOUND=VALUE(SEGMENT(SFSEARCHLIST,SFCURPOS,SFSEARCHPOS))
+END [PROCEDURE]
 
 PROCEDURE NLTS
  CALL NLS
