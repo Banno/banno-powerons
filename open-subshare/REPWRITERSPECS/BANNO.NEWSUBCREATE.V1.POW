@@ -21,13 +21,13 @@
 **              6. Corrected misspelling of 'sufficient'
 **  12/21/2020 CSimms:
 **              1. Updated Share Div Rate fetch.
-**
 **  01/13/2021 JuCarson:
 **              1. Updated to pull correct SymX client and Service number.
-**
 **  01/19/2021 TKainz:
 **              1. Updated Next ID calculation process to handle
 **                 share ID 0000
+**  01/28/2021 JuCarson:
+**              1. Updated to populate min funding options before using in logic.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -467,6 +467,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
           END
 
          [IS FUNDING REQUIRED]
+         CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
          IF ERRORCODE="" THEN
           DO
            PRINT Q+"fundingOptions"+Q+":["+Q+"electronic"+Q
@@ -483,7 +484,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          IF OPENTYPE<>"" AND
           OPENCATEGORY<>"" THEN
           DO
-           CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
+           CALL PRINTMINFUNDAMT
           END
 
          [GET SHARE TRANSFER FROM OPTIONS]
@@ -867,16 +868,17 @@ PROCEDURE GETMINIMUMDEPOSIT
 
    IF SACFUNDCALCAMT<SACFUNDMINAMT THEN
     SACFUNDCALCAMT=SACFUNDMINAMT
-
-   TMPCHR=FORMAT("######9.99",SACFUNDCALCAMT)
-   CALL NLS
-   PRINT Q+"minimumFundingAmount"+Q+": "+Q
-   PRINT TMPCHR
-   PRINT Q+","
-   NEWLINE
   END
-
 END [PROCEDURE GET MINIMUM DEPOSIT]
+
+PROCEDURE PRINTMINFUNDAMT
+ TMPCHR=FORMAT("######9.99",SACFUNDCALCAMT)
+ CALL NLS
+ PRINT Q+"minimumFundingAmount"+Q+": "+Q
+ PRINT TMPCHR
+ PRINT Q+","
+ NEWLINE
+END [PROCEDURE PRINT MIN FUND AMT]
 
 PROCEDURE PROVIDENAMESINFO
 [* Provide name configurations
@@ -2415,4 +2417,3 @@ END
 
 
 #INCLUDE "RB.LISTEXPAND"
-
