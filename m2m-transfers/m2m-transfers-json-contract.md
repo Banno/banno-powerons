@@ -25,15 +25,15 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```json
 {
 	"currentState": {
-		"enforceLimits": true,
-		"transferLimits": [{
-			"institutionCount": "5",
-			"institutionAmount": "10000.00",
-			"memberLimitCount": "3",
-			"memberLimitAmount": "5000.00",
-			"memberActualCount": "1",
-			"memberActualAmount": "500.00"
-		}],
+		"transferLimits": {
+			"enforceLimits": true,
+			"allowTransfers": true,
+			"countLimit:" "5",// optional if enforceLimits is false
+			"memberCount": "1",
+			"amountLimit": "1000.00",
+			"memberAmount": "100.00",
+			"perTransferLimit": "500.00"
+		},
 		"availableShares": [{
 				"transferSLId": "0000800005S0002",
 				"transferName": "SUMMER SAVER",
@@ -52,21 +52,20 @@ list of institution and member limits, eligible shares, list of scheduled transf
 		],
 
 		"scheduledTransfers": [{
-				"trnsferLoc": "215",
+				"transferLoc": "215",
 				"sourceAccount": "1234567890S0020",
 				"accountName": "CHECKING",
 				"transferAmt": "120.00",
 				"recipientName": "Emily Fitch",
 				"recipientMemberId": "9876543210",
-				"recipientAccount": "[9876543210L0001,savings,checking]",
+				"recipientAccount": "9876543210L0001", // could be specific account, or "savings" or "checking"?
 				"recipientNickname": "Emmy",
-				"startDate":"07/31/21",
-				"endDate":"12/31/2021",
-				"transferFrequency": "weekly",
-				"day1": "",
-				"day2": "",
-				"saveRecipient": false,
-				"memo": "Internal Note created by member"
+				"startDate": "07/31/21",
+				"endDate": "12/31/2021", // unused
+				"transferFrequency": "weekly", // daily, weekly, monthly, yearly, semiMonthly, biweekly, quarterly
+				"day1": "", // semi-monthly - first day
+				"day2": ""// semi-monthly - second day
+				
 			},
 			{
 				"transferLoc": "395",
@@ -79,18 +78,16 @@ list of institution and member limits, eligible shares, list of scheduled transf
 				"recipientNickname": "Howie",
 				"nextTransferDate": "12/15/2020",
 				"startDate":"07/03/21",
-				"endDate":"12/31/2025",
+				"endDate":"12/31/2025", // unused
 				"transferFrequency": "semi-monthly",
 				"day1": "3",
-				"day2": "31",
-				"saveRecipient": false,
-				"memo": "Internal Note created by member"
+				"day2": "31"
 			}
 		],
 		"savedRedipients": [{
 				"recipientLoc": "5443231543",
 				"recipientName": "Binsy Flomor",
-				"recipientSLId": "9876543210L0001",
+				"recipientSLId": "9876543210L0001",// full account id or "checking" or "savings"?
 				"recipientNickName": "Zeke's Future"
 			},
 			{
@@ -134,27 +131,25 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "loggingErrorMessage": "No eligible shares found"
 }
 ```
-## PROCESS REQUEST STATE
-### Client Request (PROCESS)
+## CREATE TRANSFER REQUEST STATE
+### Client Request (CREATETRAN)
 
 ```json
 {
-  "rgState": "PROCESS",
+  "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "[request type]:[data]|[data]|[data]|[data]|[data]|[data]" },
+    { "id": 1, "value": "[data]|[data]|[data]|[data]|[data]|[data]" }, // max 132 characters
     { "id": 2, "value": "[data]|[data]|[data]|[data]|[data]|[data]" },
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
-  "userNumList": [], //  usernum[1-5] is unused
+  "userNumList": [1000.51], // amount
   "rgSession": 1
 }
 ```
 Request Type, Required data:
-* CREATERECIP - Create new recipient
-	* Account Name (nickname), Account (10-digit member number, S or L, SL ID)
 * DELETERECIP - Delete existing recipient
 	* recipientLoc
 * CREATETRAN - Create new transfer with new or existing recipient
