@@ -28,9 +28,6 @@
 **                 share ID 0000
 **  01/28/2021 JuCarson:
 **              1. Updated to populate min funding options before using in logic.
-**  01/28/2021 JKeenan
-**              1. Updated Error handling to catch error for City + State + Zip
-**                 over 40 characters.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -159,7 +156,6 @@ DEFINE
  DR                        = NUMBER
  DATENULL                  = '--/--/----'
  FMERRORFLAG               = NUMBER
- LEN                       = NUMBER
 
  [QUALIFY VARIABLES]
  INELIGIBLEREASON          = CHARACTER
@@ -1532,6 +1528,7 @@ PROCEDURE GETPASSEDINFO
  IF IMPORT(1)="" THEN
   DO
    PASSEDINFOREADERROR="MISSING INFORMATION"
+
    PRINT "{"
    NEWLINE
    ERRORCODE="507"
@@ -1642,22 +1639,6 @@ PROCEDURE GETPASSEDINFO
 
      NEWNAMEPHONE(NUM)=IMPORT(J)
 
-     IF PASSEDINFOREADERROR="" THEN
-      DO
-       [city + state + zip code must 40 characters or less]
-       LEN=LENGTH(NEWNAMECITY(NUM)+NEWNAMESTATE(NUM)+NEWNAMEZIP(NUM))
-       IF LEN>40 THEN
-        DO
-
-         PASSEDINFOREADERROR="MISSING INFORMATION"
-         PRINT "{"
-         NEWLINE
-         ERRORCODE="507"
-         CALL ERRORHANDLER
-         CALL JSONCLOSE
-
-        END
-      END
     END
   END [END OF J]
 END [PROC GET PASSED INFO]
@@ -2436,5 +2417,3 @@ END
 
 
 #INCLUDE "RB.LISTEXPAND"
-
-
