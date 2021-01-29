@@ -139,27 +139,75 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "[data]|[data]|[data]|[data]|[data]|[data]" }, // max 132 characters
-    { "id": 2, "value": "[data]|[data]|[data]|[data]|[data]|[data]" },
+    { "id": 1, "value": "1234567890S0001" },  // sourceAccount
+    { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
+    { "id": 3, "value": "SAVINGS|9876543210L0001|Zeke's Future" }, // Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
+    { "id": 4, "value": "" },
+    { "id": 5, "value": "" }
+  ],
+  "userNumList": [
+	{ "id": 1, "value": 1000.51 } // transferAmt
+	{ "id": 2, "value": 395 } // transferLoc
+	{ "id": 3, "value": 0 } // recipientLoc '0' if new account
+	],
+  "rgSession": 1
+}
+```
+* CREATETRAN - Create new transfer with new or existing recipient
+	* Existing Recipient:  recipientLoc
+	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
+	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2
+
+### Client Request (EDITTRAN)
+
+```json
+{
+  "rgState": "EDITTRAN",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [
+    { "id": 1, "value": "1234567890S0001" },  // sourceAccount
+    { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
-  "userNumList": [1000.51], // amount
+  "userNumList": [
+	{ "id": 1, "value": 1000.51 } // transferAmt
+	{ "id": 2, "value": 395 } // transferLoc
+  ],
   "rgSession": 1
 }
 ```
-Request Type, Required data:
-* DELETERECIP - Delete existing recipient
-	* recipientLoc
-* CREATETRAN - Create new transfer with new or existing recipient
-	* Existing Recipient:  recipientLoc
-	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname, save:[T/F]
-	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2, memo
-* EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
-	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2, memo
-* DELETETRAN
-	* transferLoc,
+EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
+	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2
+
+### Client Request (DELETERECIP)
+
+```json
+{
+  "rgState": "DELETERECIP",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [], //  userChrList[1-5] is unused
+  "userNumList": [
+	  {"id": 1, "value": 5443231543} // recipientLoc
+	  ],  
+  "rgSession": 1
+}
+```
+
+### Client Request (DELETETRAN)
+
+```json
+{
+  "rgState": "DELETETRAN",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [], //  userChrList[1-5] is unused
+  "userNumList": [
+	   { "id": 1, "value": 395 } // transferLoc
+  ],  
+  "rgSession": 1
+}
+```
 
 ### PowerOn Successful Response (PROCESS)
 ```json
