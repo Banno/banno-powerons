@@ -142,7 +142,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
     { "id": 1, "value": "1234567890S0001" },  // sourceAccount
     { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
     { "id": 3, "value": "SAVINGS|9876543210L0001|Zeke's Future" }, // Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
-    { "id": 4, "value": "" },
+    { "id": 4, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers
     { "id": 5, "value": "" }
   ],
   "userNumList": [
@@ -157,6 +157,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	* Existing Recipient:  recipientLoc
 	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
 	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2
+	* One-time immediate transfers have an optional internal memo field.
 
 ### Client Request (EDITTRAN)
 
@@ -167,7 +168,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "userChrList": [
     { "id": 1, "value": "1234567890S0001" },  // sourceAccount
     { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
-    { "id": 3, "value": "" },
+    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
