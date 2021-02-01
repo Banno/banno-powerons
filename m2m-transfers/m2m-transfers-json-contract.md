@@ -27,7 +27,6 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	"currentState": {
 		"transferLimits": {
 			"enforceLimits": true,
-			"allowTransfers": true, // might not need this, we can control access easier by blocking the linkType per-user
 			"countLimit:" "5",// optional if enforceLimits is false
 			"memberCount": "1",
 			"amountLimit": "1000.00",
@@ -58,9 +57,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
 				"transferAmt": "120.00",
 				"recipientName": "Emily Fitch",
 				"recipientMemberId": "9876543210",
-				"recipientAccount": "9876543210L0001", // could be specific account, or "savings" or "checking"?
+				"recipientAccountId": "S0001", // could be specific account, or "savings" or "checking"?
 				"recipientNickname": "Emmy",
-				"startDate": "07/31/21",
+				"startDate": "07/31/2021",
 				"endDate": "12/31/2021", // unused
 				"transferFrequency": "weekly", // daily, weekly, monthly, yearly, semiMonthly, biweekly, quarterly
 				"day1": "", // semi-monthly - first day
@@ -74,10 +73,10 @@ list of institution and member limits, eligible shares, list of scheduled transf
 				"transferAmt": "120.00",
 				"recipientName": "Howard Cleo",
 				"recipientMemberId": "9876543210",
-				"recipientShareId": "9876543210L0001",
+				"recipientAccountId": "S0001",
 				"recipientNickname": "Howie",
-				"nextTransferDate": "12/15/2020",
-				"startDate":"07/03/21",
+				"nextTransferDate": "12/3/2020",
+				"startDate":"07/03/2021",
 				"endDate":"12/31/2025", // unused
 				"transferFrequency": "semi-monthly",
 				"day1": "3",
@@ -139,15 +138,16 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "395" }, // recipientLoc if available, empty if not
-    { "id": 2, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
-    { "id": 3, "value": "HUB|nickname" }, // [first 3][nickname]
-    { "id": 4, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
+    { "id": 1, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
+    { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
+    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
+    { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
   "userNumList": [
-	{ "id": 1, "value": 1000.51 } // transferAmt
-	],
+    { "id": 1, "value": 395 }, // recipientLoc if available
+    { "id": 2, "value": 1000.51 } // transferAmt
+  ],
   "rgSession": 1
 }
 ```
@@ -164,14 +164,15 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "EDITTRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "395" }, // transferLoc
-    { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
-    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
+    { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
+    { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
+    { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
   "userNumList": [
-	{ "id": 1, "value": 1000.51 } // transferAmt
+    { "id": 1, "value": 395 }, // transferLoc
+    { "id": 2, "value": 1000.51 } // transferAmt
   ],
   "rgSession": 1
 }
@@ -185,10 +186,10 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "rgState": "DELETERECIP",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [
-    {"id": 1, "value": "395"} // recipientLoc
-  ],   
-  "userNumList": [],  
+  "userChrList": [],   
+  "userNumList": [
+    {"id": 1, "value": 395} // recipientLoc
+  ],  
   "rgSession": 1
 }
 ```
@@ -199,10 +200,10 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "rgState": "DELETETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [
-    { "id": 1, "value": "395" } // transferLoc
-  ],
-  "userNumList": [],  
+  "userChrList": [],
+  "userNumList": [
+    { "id": 1, "value": 395 } // transferLoc
+  ],  
   "rgSession": 1
 }
 ```
@@ -216,7 +217,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   }
 }
 ```
-### PowerOn Error Response (PROCESS)
+### PowerOn Error Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
 ```json
 {
   "results": {
@@ -235,4 +236,4 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 505 - Invalid input
 506 - Error creating/deleting recipient
 507 - Error creating/updating/deleting transfer
-506 - Undefined error
+508 - Undefined error
