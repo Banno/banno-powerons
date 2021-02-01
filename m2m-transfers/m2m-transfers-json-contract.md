@@ -27,7 +27,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	"currentState": {
 		"transferLimits": {
 			"enforceLimits": true,
-			"allowTransfers": true,
+			"allowTransfers": true, // might not need this, we can control access easier by blocking the linkType per-user
 			"countLimit:" "5",// optional if enforceLimits is false
 			"memberCount": "1",
 			"amountLimit": "1000.00",
@@ -139,24 +139,22 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001" },  // sourceAccount
-    { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
-    { "id": 3, "value": "SAVINGS|9876543210L0001|Zeke's Future" }, // Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
-    { "id": 4, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers
+    { "id": 1, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
+    { "id": 2, "value": "395" }, // recipientLoc if available, empty if not
+    { "id": 3, "value": "HUB|nickname" }, // [first 3][nickname]
+    { "id": 4, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
     { "id": 5, "value": "" }
   ],
   "userNumList": [
 	{ "id": 1, "value": 1000.51 } // transferAmt
-	{ "id": 2, "value": 395 } // transferLoc
-	{ "id": 3, "value": 0 } // recipientLoc '0' if new account
 	],
   "rgSession": 1
 }
 ```
 * CREATETRAN - Create new transfer with new or existing recipient
-	* Existing Recipient:  recipientLoc
-	* New Recipient: "0",  Account Name (nickname), Account (10-digit member number, S or L, SL ID), Recipient Nickname
-	* All recipients: sourceAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2
+	* Existing Recipient:  recipientLoc will be present
+	* New Recipient: if nickname is present, create new
+	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2
 	* One-time immediate transfers have an optional internal memo field.
 
 ### Client Request (EDITTRAN)
@@ -166,15 +164,14 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "EDITTRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001" },  // sourceAccount
+    { "id": 1, "value": "395" }, // transferLoc
     { "id": 2, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
-    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for
+    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
   ],
   "userNumList": [
 	{ "id": 1, "value": 1000.51 } // transferAmt
-	{ "id": 2, "value": 395 } // transferLoc
   ],
   "rgSession": 1
 }
@@ -188,10 +185,10 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "rgState": "DELETERECIP",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [], //  userChrList[1-5] is unused
-  "userNumList": [
-	  {"id": 1, "value": 5443231543} // recipientLoc
-	  ],  
+  "userChrList": [
+    {"id": 1, "value": "395"} // recipientLoc
+  ],   
+  "userNumList": [],  
   "rgSession": 1
 }
 ```
@@ -202,30 +199,31 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "rgState": "DELETETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [], //  userChrList[1-5] is unused
-  "userNumList": [
-	   { "id": 1, "value": 395 } // transferLoc
-  ],  
+  "userChrList": [
+    { "id": 1, "value": "395" } // transferLoc
+  ],
+  "userNumList": [],  
   "rgSession": 1
 }
 ```
 
-### PowerOn Successful Response (PROCESS)
+### PowerOn Successful Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
 ```json
 {
-	"results": "success",
-	[PRELOADDATA]
+  "results": {
+    "success": true,
+    "currentState": "[PRELOADDATA]"
+  }
 }
 ```
 ### PowerOn Error Response (PROCESS)
 ```json
 {
-	"results": [
-		"errorCode",
-		"5xx",
-		"error code description"
-	],
-	[PRELOADDATA]
+  "results": {
+    "errorCode": "5xx",
+    "loggingErrorMessage": "error code description"
+  }
+}
 ```
 
 ### Error Codes
