@@ -139,8 +139,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
-    { "id": 2, "value": "395" }, // recipientLoc if available, empty if not
+    { "id": 1, "value": "395" }, // recipientLoc if available, empty if not
+    { "id": 2, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
     { "id": 3, "value": "HUB|nickname" }, // [first 3][nickname]
     { "id": 4, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
     { "id": 5, "value": "" }
