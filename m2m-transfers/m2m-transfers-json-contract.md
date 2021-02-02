@@ -3,7 +3,7 @@
 ## GET PRELOADDATA STATE
 ### Client Request (PRELOADDATA)
 
-```json
+```jsonc
 {
   "rgState": "PRELOADDATA",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
@@ -22,93 +22,94 @@
 ### PowerOn Successful Response (PRELOADDATA)
 list of institution and member limits, eligible shares, list of scheduled transfers, list of saved recipients
 
-```json
+```jsonc
 {
-	"currentState": {
-		"transferLimits": {
-			"enforceLimits": true,
-			"countLimit:" "5",// optional if enforceLimits is false
-			"memberCount": "1",
-			"amountLimit": "1000.00",
-			"memberAmount": "100.00",
-			"perTransferLimit": "500.00"
-		},
-		"availableShares": [{
-				"transferSLId": "0000800005S0002",
-				"transferName": "SUMMER SAVER",
-				"available": "50.00"
-			},
-			{
-				"transferSLId": "0000800005S0010",
-				"transferName": "REGULAR CHECKING",
-				"available": "500.00"
-			},
-			{
-				"transferSLId": "0000800005S0015",
-				"transferName": "ULTIMATE CHECKING (10)",
-				"available": "0.00"
-			}
-		],
-
-		"scheduledTransfers": [{
-				"transferLoc": "215",
-				"sourceAccount": "1234567890S0020",
-				"accountName": "CHECKING",
-				"transferAmt": "120.00",
-				"recipientName": "Emily Fitch",
-				"recipientMemberId": "9876543210",
-				"recipientAccountId": "S0001", // could be specific account, or "savings" or "checking"?
-				"recipientNickname": "Emmy",
-				"startDate": "07/31/2021",
-				"endDate": "12/31/2021", // unused
-				"transferFrequency": "weekly", // daily, weekly, monthly, yearly, semiMonthly, biweekly, quarterly
-				"day1": "", // semi-monthly - first day
-				"day2": ""// semi-monthly - second day
-				
-			},
-			{
-				"transferLoc": "395",
-				"sourceAccount": "1234567890S0001",
-				"accountName": "SAVINGS",
-				"transferAmt": "120.00",
-				"recipientName": "Howard Cleo",
-				"recipientMemberId": "9876543210",
-				"recipientAccountId": "S0001",
-				"recipientNickname": "Howie",
-				"nextTransferDate": "12/3/2020",
-				"startDate":"07/03/2021",
-				"endDate":"12/31/2025", // unused
-				"transferFrequency": "semi-monthly",
-				"day1": "3",
-				"day2": "31"
-			}
-		],
-		"savedRedipients": [{
-				"recipientLoc": "5443231543",
-				"recipientName": "Binsy Flomor",
-				"recipientSLId": "9876543210L0001",// full account id or "checking" or "savings"?
-				"recipientNickName": "Zeke's Future"
-			},
-			{
-				"recipientLoc": "5431543",
-				"recipientName": "Kylie Crenshaw",
-				"recipientSLId": "9876543210L0001",
-				"recipientNickName": "Sally Martin"
-			}
-		]
-	}
+  "currentState": {
+    "transferLimits": {
+      "enforceLimits": true,// remaining transferLimit properties are optional, if enforceLimits is false
+      "countLimit": "5", 
+      "memberCount": "1",
+      "amountLimit": "1000.00",
+      "memberAmount": "100.00",
+      "perTransferLimit": "500.00"
+    },
+    "availableShares": [
+      {
+        "transferSLId": "0000800005S0002",
+        "transferName": "SUMMER SAVER",
+        "available": "50.00"
+      },
+      {
+        "transferSLId": "0000800005S0010",
+        "transferName": "REGULAR CHECKING",
+        "available": "500.00"
+      },
+      {
+        "transferSLId": "0000800005S0015",
+        "transferName": "ULTIMATE CHECKING (10)",
+        "available": "0.00"
+      }
+    ],
+    "scheduledTransfers": [
+      {
+        "transferLoc": "215",
+        "sourceAccount": "1234567890S0020",
+        "accountName": "CHECKING",
+        "transferAmt": "120.00",
+        "recipientName": "Emily Fitch",
+        "recipientMemberId": "9876543210",
+        "recipientAccountId": "S0001", // could be specific account, or "savings" or "checking"?
+        "recipientNickname": "Emmy",
+        "startDate": "07/31/2021",
+        "endDate": "12/31/2021", // unused
+        "transferFrequency": "weekly", // daily, weekly, monthly, yearly, semiMonthly, biweekly, quarterly
+        "day1": "", // semi-monthly - first day
+        "day2": "" // semi-monthly - second day
+      },
+      {
+        "transferLoc": "395",
+        "sourceAccount": "1234567890S0001",
+        "accountName": "SAVINGS",
+        "transferAmt": "120.00",
+        "recipientName": "Howard Cleo",
+        "recipientMemberId": "9876543210",
+        "recipientAccountId": "S0001",
+        "recipientNickname": "Howie",
+        "nextTransferDate": "12/3/2020",
+        "startDate": "07/03/2021",
+        "endDate": "12/31/2025", // unused
+        "transferFrequency": "semi-monthly",
+        "day1": "3",
+        "day2": "31"
+      }
+    ],
+    "savedRedipients": [
+      {
+        "recipientLoc": "5443231543",
+        "recipientName": "Binsy Flomor",
+        "recipientSLId": "9876543210L0001", // full account id or "checking" or "savings"?
+        "recipientNickName": "Zeke's Future"
+      },
+      {
+        "recipientLoc": "5431543",
+        "recipientName": "Kylie Crenshaw",
+        "recipientSLId": "9876543210L0001",
+        "recipientNickName": "Sally Martin"
+      }
+    ]
+  }
 }
 ```
 ### PowerOn Error Responses (PRELOADDATA)
 #### PowerOn response - Configuration File read error:
-```json
+```jsonc
 {
   "errorCode": "501",
   "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
 }
 ```
 #### PowerOn response - Configuration File read error:
-```json
+```jsonc
 {
   "errorCode": "501",
   "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
@@ -116,7 +117,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```
 ### PowerOn response - Invalid Account (by Account Warning):
 
-```json
+```jsonc
 {
   "errorCode": "502",
   "loggingErrorMessage": "Invalid Account - account warning xxx"
@@ -124,7 +125,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```
 ### PowerOn response - No Eligible Share(s) found:
 
-```json
+```jsonc
 {
   "errorCode": "503",
   "loggingErrorMessage": "No eligible shares found"
@@ -133,7 +134,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ## CREATE TRANSFER REQUEST STATE
 ### Client Request (CREATETRAN)
 
-```json
+```jsonc
 {
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
@@ -159,7 +160,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 
 ### Client Request (EDITTRAN)
 
-```json
+```jsonc
 {
   "rgState": "EDITTRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
@@ -182,7 +183,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 
 ### Client Request (DELETERECIP)
 
-```json
+```jsonc
 {
   "rgState": "DELETERECIP",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
@@ -196,7 +197,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 
 ### Client Request (DELETETRAN)
 
-```json
+```jsonc
 {
   "rgState": "DELETETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
@@ -209,7 +210,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 ```
 
 ### PowerOn Successful Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
-```json
+```jsonc
 {
   "results": {
     "success": true,
@@ -218,7 +219,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 }
 ```
 ### PowerOn Error Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
-```json
+```jsonc
 {
   "results": {
     "errorCode": "5xx",
