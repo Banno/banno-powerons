@@ -37,17 +37,20 @@ list of institution and member limits, eligible shares, list of scheduled transf
       {
         "transferSLId": "0000800005S0002",
         "transferName": "SUMMER SAVER",
-        "available": "50.00"
+        "available": "50.00",
+        "accountOwnerName": "Beth Nussbaum",
       },
       {
         "transferSLId": "0000800005S0010",
         "transferName": "REGULAR CHECKING",
-        "available": "500.00"
+        "available": "500.00",
+        "accountOwnerName": "Ruth Nordstrom",
       },
       {
         "transferSLId": "0000800005S0015",
         "transferName": "ULTIMATE CHECKING (10)",
-        "available": "0.00"
+        "available": "0.00",
+        "accountOwnerName": "Cliff Woodward",
       }
     ],
     "scheduledTransfers": [
@@ -56,9 +59,10 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "sourceAccount": "1234567890S0020",
         "accountName": "CHECKING",
         "transferAmt": "120.00",
-        "recipientName": "Emily Fitch",
+        "recipientName": "Fit", // first 3 letters of last name or business name
         "recipientMemberId": "9876543210",
-        "recipientAccountId": "S0001", // could be specific account, or "savings" or "checking"?
+        "recipientAccountType": "share", // share, loan, share draft
+        "recipientAccountId": "0001", // could be specific account, or "savings" or "checking"?
         "recipientNickname": "Emmy",
         "startDate": "07/31/2021",
         "endDate": "12/31/2021", // unused
@@ -71,11 +75,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "sourceAccount": "1234567890S0001",
         "accountName": "SAVINGS",
         "transferAmt": "120.00",
-        "recipientName": "Howard Cleo",
+        "recipientName": "Cle",
         "recipientMemberId": "9876543210",
-        "recipientAccountId": "S0001",
+        "recipientAccountType": "share",
+        "recipientAccountId": "0001",
         "recipientNickname": "Howie",
-        "nextTransferDate": "12/3/2020",
         "startDate": "07/03/2021",
         "endDate": "12/31/2025", // unused
         "transferFrequency": "semi-monthly",
@@ -86,14 +90,18 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "savedRedipients": [
       {
         "recipientLoc": "5443231543",
-        "recipientName": "Binsy Flomor",
-        "recipientSLId": "9876543210L0001", // full account id or "checking" or "savings"?
+        "recipientName": "Flo",
+        "recipientMemberId": "9876543210",
+        "recipientAccountType": "loan",
+        "recipientAccountId": "0001",
         "recipientNickName": "Zeke's Future"
       },
       {
         "recipientLoc": "5431543",
-        "recipientName": "Kylie Crenshaw",
-        "recipientSLId": "9876543210L0001",
+        "recipientName": "Cre",
+        "recipientMemberId": "9876543210",
+        "recipientAccountType": "loan",
+        "recipientAccountId": "0001",
         "recipientNickName": "Sally Martin"
       }
     ]
