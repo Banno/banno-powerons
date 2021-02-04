@@ -26,7 +26,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 {
   "currentState": {
     "transferLimits": {
-      "enforceLimits": true,// remaining transferLimit properties are optional, if enforceLimits is false
+      "enforceLimits": true, // remaining transferLimit properties are optional, if enforceLimits is false
       "countLimit": "5", 
       "memberCount": "1",
       "amountLimit": "1000.00",
@@ -36,19 +36,19 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "availableShares": [
       {
         "transferSLId": "0000800005S0002",
-        "transferName": "SUMMER SAVER",
+        "name": "SUMMER SAVER",
         "available": "50.00",
         "accountOwnerName": "Beth Nussbaum",
       },
       {
         "transferSLId": "0000800005S0010",
-        "transferName": "REGULAR CHECKING",
+        "name": "REGULAR CHECKING",
         "available": "500.00",
         "accountOwnerName": "Ruth Nordstrom",
       },
       {
         "transferSLId": "0000800005S0015",
-        "transferName": "ULTIMATE CHECKING (10)",
+        "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
         "accountOwnerName": "Cliff Woodward",
       }
@@ -61,12 +61,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "transferAmt": "120.00",
         "recipientName": "Fit", // first 3 letters of last name or business name
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "share", // share, loan, share draft
-        "recipientAccountId": "0001", // could be specific account, or "savings" or "checking"?
-        "recipientNickname": "Emmy",
+        "recipientAccountType": "S", // S = share, loan = L
+        "recipientAccountId": "0001", // required share or loan id
+        "recipientNickname": "Emmy", // optonal, blank if not saved
         "startDate": "07/31/2021",
-        "endDate": "12/31/2021", // unused
-        "transferFrequency": "weekly", // daily, weekly, monthly, yearly, semiMonthly, biweekly, quarterly
+        "transferFrequency": "weekly", // once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
         "day1": "", // semi-monthly - first day
         "day2": "" // semi-monthly - second day
       },
@@ -77,11 +76,10 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "transferAmt": "120.00",
         "recipientName": "Cle",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "share",
+        "recipientAccountType": "L",
         "recipientAccountId": "0001",
-        "recipientNickname": "Howie",
+        "recipientNickname": "",
         "startDate": "07/03/2021",
-        "endDate": "12/31/2025", // unused
         "transferFrequency": "semi-monthly",
         "day1": "3",
         "day2": "31"
@@ -92,7 +90,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientLoc": "5443231543",
         "recipientName": "Flo",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "loan",
+        "recipientAccountType": "L",
         "recipientAccountId": "0001",
         "recipientNickName": "Zeke's Future"
       },
@@ -100,7 +98,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientLoc": "5431543",
         "recipientName": "Cre",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "loan",
+        "recipientAccountType": "L",
         "recipientAccountId": "0001",
         "recipientNickName": "Sally Martin"
       }
@@ -163,7 +161,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 * CREATETRAN - Create new transfer with new or existing recipient
 	* Existing Recipient:  recipientLoc will be present
 	* New Recipient: if nickname is present, create new
-	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, endDate, day1, day2
+	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
 	* One-time immediate transfers have an optional internal memo field.
 
 ### Client Request (EDITTRAN)
@@ -173,7 +171,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "EDITTRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[endDate]|[day1]|[day2] max 132 characters
+    { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[startDate]|[day1]|[day2] max 132 characters
     { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
