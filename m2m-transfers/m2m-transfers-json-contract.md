@@ -65,7 +65,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001", // required share or loan id
         "recipientNickname": "Emmy", // optonal, blank if not saved
         "startDate": "07/31/2021",
-        "transferFrequency": "weekly", // once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
+	"nextTransferDate":"08/07/2021",
+        "transferFrequency": "weekly",
         "day1": "", // semi-monthly - first day
         "day2": "" // semi-monthly - second day
       },
@@ -80,6 +81,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001",
         "recipientNickname": "",
         "startDate": "07/03/2021",
+	"nextTransferDate":"08/07/2021",
         "transferFrequency": "semi-monthly",
         "day1": "3",
         "day2": "31"
@@ -137,6 +139,47 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "loggingErrorMessage": "No eligible shares found"
 }
 ```
+
+## VERIFY MEMBER DETAILS
+### Client Request (VERIFYMEMBER)
+
+```jsonc
+{
+  "rgState": "CREATETRAN",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "userChrList": [
+    { "id": 1, "value": "9876543210L0001|HUB" },// [memberAccountId][first 3 of last name or business name]
+    { "id": 2, "value": "" },
+    { "id": 3, "value": "" }, 
+    { "id": 4, "value": "" },
+    { "id": 5, "value": "" }
+  ],
+  "userNumList": [],
+  "rgSession": 1
+}
+```
+
+### Poweron Successful Response (VERIFYMEMBER)
+
+```jsonc
+{
+  "results": {
+    "verified": true,
+  }
+}
+```
+
+### Poweron Error Response (VERIFYMEMBER)
+
+```jsonc
+{
+  "results": {
+    "errorCode": "509",
+    "loggingErrorMessage": "member verification failed"
+  }
+}
+```
+
 ## CREATE TRANSFER REQUEST STATE
 ### Client Request (CREATETRAN)
 
@@ -244,3 +287,8 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 506 - Error creating/deleting recipient
 507 - Error creating/updating/deleting transfer
 508 - Undefined error
+509 - Member unverified
+
+### Transfer Frequencies
+The following strings are all valid transfer frequencies:
+once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
