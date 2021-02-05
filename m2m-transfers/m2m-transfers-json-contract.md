@@ -145,7 +145,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 
 ```jsonc
 {
-  "rgState": "CREATETRAN",
+  "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
     { "id": 1, "value": "9876543210L0001|HUB" },// [memberAccountId][first 3 of last name or business name]
