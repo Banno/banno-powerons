@@ -27,7 +27,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "currentState": {
     "transferLimits": {
       "enforceLimits": true, // remaining transferLimit properties are optional, if enforceLimits is false
-      "countLimit": "5", 
+      "countLimit": "5", // if limits are 0 assume no limit
       "memberCount": "1",
       "amountLimit": "1000.00",
       "memberAmount": "100.00",
