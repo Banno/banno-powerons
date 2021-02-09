@@ -61,8 +61,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "transferAmt": "120.00",
         "recipientName": "Fit", // first 3 letters of last name or business name
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "S", // S = share, loan = L
-        "recipientAccountId": "0001", // required share or loan id
+        "recipientAccountType": "savings", // savings, checking or loan
+        "recipientAccountId": "0001", // optional share or loan id
         "recipientNickname": "Emmy", // optonal, blank if not saved
         "startDate": "07/31/2021",
 	"nextTransferDate":"08/07/2021",
@@ -77,7 +77,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "transferAmt": "120.00",
         "recipientName": "Cle",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "L",
+        "recipientAccountType": "loan",
         "recipientAccountId": "0001",
         "recipientNickname": "",
         "startDate": "07/03/2021",
@@ -92,15 +92,15 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientLoc": "5443231543",
         "recipientName": "Flo",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "L",
-        "recipientAccountId": "0001",
+        "recipientAccountType": "savings",
+        "recipientAccountId": "0001",// optional
         "recipientNickName": "Zeke's Future"
       },
       {
         "recipientLoc": "5431543",
         "recipientName": "Cre",
         "recipientMemberId": "9876543210",
-        "recipientAccountType": "L",
+        "recipientAccountType": "loan",
         "recipientAccountId": "0001",
         "recipientNickName": "Sally Martin"
       }
@@ -148,7 +148,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "9876543210L0001|HUB" },// [memberAccountId][first 3 of last name or business name]
+    { "id": 1, "value": "9876543210|HUB" },// [member id][first 3 of last name or business name]
     { "id": 2, "value": "" },
     { "id": 3, "value": "" }, 
     { "id": 4, "value": "" },
@@ -188,7 +188,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001|9876543210L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][destinationAccount][frequency]|[startDate]|[day1]|[day2]
+    { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
     { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
     { "id": 4, "value": "" },
@@ -292,3 +292,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 ### Transfer Frequencies
 The following strings are all valid transfer frequencies:
 once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
+
+### Account types
+The recipient member's account id is optional when creating a new transfer and when displaying saved recipients
+available account types are savings checking, loan
