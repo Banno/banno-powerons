@@ -207,6 +207,30 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
 	* One-time immediate transfers have an optional internal memo field.
 
+### PowerOn Successful Response (CREATETRAN)
+```jsonc
+{
+  "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
+   "change": {
+    "application": "member-to-member-transfers",
+    "name": "MemberToMemberTransferSent", // "MemberToMemberTransferSent" if frequency is "once", otherwise "MemberToMemberTransferScheduled"
+    "toMemberName": "John Smith",
+    "amount": 1.00,
+    "toAccountName": "Regular Shares",
+    "fromAccountNumberMasked": "x00S0010",
+    "toAccountNumberMasked": "x55S0001"
+    "frequency": "weekly", // included if frequency is not "once"
+    "day1": "", // included if frequency is not "once"
+    "day2": "" // included if frequency is not "once"
+    }
+  },
+  "results": {
+    "success": true,
+    "currentState": "[PRELOADDATA]"
+  }
+}
+```
+
 ### Client Request (EDITTRAN)
 
 ```jsonc
@@ -229,6 +253,30 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```
 EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
 	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2
+
+### PowerOn Successful Response (EDITTRAN)
+```jsonc
+{
+  "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
+   "change": {
+    "application": "member-to-member-transfers",
+    "name": "MemberToMemberTransferUpdate",
+    "toMemberName": "John Smith",
+    "amount": 1.00,
+    "toAccountName": "Regular Shares",
+    "fromAccountNumberMasked": "x00S0010",
+    "toAccountNumberMasked": "x55S0001"
+    "frequency": "weekly", // included if frequency is not "once"
+    "day1":"", // include dif frequency is not "once"
+    "day2":"" // include dif frequency is not "once"
+    }
+  },
+  "results": {
+    "success": true,
+    "currentState": "[PRELOADDATA]"
+  }
+}
+```
 
 ### Client Request (DELETERECIP)
 
@@ -258,15 +306,31 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 }
 ```
 
-### PowerOn Successful Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
+### PowerOn Successful Response (DELETETRAN)
 ```jsonc
 {
+  "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
+   "change": {
+    "application": "member-to-member-transfers",
+    "name": "MemberToMemberTransferDeleted",
+    "toMemberName": "John Smith",
+    "amount": 1.00,
+    "toAccountName": "Regular Shares",
+    "fromAccountNumberMasked": "x00S0010",
+    "toAccountNumberMasked": "x55S0001"
+    "frequency": "weekly", // included if frequency is not "once"
+    "day1":"", // include dif frequency is not "once"
+    "day2":"" // include dif frequency is not "once"
+    }
+  },
   "results": {
     "success": true,
     "currentState": "[PRELOADDATA]"
   }
 }
 ```
+
+
 ### PowerOn Error Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
 ```jsonc
 {
