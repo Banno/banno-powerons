@@ -8,8 +8,8 @@
   "rgState": "PRELOADDATA",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890" }, // 10-digit account
-    { "id": 2, "value": "" }, // userchar[2-5] is unused
+    { "id": 1, "value": "" }, // userchar[1-5] is unused
+    { "id": 2, "value": "" }, 
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
@@ -68,7 +68,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	"nextTransferDate":"08/07/2021",
         "transferFrequency": "weekly",
         "day1": "", // semi-monthly - first day
-        "day2": "" // semi-monthly - second day
+        "day2": "", // semi-monthly - second day
+	"readOnly": false
       },
       {
         "transferLoc": "395",
@@ -84,7 +85,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	"nextTransferDate":"08/07/2021",
         "transferFrequency": "semi-monthly",
         "day1": "3",
-        "day2": "31"
+        "day2": "31",
+	"readOnly": true
       }
     ],
     "savedRedipients": [
@@ -101,7 +103,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientName": "Cre",
         "recipientMemberId": "9876543210",
         "recipientAccountType": "loan",
-        "recipientAccountId": "0001",
+        "recipientAccountId": "",// optional
         "recipientNickName": "Sally Martin"
       }
     ]
@@ -109,13 +111,6 @@ list of institution and member limits, eligible shares, list of scheduled transf
 }
 ```
 ### PowerOn Error Responses (PRELOADDATA)
-#### PowerOn response - Configuration File read error:
-```jsonc
-{
-  "errorCode": "501",
-  "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
-}
-```
 #### PowerOn response - Configuration File read error:
 ```jsonc
 {
@@ -148,7 +143,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "9876543210|HUB" },// [member id][first 3 of last name or business name]
+    { "id": 1, "value": "9876543210|HUB|accountType" },// [member id][first 3 of last name or business name][accountType]
     { "id": 2, "value": "" },
     { "id": 3, "value": "" }, 
     { "id": 4, "value": "" },
