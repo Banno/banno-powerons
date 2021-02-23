@@ -3,13 +3,13 @@
 **  Datafile Name:      BANNO.NEWSUBCREATE.V1.CFG
 **  Letterfile Name:    BANNO.NEWSUBCREATE.TERMS.00-09
 **
-**  Copyright 2020 Jack Henry and Associates
+**  Copyright 2020-2021 Jack Henry and Associates
 **
-**  08/19/2020: Added debug mode switch. When on, config file
+**  Ver. 1.0.0  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
-**  09/01/2020: TKainz - Corrected JSON output when Display Rates
+**  Ver. 1.0.1  09/01/2020: TKainz - Corrected JSON output when Display Rates
 **              flag was set to 'off'.
-**  12/17/2020: TKainz:
+**  Ver. 1.0.2  12/17/2020: TKainz:
 **              1. Updated JSON output for Memo Mode
 **              2. Updated JSON output when a share group has been
 **                 printed
@@ -19,18 +19,22 @@
 **              4. Updated maturity date calculation for clubs
 **              5. Updated error handling note record output
 **              6. Corrected misspelling of 'sufficient'
-**  12/21/2020 CSimms:
+**  Ver. 1.0.3  12/21/2020 CSimms:
 **              1. Updated Share Div Rate fetch.
-**  01/13/2021 JuCarson:
+**  Ver. 1.0.4  01/13/2021 JuCarson:
 **              1. Updated to pull correct SymX client and Service number.
-**  01/19/2021 TKainz:
+**  Ver. 1.0.5  01/19/2021 TKainz:
 **              1. Updated Next ID calculation process to handle
 **                 share ID 0000
-**  01/28/2021 JuCarson:
+**  Ver. 1.0.6  01/28/2021 JuCarson:
 **              1. Updated to populate min funding options before using in logic.
-**  01/28/2021 JKeenan
+**  Ver. 1.0.7  01/28/2021 JKeenan
 **              1. Updated Error handling to catch error for City + State + Zip
 **                 over 40 characters.
+**  Ver. 1.0.8  02/10/2021 TKainz:
+**              1. Corrected JSON output for div types with a 0.000 rate calculation
+**                 which were bypassing current rate calcs and not outputting rate
+**                 JSON
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -301,6 +305,7 @@ DEFINE
  TMPMONEY               = MONEY
  TMPMINBAL              = MONEY
  TMPMINDEPOSIT          = MONEY
+ RATEPRINTED            = NUMBER
 END
 
 SETUP
@@ -413,6 +418,8 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          IF SHARETYPEFOUND=TRUE THEN
           DO
            PRINT "{"
+           NEWLINE
+           CALL PRINTPROGRAMINFO
            NEWLINE
            PRINT "  "+Q+"memoMode"+Q+": false,"
            NEWLINE
@@ -1207,6 +1214,7 @@ END
 PROCEDURE GETSHARERATE
  DIVDEFBALCUTOFF=$0.00
  DIVDEFPREVBALCUTOFF=$0.00
+ RATEPRINTED=FALSE
 
  [GET RATE AND DIV TYPE FROM DEFAULT MANAGER]
  SACTYPEDIVTYPE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),19)
@@ -1238,6 +1246,7 @@ PROCEDURE GETSHARERATE
      RATEDATAMAXBAL(RATEDATALOOP)=$0.00
     END
    RATEDATAUSED=0
+
 
    IF DIVDEFINDEXOPTION=0 AND
       ((DIVDEFRATESELECT=1 AND
@@ -1303,7 +1312,6 @@ PROCEDURE GETSHARERATE
 
          DONE=TRUE
         END
-
        DR=DR+1
       END
 
@@ -1311,6 +1319,7 @@ PROCEDURE GETSHARERATE
       DO
        IF RATEDATALOOP=1 THEN
         DO
+         RATEPRINTED=TRUE
          PRINT "            "+Q+"interestRates"+Q+":[ "
          NEWLINE
         END
@@ -1353,9 +1362,11 @@ PROCEDURE GETSHARERATE
     END [IF DIVDEFINDEXOPTION=0 AND...]
 
    [FILL IN FROM SHARE DEFAULTS]
-   IF DIVDEFRATESELECT=1 AND
-      DIVDEFFILLINMETHOD=0 THEN
+   IF (DIVDEFRATESELECT=1 AND
+       DIVDEFFILLINMETHOD=0) OR
+       RATEPRINTED=FALSE THEN
     DO
+     RATEPRINTED=TRUE
      PRINT "            "+Q+"interestRates"+Q+": [{"+Q+"rate"+Q+":"+Q
      TMPCHR=FORMAT("###9.999",SACTYPEDIVRATE)
      CALL NLS
@@ -2435,6 +2446,19 @@ PROCEDURE CREATENOTERECORD
 END
 
 
-#INCLUDE "RB.LISTEXPAND"
+PROCEDURE PRINTPROGRAMINFO
 
+ PRINT "  "+Q+"programInfo"+Q+": {"
+ NEWLINE
+ PRINT "    "+Q+"programName"+Q+": "+Q+"BANNO.NEWSUBCREATE.V1.POW"+Q+","
+ NEWLINE
+ PRINT "    "+Q+"programVersion"+Q+": "+Q+"1.0.8"+Q+","
+ NEWLINE
+ PRINT "    "+Q+"programLastModDate"+Q+": "+Q+"02/10/2021"+Q
+ NEWLINE
+ PRINT "  "+"},"
+ NEWLINE
+END
+
+#INCLUDE "RB.LISTEXPAND"
 
