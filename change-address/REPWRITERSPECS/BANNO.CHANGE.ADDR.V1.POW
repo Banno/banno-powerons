@@ -305,7 +305,7 @@ PROCEDURE PULLRGDATA
 [* Parse through the data passed back from the UI. Data will be delimited
 ** with a pipe character.
 ** PASS    @RGUSERCHR1  Street Address | Extra Address
-** PASS    @RGUSERCHR2  City | Stata | Zipcode
+** PASS    @RGUSERCHR2  City | State | Zipcode
 ** PASS    @RGUSERCHR3  Member Note
 ** PASS    @RGUSERCHR4  Member's Banno ID
 ** RETURN  NEWSTREET  Updated street address
@@ -384,7 +384,7 @@ PROCEDURE PULLRGDATA
 END [PROCEDURE]
 
 PROCEDURE CLEANUPTEXT
-[* Check character string and remove out any characters or hidden
+[* Check character string and remove any characters or hidden
 ** characters which have an ASCII value which is not established in
 ** the VALIDCHRINPUT1 string in the SETUP division . This is to avoid
 ** display issues with displaying the terms or conditions. Additionally,
@@ -423,7 +423,7 @@ END [PROCEDURE]
 PROCEDURE VALIDATERGDATA
 [* Check the member's new street address to see if it contains
 ** a PO Box address per the CU's configuration settings. If a
-** PO Box address be found, set an error code and create a
+** PO Box address is found, set an error code and create a
 ** note record on the member's account
 ** PASS    NEWSTREET
 ** PASS    PARAMPORESTRICT Boolean flag: should the street be
@@ -607,7 +607,7 @@ PROCEDURE READCONFIGFILESETTINGS
 ** RETURN  WARNINGSACCT()  Array of account warnings restricting access
 ** RETURN  WARNINGTOCLEAR  Account warning to clear on successful addr. change
 ** RETURN  WARNINGTOSET  Account warning to set on successful addr. change
-** RETURN  PARAMSETWARNINGEXPIRATION  Caldulated warning expiration date for WARNINGTOSET
+** RETURN  PARAMSETWARNINGEXPIRATION  Calculated warning expiration date for WARNINGTOSET
 ** RETURN  PARAMPORESTRICT  Boolean flag: test for PO Box address?
 ** RETURN  POBOXLIST()  Array of PO Box Text strings tp test for
 ** RETURN  DEBUGMODE  Boolean: Debug mode on or off
@@ -783,7 +783,7 @@ PROCEDURE VALIDATECONFIG
 ** PASS
 ** RETURN  PARAMVALIDATIONERROR  Boolean flag
 ** RETURN  PARAMVALIDATIONERRORCHR  Error return description
-** RETURN  RESPONSECODE  Error code pertinant to error type
+** RETURN  RESPONSECODE  Error code pertinent to error type
 *]
  PARAMVALIDATIONERROR=FALSE
  PARAMVALIDATIONERRORCHR=""
