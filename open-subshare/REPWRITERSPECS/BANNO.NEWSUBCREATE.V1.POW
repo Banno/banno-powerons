@@ -35,6 +35,8 @@
 **              1. Corrected JSON output for div types with a 0.000 rate calculation
 **                 which were bypassing current rate calcs and not outputting rate
 **                 JSON
+**  Ver. 1.0.9  03/05/2021 JKeenan
+**              1. Corrected JSON output when no shares have an available balance
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -481,12 +483,16 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
          IF ERRORCODE="" THEN
           DO
-           PRINT Q+"fundingOptions"+Q+":["+Q+"electronic"+Q
-
+           CALL CHECKFORSHARETRANSFERS
+           PRINT Q+"fundingOptions"+Q+":["
+           IF XFERSHAREFOUND>0 THEN
+            PRINT Q+"electronic"+Q
            IF SACFUNDREQUIREFLAG="0" AND
               SACFUNDCALCAMT=$0.00 THEN
             DO
-           PRINT ","+Q+"later"+Q
+             IF XFERSHAREFOUND>0 THEN
+              PRINT ","     
+             PRINT Q+"later"+Q
           END
          PRINT "],"
          NEWLINE
@@ -887,8 +893,7 @@ PROCEDURE PRINTMINFUNDAMT
  CALL NLS
  PRINT Q+"minimumFundingAmount"+Q+": "+Q
  PRINT TMPCHR
- PRINT Q+","
- NEWLINE
+ PRINT Q
 END [PROCEDURE PRINT MIN FUND AMT]
 
 PROCEDURE PROVIDENAMESINFO
@@ -1135,66 +1140,72 @@ PROCEDURE SHAREOUTPUT
               END
             END
           END
-
-         NEWLINE
-         PRINT "          {"                            [new share type]
-         NEWLINE
-         SHARETYPEPRINTED=TRUE
-         [SHARE TYPE NUMBER]
-         PRINT "            "+Q+"shareType"+Q+": "+Q
-         PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
-         PRINT Q+","
-         NEWLINE
-
-         [SHARE DESCRIPTION]
-         PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
-         NEWLINE
-
-         [SHARE TERM - FOR SHARECODES 2 OR 3]
-         TMPSHARECODE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),11)
-         TMPCHR=FORMAT("###9",GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),53))
-         CALL NLTS
-         TMPTERMPERIODCHR=TMPCHR
-
-         IF TMPSHARECODE=2 OR
-            TMPSHARECODE=3 THEN
+         
+         [GET MINIMUM BALANCE]
+         SHAREMINIMUMBALANCE=GETDATAMONEY(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),31)
+         CALL CHECKFORSHARETRANSFERS
+         IF (XFERSHAREFOUND>0 AND SHAREMINIMUMBALANCE>$0.00)OR
+             SHAREMINIMUMBALANCE=$0.00 THEN
           DO
-           PRINT "            "+Q+"term"+Q+": "+Q
-           PRINT TMPTERMPERIODCHR
-           PRINT " "
-           PRINT SHARETERMFREQCHR(GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),52)) [Freq- 0,1]
-           IF VALUE(TMPTERMPERIODCHR)>1 THEN
-            PRINT "s"
+           NEWLINE
+           PRINT "          {"                            [new share type]
+           NEWLINE
+           SHARETYPEPRINTED=TRUE
+           [SHARE TYPE NUMBER]
+           PRINT "            "+Q+"shareType"+Q+": "+Q
+           PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
            PRINT Q+","
            NEWLINE
-          END
-[
-         ELSE
-          DO
-           PRINT "            "+Q+"term"+Q+": "+Q+"null"+Q+","
+
+           [SHARE DESCRIPTION]
+           PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
            NEWLINE
-          END
+
+           [SHARE TERM - FOR SHARECODES 2 OR 3]
+           TMPSHARECODE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),11)
+           TMPCHR=FORMAT("###9",GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),53))
+           CALL NLTS
+           TMPTERMPERIODCHR=TMPCHR
+
+           IF TMPSHARECODE=2 OR
+              TMPSHARECODE=3 THEN
+            DO
+             PRINT "            "+Q+"term"+Q+": "+Q
+             PRINT TMPTERMPERIODCHR
+             PRINT " "
+             PRINT SHARETERMFREQCHR(GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),52)) [Freq- 0,1]
+             IF VALUE(TMPTERMPERIODCHR)>1 THEN
+              PRINT "s"
+             PRINT Q+","
+             NEWLINE
+            END
+[
+           ELSE
+            DO
+             PRINT "            "+Q+"term"+Q+": "+Q+"null"+Q+","
+             NEWLINE
+            END
 ]
 
-         [MINIMUM BALANCE]
-         SHAREMINIMUMBALANCE=GETDATAMONEY(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),31)
-         PRINT"            "+Q+"minBalance"+Q+": "+Q
-         TMPCHR=FORMAT("######9.99",SHAREMINIMUMBALANCE)
-         CALL NLS
-         PRINT TMPCHR
-         PRINT Q
-         IF SACDISPLAYRATEFLAG="1" THEN
-          PRINT ","
-         NEWLINE
-
-         [RATES]
-         IF SACDISPLAYRATEFLAG="1" THEN
-          DO
-           CALL GETSHARERATE
+           [MINIMUM BALANCE]
+           PRINT"            "+Q+"minBalance"+Q+": "+Q
+           TMPCHR=FORMAT("######9.99",SHAREMINIMUMBALANCE)
+           CALL NLS
+           PRINT TMPCHR
+           PRINT Q
+           IF SACDISPLAYRATEFLAG="1" THEN
+            PRINT ","
            NEWLINE
+
+           [RATES]
+           IF SACDISPLAYRATEFLAG="1" THEN
+            DO
+             CALL GETSHARERATE
+             NEWLINE
+            END
+          [END A SHARE TYPE]
+           PRINT "          }"
           END
-        [END A SHARE TYPE]
-         PRINT "          }"
         END
 
       END [FOR J SHARE TYPES]
@@ -1403,6 +1414,8 @@ PROCEDURE GETSHARETRANSFERS
       DO
        IF XFERSHAREFOUND=1 THEN
         DO
+         PRINT ","
+         NEWLINE
          PRINT "    "+Q+"electronicFundingAccounts"+Q+": ["
          NEWLINE
         END
@@ -1434,8 +1447,11 @@ PROCEDURE GETSHARETRANSFERS
 
  IF GETSHARETRANSFERRUN=TRANSFERRUNFINAL THEN
   DO
-   NEWLINE
-   PRINT "    ]"
+   IF XFERSHAREFOUND>0 THEN
+    DO
+     NEWLINE
+     PRINT "    ]"
+    END
    NEWLINE
    PRINT "  }"
    NEWLINE
@@ -1444,6 +1460,18 @@ PROCEDURE GETSHARETRANSFERS
   END
 
 END [PROCEDURE GET SHARE XFRS]
+
+PROCEDURE CHECKFORSHARETRANSFERS
+[* This procedure finds eligble shares.
+*]
+ XFERSHAREFOUND=0
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
+                      SHARE:CHARGEOFFDATE='--/--/--' AND
+                      SHARE:AVAILABLEBALANCE>$0.00)
+  DO
+   XFERSHAREFOUND=XFERSHAREFOUND+1
+  END
+END [PROCEDURE CHECK FOR SHARE XFERS]
 
 PROCEDURE BUILDSERVICEARRAY
  FOR I=1 TO 99
@@ -2461,4 +2489,5 @@ PROCEDURE PRINTPROGRAMINFO
 END
 
 #INCLUDE "RB.LISTEXPAND"
+
 
