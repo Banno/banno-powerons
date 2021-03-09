@@ -213,7 +213,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "amount": 1.00,
     "toAccountName": "Regular Shares",
     "fromAccountNumberMasked": "x00S0010",
-    "toAccountNumberMasked": "x55S0001"
+    "toAccountNumberMasked": "x55S0001",
+    "nextTransferDate":"08/07/2021",
     "frequency": "weekly", // included if frequency is not "once"
     "day1": "", // included if frequency is not "once"
     "day2": "" // included if frequency is not "once"
@@ -260,7 +261,8 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
     "amount": 1.00,
     "toAccountName": "Regular Shares",
     "fromAccountNumberMasked": "x00S0010",
-    "toAccountNumberMasked": "x55S0001"
+    "toAccountNumberMasked": "x55S0001",
+    "nextTransferDate":"08/07/2021",
     "frequency": "weekly", // included if frequency is not "once"
     "day1":"", // include dif frequency is not "once"
     "day2":"" // include dif frequency is not "once"
@@ -312,7 +314,8 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
     "amount": 1.00,
     "toAccountName": "Regular Shares",
     "fromAccountNumberMasked": "x00S0010",
-    "toAccountNumberMasked": "x55S0001"
+    "toAccountNumberMasked": "x55S0001",
+    "nextTransferDate":"08/07/2021",
     "frequency": "weekly", // included if frequency is not "once"
     "day1":"", // include dif frequency is not "once"
     "day2":"" // include dif frequency is not "once"
