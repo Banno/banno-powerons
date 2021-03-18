@@ -222,6 +222,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
   },
   "results": {
     "success": true,
+    "memoMode": false,
+    "transferLoc": 395,
+    "recipientLoc": 54315431,
     "currentState": "[PRELOADDATA]"
   }
 }
@@ -270,6 +273,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   },
   "results": {
     "success": true,
+    "transferLoc": 395,
     "currentState": "[PRELOADDATA]"
   }
 }
@@ -288,6 +292,15 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "rgSession": 1
 }
 ```
+### PowerOn Successful Response (DELETERECIP)
+```jsonc
+  "results": {
+    "success": true,
+    "recipientLoc": 395,
+    "currentState": "[PRELOADDATA]"
+  }
+```
+
 
 ### Client Request (DELETETRAN)
 
@@ -323,6 +336,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   },
   "results": {
     "success": true,
+    "transferLoc": 395,
     "currentState": "[PRELOADDATA]"
   }
 }
@@ -340,7 +354,6 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 ```
 
 ### Error Codes
-500 - System in Memo Mode
 501 - Config file read / validation error
 502 - Invalid source account
 503 - Invalid recipient account
