@@ -175,11 +175,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "userChrList": [
     { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
-    { "id": 3, "value": "internal memo for immediate transfers" } // internal memo for immediate transfers (max 132 characters)
+    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
+    { "id": 4, "value:"1000.51"} // transfer amount
   ],
   "userNumList": [
-    { "id": 1, "value": 395 }, // recipientLoc if available
-    { "id": 2, "value": 1000.51 } // transferAmt
+    { "id": 1, "value": 395 } // recipientLoc if available
   ],
   "rgSession": 1
 }
@@ -226,11 +226,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
     { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[startDate]|[day1]|[day2] max 132 characters
-    { "id": 2, "value": "internal memo for immediate transfers" } // internal memo for immediate transfers only
+    { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
+    { "id": 3, "value": "1000.51" } // transfer amount
   ],
   "userNumList": [
-    { "id": 1, "value": 395 }, // transferLoc
-    { "id": 2, "value": 1000.51 } // transferAmt
+    { "id": 1, "value": 395 } // transferLoc
   ],
   "rgSession": 1
 }
