@@ -195,8 +195,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 {
   "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
    "change": {
-    "application": "member-to-member-transfers",
-    "name": "MemberToMemberTransferSent", // "MemberToMemberTransferSent" if frequency is "once", otherwise "MemberToMemberTransferScheduled"
+    "application": "member-to-member-transfers-poweron",
+    "name": "MemberToMemberTransferScheduled",
     "toMemberName": "John Smith",
     "amount": 1.00,
     "toAccountName": "Regular Shares",
@@ -243,7 +243,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
    "change": {
-    "application": "member-to-member-transfers",
+    "application": "member-to-member-transfers-poweron",
     "name": "MemberToMemberTransferUpdate",
     "toMemberName": "John Smith",
     "amount": 1.00,
@@ -306,7 +306,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
    "change": {
-    "application": "member-to-member-transfers",
+    "application": "member-to-member-transfers-poweron",
     "name": "MemberToMemberTransferDeleted",
     "toMemberName": "John Smith",
     "amount": 1.00,
