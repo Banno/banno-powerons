@@ -7,13 +7,7 @@
 {
   "rgState": "PRELOADDATA",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [
-    { "id": 1, "value": "" }, // userchar[1-5] is unused
-    { "id": 2, "value": "" }, 
-    { "id": 3, "value": "" },
-    { "id": 4, "value": "" },
-    { "id": 5, "value": "" }
-  ],
+  "userChrList": [], // userchar[1-5] is unused
   "userNumList": [], //  usernum[1-5] is unused
   "rgSession": 1
 }
@@ -143,11 +137,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "9876543210|HUB|accountType" },// [member id][first 3 of last name or business name][accountType]
-    { "id": 2, "value": "" },
-    { "id": 3, "value": "" }, 
-    { "id": 4, "value": "" },
-    { "id": 5, "value": "" }
+    { "id": 1, "value": "9876543210|HUB|accountType" }// [member id][first 3 of last name or business name][accountType]
   ],
   "userNumList": [],
   "rgSession": 1
@@ -185,9 +175,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "userChrList": [
     { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
-    { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
-    { "id": 4, "value": "" },
-    { "id": 5, "value": "" }
+    { "id": 3, "value": "internal memo for immediate transfers" } // internal memo for immediate transfers (max 132 characters)
   ],
   "userNumList": [
     { "id": 1, "value": 395 }, // recipientLoc if available
@@ -238,10 +226,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
     { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[startDate]|[day1]|[day2] max 132 characters
-    { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
-    { "id": 3, "value": "" },
-    { "id": 4, "value": "" },
-    { "id": 5, "value": "" }
+    { "id": 2, "value": "internal memo for immediate transfers" } // internal memo for immediate transfers only
   ],
   "userNumList": [
     { "id": 1, "value": 395 }, // transferLoc
