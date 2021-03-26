@@ -38,28 +38,28 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "transferSLId": "0000800005S0002",
         "name": "SUMMER SAVER",
         "available": "50.00",
-        "accountOwnerName": "Beth Nussbaum",
+        "accountOwnerName": "Beth Nussbaum"
       },
       {
         "transferSLId": "0000800005S0010",
         "name": "REGULAR CHECKING",
         "available": "500.00",
-        "accountOwnerName": "Ruth Nordstrom",
+        "accountOwnerName": "Ruth Nordstrom"
       },
       {
         "transferSLId": "0000800005S0015",
         "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
-        "accountOwnerName": "Cliff Woodward",
+        "accountOwnerName": "Cliff Woodward"
       }
     ],
     "scheduledTransfers": [
       {
         "transferLoc": "215",
         "sourceAccount": "1234567890S0020",
-        "accountName": "CHECKING",
+        "accountName": "Bob's CHECKING",
         "transferAmt": "120.00",
-        "recipientName": "Fit", // first 3 letters of last name or business name
+        "recipientName": "FIT", // first 3 letters of last name or business name
         "recipientMemberId": "9876543210",
         "recipientAccountType": "savings", // savings, checking or loan
         "recipientAccountId": "0001", // optional share or loan id
@@ -74,9 +74,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
       {
         "transferLoc": "395",
         "sourceAccount": "1234567890S0001",
-        "accountName": "SAVINGS",
+        "accountName": "MY Savings",
         "transferAmt": "120.00",
-        "recipientName": "Cle",
+        "recipientName": "CLE",
         "recipientMemberId": "9876543210",
         "recipientAccountType": "loan",
         "recipientAccountId": "0001",
@@ -89,10 +89,10 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	"readOnly": true
       }
     ],
-    "savedRedipients": [
+    "savedRecipients": [
       {
         "recipientLoc": "5443231543",
-        "recipientName": "Flo",
+        "recipientName": "FLO",
         "recipientMemberId": "9876543210",
         "recipientAccountType": "savings",
         "recipientAccountId": "0001",// optional
@@ -100,7 +100,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
       },
       {
         "recipientLoc": "5431543",
-        "recipientName": "Cre",
+        "recipientName": "CRE",
         "recipientMemberId": "9876543210",
         "recipientAccountType": "loan",
         "recipientAccountId": "",// optional
@@ -159,7 +159,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```jsonc
 {
   "results": {
-    "verified": true,
+    "verified": true
   }
 }
 ```
@@ -214,7 +214,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "toAccountName": "Regular Shares",
     "fromAccountNumberMasked": "x00S0010",
     "toAccountNumberMasked": "x55S0001",
-    "nextTransferDate":"08/07/2021",
+    "nextTransferDate": "08/07/2021",
     "frequency": "weekly", // included if frequency is not "once"
     "day1": "", // included if frequency is not "once"
     "day2": "" // included if frequency is not "once"
@@ -223,8 +223,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "results": {
     "success": true,
     "memoMode": false,
-    "transferLoc": 395,
-    "recipientLoc": 54315431,
+    "transferLoc": "395",
+    "recipientLoc": "54315431",
     "currentState": "[PRELOADDATA]"
   }
 }
@@ -273,7 +273,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   },
   "results": {
     "success": true,
-    "transferLoc": 395,
+    "transferLoc": "395",
     "currentState": "[PRELOADDATA]"
   }
 }
