@@ -59,11 +59,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001", // optional share or loan id
         "recipientNickname": "Emmy", // optonal, blank if not saved
         "startDate": "07/31/2021",
-	"nextTransferDate":"08/07/2021",
+	      "nextTransferDate":"08/07/2021",
         "transferFrequency": "weekly",
         "day1": "", // semi-monthly - first day
         "day2": "", // semi-monthly - second day
-	"readOnly": false
+	      "readOnly": false
       },
       {
         "transferLoc": "395",
@@ -76,11 +76,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001",
         "recipientNickname": "",
         "startDate": "07/03/2021",
-	"nextTransferDate":"08/07/2021",
+	      "nextTransferDate":"08/07/2021",
         "transferFrequency": "semi-monthly",
         "day1": "3",
         "day2": "31",
-	"readOnly": true
+	      "readOnly": true
       }
     ],
     "savedRecipients": [
@@ -90,7 +90,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientMemberId": "9876543210",
         "recipientAccountType": "savings",
         "recipientAccountId": "0001",// optional
-        "recipientNickName": "Zeke's Future"
+        "recipientNickname": "Zeke's Future"
       },
       {
         "recipientLoc": "5431543",
@@ -98,7 +98,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientMemberId": "9876543210",
         "recipientAccountType": "loan",
         "recipientAccountId": "",// optional
-        "recipientNickName": "Sally Martin"
+        "recipientNickname": "Sally Martin"
       }
     ]
   }
@@ -176,7 +176,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
     { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
     { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
-    { "id": 4, "value:"1000.51"} // transfer amount
+    { "id": 4, "value":"1000.51"} // transfer amount
   ],
   "userNumList": [
     { "id": 1, "value": 395 } // recipientLoc if available
