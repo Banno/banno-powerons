@@ -244,7 +244,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "history": { // used for history event by node-poweron-proxy. stripped before being sent to client
    "change": {
     "application": "member-to-member-transfers-poweron",
-    "name": "MemberToMemberTransferUpdate",
+    "name": "MemberToMemberTransferUpdated",
     "toMemberName": "John Smith",
     "amount": 1.00,
     "toAccountName": "Regular Shares",
