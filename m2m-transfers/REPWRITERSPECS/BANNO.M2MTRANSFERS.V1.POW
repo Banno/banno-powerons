@@ -14,7 +14,37 @@
 **  made by unauthorized personnel.
 **
 **  Modification History:
-**    Ver. 1.0.0  04/20/21 T. Kainz - Original Programming
+**    Ver. 1.0.0  03/22/21 T. Kainz - Original Programming
+**    3/22 - 15:06: Updated limit calcs
+**    3/23 - 11:55: tran comment nts, pref max indiv. tran recalc
+**    3/24 - 10:12: Misspelled JSON field name, recipientAccountType - full name
+**    3/24 - 17:44: Unsupported transfer freq mark as readonly
+**    3/24 - 22:50  Corrected array out of bounds for freq
+**    3/25 - 11:00  Corrected recip JSON, Day1/Day2 format
+**    3/25 - 11:15  Added missing data in new transfer history JSON
+**           11:50  Corrected preload xfer labels
+**           16:00  JSON validation and necessary changes
+**    3/26 - 11:33  Amount from chr3, freq changes
+**    3/27 - 10:15  Corrected readOnly calcs
+**    3/29 - 09:20  If no limits based on calcs,force parameter setting to false
+**           13:00  recipientAccountType output based on tran type (savings/share)
+**           17:05  Pad memberId in Createtran,verifymember states to 10 digits
+**    3/30 - 11:30  Updated history JSON. Some code cleanup/commenting
+**    3/31 - 12:50  Added calc for global individual amount & calc
+**    4/01 - 17:25  Modified account validation criteria
+**    4/02 - 06:45  Added Preference record update
+**           09:55  Added (uncommented) expiration date check in procedure to build recip list
+**           12:15  Added ability to validate specific share/loan id
+**           15:15  Modified verify member logic to new specs
+**           16:45  Corrected transfer with links being displayed
+**    4/05 - 07:30  Added resetting of pref record values
+**           11:30  Corrected recip expiredate logic
+**    4/06 - 07:20  Clear pref rec fields before reading if last tran date < systemdate
+**           10:30  Update recip list logic, updated verify member logic.
+**    4/07   12:30  Existing xfers recipientAccountId blank for unsaved recipient
+**    4/09 - 08:40  Pad incoming S/L ID to required length during CREATETRAN state
+**    4/15 - 11:00  Added final check for exceeding limits before performing xfer
+**    4/20 - 07:45  Corrected extraneous comma in existing xfer monetary ouput
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -275,13 +305,13 @@ DEFINE
 END [DEFINE]
 
 SETUP
- [*  INCLUDE "BNO.INTERACTIVE.INIT"
-*]
+ #INCLUDE "BNO.INTERACTIVE.INIT"
+
  INCLUDEPROGRAMINFO=TRUE
- LASTMODDATE='04/20/21'
- LASTMODTIME="07:45 MT"
+ LASTMODDATE='04/21/21'
+ LASTMODTIME="11:15 MT"
  PROGRAMUPDATENOTE1="WORK IN PROGRESS - NOT READY FOR PRODUCTION."
- PROGRAMUPDATENOTE2="Corrected extraneous comma in existing xfer monetary ouput"
+ PROGRAMUPDATENOTE2="Updated include files 'BNO.INTERACTIVE.[DEF,INIT,PRO]'"
  NTSLTYPE=NTSLTYPESHARELOAN
  NTCROSSACCTACCESS=TRUE
  NTACCESSTYPE=NTACCESSTYPEIQ
@@ -2949,4 +2979,8 @@ END [PROCEDURE]
 
 #INCLUDE "BNO.INTERACTIVE.PRO"
 #INCLUDE "RB.LISTEXPAND"
+
+
+
+
 
