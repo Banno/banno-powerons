@@ -35,8 +35,12 @@
 **              1. Corrected JSON output for div types with a 0.000 rate calculation
 **                 which were bypassing current rate calcs and not outputting rate
 **                 JSON
-**  Ver. 1.0.9  03/05/2021 JKeenan
+**  Ver. 1.0.9  05/11/2021 JKeenan
 **              1. Corrected JSON output when no shares have an available balance
+**              2. Prevent member from choosing share group (s)
+**                 when funding is not required, and member does not have
+**                 sufficient funds available
+**              3. Added more Program info to JSON Output
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -308,6 +312,15 @@ DEFINE
  TMPMINBAL              = MONEY
  TMPMINDEPOSIT          = MONEY
  RATEPRINTED            = NUMBER
+
+ PROGRAMUPDATENOTE1     = CHARACTER
+ PROGRAMUPDATENOTE2     = CHARACTER
+ PROGRAMVERSION         = CHARACTER
+ LASTMODDATE            = DATE
+ LASTMODTIME            = CHARACTER
+ INDENT                 = CHARACTER ARRAY(9)
+ INDENTMAX              = 9
+
 END
 
 SETUP
@@ -319,6 +332,11 @@ SETUP
   DATAFILETYPE="DATA"
 
  Q=CTRLCHR(34)
+ PROGRAMVERSION="1.0.9"
+ LASTMODDATE='05/11/21'
+ LASTMODTIME="06:30 PT"
+ PROGRAMUPDATENOTE1="Corrected JSON output when no shares have an available balance"
+ PROGRAMUPDATENOTE2="Added more Program info to JSON Output"   
 
  PRIMARYSSN = NAME:SSN
 
@@ -369,6 +387,10 @@ SETUP
  SHARETERMFREQCHR(1)="day"
  SYMXINSTANCE  = @SYMXINSTANCEID
  SYMXCLIENTNUM = @CLIENTNUMBER
+ FOR TMPLOOP=1 TO INDENTMAX
+  DO
+   INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
+  END
 END
 
 PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
@@ -396,12 +418,13 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
   DO
 
    GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
-   CALL GETSHARETRANSFERS
-   CALL READCONFIGFILESETTINGS
+   CALL GETSHARETRANSFERS [CREATE A LIST OF ELIGIBLE FUNDING SHARES]
+   CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREAT]
    IF CFGFILEREADERROR<>"" THEN
     DO
      PRINT "  {"
      NEWLINE
+     CALL PRINTPROGRAMINFO
      ERRORCODE="501"
      CALL ERRORHANDLER
      CALL JSONCLOSE
@@ -444,6 +467,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
           DO
            PRINT "{"
            NEWLINE
+           CALL PRINTPROGRAMINFO
            ERRORCODE="504"
            CALL ERRORHANDLER
            CALL JSONCLOSE
@@ -466,6 +490,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          NEWLINE
          PRINT "{"
          NEWLINE
+         CALL PRINTPROGRAMINFO
          ERRORCODE="506"
          CALL ERRORHANDLER
          NEWLINE
@@ -493,21 +518,21 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
              IF XFERSHAREFOUND>0 THEN
               PRINT ","     
              PRINT Q+"later"+Q
-          END
-         PRINT "],"
-         NEWLINE
+            END
+           PRINT "],"
+           NEWLINE
 
-         [GET FUNDING INFO]
-         IF OPENTYPE<>"" AND
-          OPENCATEGORY<>"" THEN
-          DO
-           CALL PRINTMINFUNDAMT
-          END
+           [GET FUNDING INFO]
+           IF OPENTYPE<>"" AND
+            OPENCATEGORY<>"" THEN
+            DO
+             CALL PRINTMINFUNDAMT
+            END
 
-         [GET SHARE TRANSFER FROM OPTIONS]
-         GETSHARETRANSFERRUN=TRANSFERRUNFINAL
-         CALL GETSHARETRANSFERS
-        END
+           [GET SHARE TRANSFER FROM OPTIONS]
+           GETSHARETRANSFERRUN=TRANSFERRUNFINAL
+           CALL GETSHARETRANSFERS
+          END
         END
       END  [GETTERMSFUNDING STATE]
 
@@ -782,6 +807,7 @@ PROCEDURE QUALIFYMEMBER
        INELIGIBLEREASON="ACCOUNT WARNING"
        PRINT "{"
        NEWLINE
+       CALL PRINTPROGRAMINFO
        ERRORCODE="502"
        CALL ERRORHANDLER
        CALL JSONCLOSE
@@ -826,6 +852,7 @@ PROCEDURE LOADSUBACCTTERMS
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="505"
    CALL ERRORHANDLER
    CALL JSONCLOSE
@@ -980,19 +1007,28 @@ PROCEDURE CHECKSHAREIDS
 ** share opening deposit, then clear share type, else run
 ** next section to test for valid IDs
 *]
+
          TMPTYPE=VALUE(SEGMENT(SACSHARETYPES(I,J),1,4))
          TMPMONEY=$0.00
          TMPMINBAL=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,31) [Min. balance]
          TMPMINDEPOSIT=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,35) [Min. deposit]
 
-         TMPMONEY=SACFUNDMINAMT
-         IF TMPMINBAL>TMPMONEY THEN
-          TMPMONEY=TMPMINBAL
-         IF TMPMINDEPOSIT>TMPMONEY THEN
-          TMPMONEY=TMPMINDEPOSIT
+         IF VALUE(SACFUNDREQUIREFLAG)>0 THEN
+          DO
+           TMPMONEY=SACFUNDMINAMT
+           IF TMPMINBAL>TMPMONEY THEN
+            TMPMONEY=TMPMINBAL
+           IF TMPMINDEPOSIT>TMPMONEY THEN
+            TMPMONEY=TMPMINDEPOSIT
+          END
+         ELSE
+          DO
+           TMPMONEY=TMPMINBAL
+           IF TMPMINDEPOSIT>TMPMONEY THEN
+            TMPMONEY=TMPMINDEPOSIT
+          END
 
-         IF VALUE(SACFUNDREQUIREFLAG)>0 AND
-            MEMBERMAXAVAILABLE<TMPMONEY THEN
+         IF MEMBERMAXAVAILABLE<TMPMONEY THEN
           DO
            SACSHARETYPES(I,J)=""
           END
@@ -1140,45 +1176,39 @@ PROCEDURE SHAREOUTPUT
               END
             END
           END
-         
-         [GET MINIMUM BALANCE]
-         SHAREMINIMUMBALANCE=GETDATAMONEY(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),31)
-         CALL CHECKFORSHARETRANSFERS
-         IF (XFERSHAREFOUND>0 AND SHAREMINIMUMBALANCE>$0.00)OR
-             SHAREMINIMUMBALANCE=$0.00 THEN
+
+         NEWLINE
+         PRINT "          {"                            [new share type]
+         NEWLINE
+         SHARETYPEPRINTED=TRUE
+         [SHARE TYPE NUMBER]
+         PRINT "            "+Q+"shareType"+Q+": "+Q
+         PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
+         PRINT Q+","
+         NEWLINE
+
+         [SHARE DESCRIPTION]
+         PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
+         NEWLINE
+
+         [SHARE TERM - FOR SHARECODES 2 OR 3]
+         TMPSHARECODE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),11)
+         TMPCHR=FORMAT("###9",GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),53))
+         CALL NLTS
+         TMPTERMPERIODCHR=TMPCHR
+
+         IF TMPSHARECODE=2 OR
+            TMPSHARECODE=3 THEN
           DO
-           NEWLINE
-           PRINT "          {"                            [new share type]
-           NEWLINE
-           SHARETYPEPRINTED=TRUE
-           [SHARE TYPE NUMBER]
-           PRINT "            "+Q+"shareType"+Q+": "+Q
-           PRINT FORMAT("9999",VALUE(SACSHARETYPES(I,J)))
+           PRINT "            "+Q+"term"+Q+": "+Q
+           PRINT TMPTERMPERIODCHR
+           PRINT " "
+           PRINT SHARETERMFREQCHR(GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),52)) [Freq- 0,1]
+           IF VALUE(TMPTERMPERIODCHR)>1 THEN
+            PRINT "s"
            PRINT Q+","
            NEWLINE
-
-           [SHARE DESCRIPTION]
-           PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
-           NEWLINE
-
-           [SHARE TERM - FOR SHARECODES 2 OR 3]
-           TMPSHARECODE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),11)
-           TMPCHR=FORMAT("###9",GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),53))
-           CALL NLTS
-           TMPTERMPERIODCHR=TMPCHR
-
-           IF TMPSHARECODE=2 OR
-              TMPSHARECODE=3 THEN
-            DO
-             PRINT "            "+Q+"term"+Q+": "+Q
-             PRINT TMPTERMPERIODCHR
-             PRINT " "
-             PRINT SHARETERMFREQCHR(GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),52)) [Freq- 0,1]
-             IF VALUE(TMPTERMPERIODCHR)>1 THEN
-              PRINT "s"
-             PRINT Q+","
-             NEWLINE
-            END
+          END
 [
            ELSE
             DO
@@ -1187,25 +1217,25 @@ PROCEDURE SHAREOUTPUT
             END
 ]
 
-           [MINIMUM BALANCE]
-           PRINT"            "+Q+"minBalance"+Q+": "+Q
-           TMPCHR=FORMAT("######9.99",SHAREMINIMUMBALANCE)
-           CALL NLS
-           PRINT TMPCHR
-           PRINT Q
-           IF SACDISPLAYRATEFLAG="1" THEN
-            PRINT ","
-           NEWLINE
+         [MINIMUM BALANCE]
+         SHAREMINIMUMBALANCE=GETDATAMONEY(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),31)
+         PRINT"            "+Q+"minBalance"+Q+": "+Q
+         TMPCHR=FORMAT("######9.99",SHAREMINIMUMBALANCE)
+         CALL NLS
+         PRINT TMPCHR
+         PRINT Q
+         IF SACDISPLAYRATEFLAG="1" THEN
+          PRINT ","
+         NEWLINE
 
-           [RATES]
-           IF SACDISPLAYRATEFLAG="1" THEN
-            DO
-             CALL GETSHARERATE
-             NEWLINE
-            END
-          [END A SHARE TYPE]
-           PRINT "          }"
+         [RATES]
+         IF SACDISPLAYRATEFLAG="1" THEN
+          DO
+           CALL GETSHARERATE
+           NEWLINE
           END
+        [END A SHARE TYPE]
+         PRINT "          }"
         END
 
       END [FOR J SHARE TYPES]
@@ -1573,6 +1603,7 @@ PROCEDURE GETPASSEDINFO
    PASSEDINFOREADERROR="MISSING INFORMATION"
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="507"
    CALL ERRORHANDLER
    CALL JSONCLOSE
@@ -1691,6 +1722,7 @@ PROCEDURE GETPASSEDINFO
          PASSEDINFOREADERROR="MISSING INFORMATION"
          PRINT "{"
          NEWLINE
+         CALL PRINTPROGRAMINFO
          ERRORCODE="507"
          CALL ERRORHANDLER
          CALL JSONCLOSE
@@ -1771,6 +1803,7 @@ PROCEDURE GETNEXTID
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="508"
    CALL ERRORHANDLER
    NEWLINE
@@ -1902,6 +1935,7 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="509"
    CALL ERRORHANDLER
    NEWLINE
@@ -1960,6 +1994,7 @@ PROCEDURE GETNEWMATURITYDATE
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="510"
    CALL ERRORHANDLER
    NEWLINE
@@ -1999,6 +2034,7 @@ IF IRSERRORMESSAGE<>"" THEN
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="511"
    CALL ERRORHANDLER
    NEWLINE
@@ -2475,19 +2511,25 @@ END
 
 
 PROCEDURE PRINTPROGRAMINFO
-
- PRINT "  "+Q+"programInfo"+Q+": {"
+[* Print program info to JSON output
+*]
+ PRINT INDENT(1)+Q+"programInfo"+Q+": {"
  NEWLINE
- PRINT "    "+Q+"programName"+Q+": "+Q+"BANNO.NEWSUBCREATE.V1.POW"+Q+","
+ PRINT INDENT(2)+Q+"programName"+Q+": "+Q+"BANNO.NEWSUBCREATE.V1.POW"+Q+","
  NEWLINE
- PRINT "    "+Q+"programVersion"+Q+": "+Q+"1.0.8"+Q+","
+ PRINT INDENT(2)+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
  NEWLINE
- PRINT "    "+Q+"programLastModDate"+Q+": "+Q+"02/10/2021"+Q
+ PRINT INDENT(2)+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q+","
  NEWLINE
- PRINT "  "+"},"
+ PRINT INDENT(2)+Q+"programNote1"+Q+": "+Q+PROGRAMUPDATENOTE1+Q+","
  NEWLINE
-END
+ PRINT INDENT(2)+Q+"programNote2"+Q+": "+Q+PROGRAMUPDATENOTE2+Q
+ NEWLINE
+ PRINT INDENT(1)+"},"
+ NEWLINE
+END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
 
 
