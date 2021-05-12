@@ -3,13 +3,13 @@
 **  Datafile Name:      BANNO.NEWSUBCREATE.V1.CFG
 **  Letterfile Name:    BANNO.NEWSUBCREATE.TERMS.00-09
 **
-**  Copyright 2020 Jack Henry and Associates
+**  Copyright 2020-2021 Jack Henry and Associates
 **
-**  08/19/2020: Added debug mode switch. When on, config file
+**  Ver. 1.0.0  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
-**  09/01/2020: TKainz - Corrected JSON output when Display Rates
+**  Ver. 1.0.1  09/01/2020: TKainz - Corrected JSON output when Display Rates
 **              flag was set to 'off'.
-**  12/17/2020: TKainz:
+**  Ver. 1.0.2  12/17/2020: TKainz:
 **              1. Updated JSON output for Memo Mode
 **              2. Updated JSON output when a share group has been
 **                 printed
@@ -19,15 +19,27 @@
 **              4. Updated maturity date calculation for clubs
 **              5. Updated error handling note record output
 **              6. Corrected misspelling of 'sufficient'
-**  12/21/2020 CSimms:
+**  Ver. 1.0.3  12/21/2020 CSimms:
 **              1. Updated Share Div Rate fetch.
-**  01/13/2021 JuCarson:
+**  Ver. 1.0.4  01/13/2021 JuCarson:
 **              1. Updated to pull correct SymX client and Service number.
-**  01/19/2021 TKainz:
+**  Ver. 1.0.5  01/19/2021 TKainz:
 **              1. Updated Next ID calculation process to handle
 **                 share ID 0000
-**  01/28/2021 JuCarson:
+**  Ver. 1.0.6  01/28/2021 JuCarson:
 **              1. Updated to populate min funding options before using in logic.
+**  Ver. 1.0.7  01/28/2021 JKeenan
+**              1. Updated Error handling to catch error for City + State + Zip
+**                 over 40 characters.
+**  Ver. 1.0.8  02/10/2021 TKainz:
+**              1. Corrected JSON output for div types with a 0.000 rate calculation
+**                 which were bypassing current rate calcs and not outputting rate
+**                 JSON
+**  Ver. 1.0.9  05/12/2021 JKeenan
+**              1. Corrected JSon output when no shares have and available balance
+**              2. Enhanced share type selection to account for available balance for funding
+**              3. Enhanced Program info to JSON Output
+**              4. Corrected JSON for targeted account warning type
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -156,6 +168,7 @@ DEFINE
  DR                        = NUMBER
  DATENULL                  = '--/--/----'
  FMERRORFLAG               = NUMBER
+ LEN                       = NUMBER
 
  [QUALIFY VARIABLES]
  INELIGIBLEREASON          = CHARACTER
@@ -297,6 +310,16 @@ DEFINE
  TMPMONEY               = MONEY
  TMPMINBAL              = MONEY
  TMPMINDEPOSIT          = MONEY
+ RATEPRINTED            = NUMBER
+
+ PROGRAMUPDATENOTE1     = CHARACTER
+ PROGRAMUPDATENOTE2     = CHARACTER
+ PROGRAMVERSION         = CHARACTER
+ LASTMODDATE            = DATE
+ LASTMODTIME            = CHARACTER
+ INDENT                 = CHARACTER ARRAY(9)
+ INDENTMAX              = 9
+
 END
 
 SETUP
@@ -308,6 +331,11 @@ SETUP
   DATAFILETYPE="DATA"
 
  Q=CTRLCHR(34)
+ PROGRAMVERSION="1.0.9"
+ LASTMODDATE='05/12/21'
+ LASTMODTIME="16:30 PT"
+ PROGRAMUPDATENOTE1="Corrected JSon output when no shares have and available balance"
+ PROGRAMUPDATENOTE2="Enhanced Program info to JSON Output"   
 
  PRIMARYSSN = NAME:SSN
 
@@ -358,6 +386,10 @@ SETUP
  SHARETERMFREQCHR(1)="day"
  SYMXINSTANCE  = @SYMXINSTANCEID
  SYMXCLIENTNUM = @CLIENTNUMBER
+ FOR TMPLOOP=1 TO INDENTMAX
+  DO
+   INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
+  END
 END
 
 PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
@@ -385,12 +417,13 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
   DO
 
    GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
-   CALL GETSHARETRANSFERS
-   CALL READCONFIGFILESETTINGS
+   CALL GETSHARETRANSFERS [CREATE A LIST OF ELIGIBLE FUNDING SHARES]
+   CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREATE]
    IF CFGFILEREADERROR<>"" THEN
     DO
      PRINT "  {"
      NEWLINE
+     CALL PRINTPROGRAMINFO
      ERRORCODE="501"
      CALL ERRORHANDLER
      CALL JSONCLOSE
@@ -409,6 +442,8 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          IF SHARETYPEFOUND=TRUE THEN
           DO
            PRINT "{"
+           NEWLINE
+           CALL PRINTPROGRAMINFO
            NEWLINE
            PRINT "  "+Q+"memoMode"+Q+": false,"
            NEWLINE
@@ -431,6 +466,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
           DO
            PRINT "{"
            NEWLINE
+           CALL PRINTPROGRAMINFO
            ERRORCODE="504"
            CALL ERRORHANDLER
            CALL JSONCLOSE
@@ -453,6 +489,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          NEWLINE
          PRINT "{"
          NEWLINE
+         CALL PRINTPROGRAMINFO
          ERRORCODE="506"
          CALL ERRORHANDLER
          NEWLINE
@@ -470,27 +507,30 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
          IF ERRORCODE="" THEN
           DO
-           PRINT Q+"fundingOptions"+Q+":["+Q+"electronic"+Q
-
+           PRINT Q+"fundingOptions"+Q+":["
+           IF XFERSHAREFOUND>0 THEN
+            PRINT Q+"electronic"+Q
            IF SACFUNDREQUIREFLAG="0" AND
               SACFUNDCALCAMT=$0.00 THEN
             DO
-           PRINT ","+Q+"later"+Q
-          END
-         PRINT "],"
-         NEWLINE
+             IF XFERSHAREFOUND>0 THEN
+              PRINT ","     
+             PRINT Q+"later"+Q
+            END
+           PRINT "],"
+           NEWLINE
 
-         [GET FUNDING INFO]
-         IF OPENTYPE<>"" AND
-          OPENCATEGORY<>"" THEN
-          DO
-           CALL PRINTMINFUNDAMT
-          END
+           [GET FUNDING INFO]
+           IF OPENTYPE<>"" AND
+            OPENCATEGORY<>"" THEN
+            DO
+             CALL PRINTMINFUNDAMT
+            END
 
-         [GET SHARE TRANSFER FROM OPTIONS]
-         GETSHARETRANSFERRUN=TRANSFERRUNFINAL
-         CALL GETSHARETRANSFERS
-        END
+           [GET SHARE TRANSFER FROM OPTIONS]
+           GETSHARETRANSFERRUN=TRANSFERRUNFINAL
+           CALL GETSHARETRANSFERS
+          END
         END
       END  [GETTERMSFUNDING STATE]
 
@@ -498,6 +538,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
       DO
        PRINT "{"
        NEWLINE
+       CALL PRINTPROGRAMINFO
        PRINT "  "+Q+"memoMode"+Q+": false,"
        NEWLINE
        PRINT "   "+Q+"canOpenSubShare"+Q+": true,"
@@ -556,6 +597,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
                    PRINT "{"
                    NEWLINE
+		   CALL PRINTPROGRAMINFO
                    PRINT "  "+Q+"memoMode"+Q+": false,"
                    NEWLINE
                    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
@@ -765,6 +807,7 @@ PROCEDURE QUALIFYMEMBER
        INELIGIBLEREASON="ACCOUNT WARNING"
        PRINT "{"
        NEWLINE
+       CALL PRINTPROGRAMINFO
        ERRORCODE="502"
        CALL ERRORHANDLER
        CALL JSONCLOSE
@@ -782,6 +825,9 @@ PROCEDURE QUALIFYMEMBER
    CALL LISTEXPAND
    IF LELIST(ACCOUNT:TYPE)=TRUE THEN
     DO
+     PRINT "{"
+     NEWLINE
+     CALL PRINTPROGRAMINFO
      PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
      NEWLINE
      PRINT "  "+Q+"results"+Q+":{"
@@ -809,6 +855,7 @@ PROCEDURE LOADSUBACCTTERMS
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="505"
    CALL ERRORHANDLER
    CALL JSONCLOSE
@@ -819,6 +866,7 @@ PROCEDURE LOADSUBACCTTERMS
    LFLINECOUNT=0
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    PRINT "  "+Q+"memoMode"+Q+": false,"
    NEWLINE
    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
@@ -876,8 +924,7 @@ PROCEDURE PRINTMINFUNDAMT
  CALL NLS
  PRINT Q+"minimumFundingAmount"+Q+": "+Q
  PRINT TMPCHR
- PRINT Q+","
- NEWLINE
+ PRINT Q
 END [PROCEDURE PRINT MIN FUND AMT]
 
 PROCEDURE PROVIDENAMESINFO
@@ -964,19 +1011,28 @@ PROCEDURE CHECKSHAREIDS
 ** share opening deposit, then clear share type, else run
 ** next section to test for valid IDs
 *]
+
          TMPTYPE=VALUE(SEGMENT(SACSHARETYPES(I,J),1,4))
          TMPMONEY=$0.00
          TMPMINBAL=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,31) [Min. balance]
          TMPMINDEPOSIT=GETDATAMONEY(GETDEFAULTSHARE,TMPTYPE,35) [Min. deposit]
 
-         TMPMONEY=SACFUNDMINAMT
-         IF TMPMINBAL>TMPMONEY THEN
-          TMPMONEY=TMPMINBAL
-         IF TMPMINDEPOSIT>TMPMONEY THEN
-          TMPMONEY=TMPMINDEPOSIT
+         IF VALUE(SACFUNDREQUIREFLAG)>0 THEN
+          DO
+           TMPMONEY=SACFUNDMINAMT
+           IF TMPMINBAL>TMPMONEY THEN
+            TMPMONEY=TMPMINBAL
+           IF TMPMINDEPOSIT>TMPMONEY THEN
+            TMPMONEY=TMPMINDEPOSIT
+          END
+         ELSE
+          DO
+           TMPMONEY=TMPMINBAL
+           IF TMPMINDEPOSIT>TMPMONEY THEN
+            TMPMONEY=TMPMINDEPOSIT
+          END
 
-         IF VALUE(SACFUNDREQUIREFLAG)>0 AND
-            MEMBERMAXAVAILABLE<TMPMONEY THEN
+         IF MEMBERMAXAVAILABLE<TMPMONEY THEN
           DO
            SACSHARETYPES(I,J)=""
           END
@@ -1158,11 +1214,11 @@ PROCEDURE SHAREOUTPUT
            NEWLINE
           END
 [
-         ELSE
-          DO
-           PRINT "            "+Q+"term"+Q+": "+Q+"null"+Q+","
-           NEWLINE
-          END
+           ELSE
+            DO
+             PRINT "            "+Q+"term"+Q+": "+Q+"null"+Q+","
+             NEWLINE
+            END
 ]
 
          [MINIMUM BALANCE]
@@ -1203,6 +1259,7 @@ END
 PROCEDURE GETSHARERATE
  DIVDEFBALCUTOFF=$0.00
  DIVDEFPREVBALCUTOFF=$0.00
+ RATEPRINTED=FALSE
 
  [GET RATE AND DIV TYPE FROM DEFAULT MANAGER]
  SACTYPEDIVTYPE=GETDATANUMBER(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),19)
@@ -1234,6 +1291,7 @@ PROCEDURE GETSHARERATE
      RATEDATAMAXBAL(RATEDATALOOP)=$0.00
     END
    RATEDATAUSED=0
+
 
    IF DIVDEFINDEXOPTION=0 AND
       ((DIVDEFRATESELECT=1 AND
@@ -1299,7 +1357,6 @@ PROCEDURE GETSHARERATE
 
          DONE=TRUE
         END
-
        DR=DR+1
       END
 
@@ -1307,6 +1364,7 @@ PROCEDURE GETSHARERATE
       DO
        IF RATEDATALOOP=1 THEN
         DO
+         RATEPRINTED=TRUE
          PRINT "            "+Q+"interestRates"+Q+":[ "
          NEWLINE
         END
@@ -1349,9 +1407,11 @@ PROCEDURE GETSHARERATE
     END [IF DIVDEFINDEXOPTION=0 AND...]
 
    [FILL IN FROM SHARE DEFAULTS]
-   IF DIVDEFRATESELECT=1 AND
-      DIVDEFFILLINMETHOD=0 THEN
+   IF (DIVDEFRATESELECT=1 AND
+       DIVDEFFILLINMETHOD=0) OR
+       RATEPRINTED=FALSE THEN
     DO
+     RATEPRINTED=TRUE
      PRINT "            "+Q+"interestRates"+Q+": [{"+Q+"rate"+Q+":"+Q
      TMPCHR=FORMAT("###9.999",SACTYPEDIVRATE)
      CALL NLS
@@ -1388,6 +1448,8 @@ PROCEDURE GETSHARETRANSFERS
       DO
        IF XFERSHAREFOUND=1 THEN
         DO
+         PRINT ","
+         NEWLINE
          PRINT "    "+Q+"electronicFundingAccounts"+Q+": ["
          NEWLINE
         END
@@ -1419,8 +1481,11 @@ PROCEDURE GETSHARETRANSFERS
 
  IF GETSHARETRANSFERRUN=TRANSFERRUNFINAL THEN
   DO
-   NEWLINE
-   PRINT "    ]"
+   IF XFERSHAREFOUND>0 THEN
+    DO
+     NEWLINE
+     PRINT "    ]"
+    END
    NEWLINE
    PRINT "  }"
    NEWLINE
@@ -1528,9 +1593,9 @@ PROCEDURE GETPASSEDINFO
  IF IMPORT(1)="" THEN
   DO
    PASSEDINFOREADERROR="MISSING INFORMATION"
-
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="507"
    CALL ERRORHANDLER
    CALL JSONCLOSE
@@ -1639,6 +1704,23 @@ PROCEDURE GETPASSEDINFO
 
      NEWNAMEPHONE(NUM)=IMPORT(J)
 
+     IF PASSEDINFOREADERROR="" THEN
+      DO
+       [city + state + zip code must 40 characters or less]
+       LEN=LENGTH(NEWNAMECITY(NUM)+NEWNAMESTATE(NUM)+NEWNAMEZIP(NUM))
+       IF LEN>40 THEN
+        DO
+
+         PASSEDINFOREADERROR="MISSING INFORMATION"
+         PRINT "{"
+         NEWLINE
+         CALL PRINTPROGRAMINFO
+         ERRORCODE="507"
+         CALL ERRORHANDLER
+         CALL JSONCLOSE
+
+        END
+      END
     END
   END [END OF J]
 END [PROC GET PASSED INFO]
@@ -1713,6 +1795,7 @@ PROCEDURE GETNEXTID
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="508"
    CALL ERRORHANDLER
    NEWLINE
@@ -1844,6 +1927,7 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="509"
    CALL ERRORHANDLER
    NEWLINE
@@ -1902,6 +1986,7 @@ PROCEDURE GETNEWMATURITYDATE
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="510"
    CALL ERRORHANDLER
    NEWLINE
@@ -1941,6 +2026,7 @@ IF IRSERRORMESSAGE<>"" THEN
   DO
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    ERRORCODE="511"
    CALL ERRORHANDLER
    NEWLINE
@@ -2416,4 +2502,26 @@ PROCEDURE CREATENOTERECORD
 END
 
 
+PROCEDURE PRINTPROGRAMINFO
+[* Print program info to JSON output
+*]
+ PRINT INDENT(1)+Q+"programInfo"+Q+": {"
+ NEWLINE
+ PRINT INDENT(2)+Q+"programName"+Q+": "+Q+"BANNO.NEWSUBCREATE.V1.POW"+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programNote1"+Q+": "+Q+PROGRAMUPDATENOTE1+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programNote2"+Q+": "+Q+PROGRAMUPDATENOTE2+Q
+ NEWLINE
+ PRINT INDENT(1)+"},"
+ NEWLINE
+END [PROCEDURE]
+
 #INCLUDE "RB.LISTEXPAND"
+
+
+

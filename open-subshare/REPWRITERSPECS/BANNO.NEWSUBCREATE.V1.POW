@@ -35,12 +35,11 @@
 **              1. Corrected JSON output for div types with a 0.000 rate calculation
 **                 which were bypassing current rate calcs and not outputting rate
 **                 JSON
-**  Ver. 1.0.9  05/11/2021 JKeenan
-**              1. Corrected JSON output when no shares have an available balance
-**              2. Prevent member from choosing share group (s)
-**                 when funding is not required, and member does not have
-**                 sufficient funds available
-**              3. Added more Program info to JSON Output
+**  Ver. 1.0.9  05/12/2021 JKeenan
+**              1. Corrected JSON when no shares have and available balance
+**              2. Enhanced share type selection to account for available balance for funding
+**              3. Enhanced Program info to JSON Output
+**              4. Corrected JSON for targeted account warning type
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -333,10 +332,10 @@ SETUP
 
  Q=CTRLCHR(34)
  PROGRAMVERSION="1.0.9"
- LASTMODDATE='05/11/21'
- LASTMODTIME="06:30 PT"
- PROGRAMUPDATENOTE1="Corrected JSON output when no shares have an available balance"
- PROGRAMUPDATENOTE2="Added more Program info to JSON Output"   
+ LASTMODDATE='05/12/21'
+ LASTMODTIME="16:30 PT"
+ PROGRAMUPDATENOTE1="Corrected JSon output when no shares have and available balance"
+ PROGRAMUPDATENOTE2="Enhanced Program info to JSON Output"   
 
  PRIMARYSSN = NAME:SSN
 
@@ -419,7 +418,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
    GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
    CALL GETSHARETRANSFERS [CREATE A LIST OF ELIGIBLE FUNDING SHARES]
-   CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREAT]
+   CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREATE]
    IF CFGFILEREADERROR<>"" THEN
     DO
      PRINT "  {"
@@ -508,7 +507,6 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          CALL GETMINIMUMDEPOSIT [RETURN SACFUNDCALCAMT]
          IF ERRORCODE="" THEN
           DO
-           CALL CHECKFORSHARETRANSFERS
            PRINT Q+"fundingOptions"+Q+":["
            IF XFERSHAREFOUND>0 THEN
             PRINT Q+"electronic"+Q
@@ -540,6 +538,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
       DO
        PRINT "{"
        NEWLINE
+       CALL PRINTPROGRAMINFO
        PRINT "  "+Q+"memoMode"+Q+": false,"
        NEWLINE
        PRINT "   "+Q+"canOpenSubShare"+Q+": true,"
@@ -598,6 +597,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
                    PRINT "{"
                    NEWLINE
+		   CALL PRINTPROGRAMINFO
                    PRINT "  "+Q+"memoMode"+Q+": false,"
                    NEWLINE
                    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
@@ -825,6 +825,9 @@ PROCEDURE QUALIFYMEMBER
    CALL LISTEXPAND
    IF LELIST(ACCOUNT:TYPE)=TRUE THEN
     DO
+     PRINT "{"
+     NEWLINE
+     CALL PRINTPROGRAMINFO
      PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
      NEWLINE
      PRINT "  "+Q+"results"+Q+":{"
@@ -863,6 +866,7 @@ PROCEDURE LOADSUBACCTTERMS
    LFLINECOUNT=0
    PRINT "{"
    NEWLINE
+   CALL PRINTPROGRAMINFO
    PRINT "  "+Q+"memoMode"+Q+": false,"
    NEWLINE
    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
@@ -1490,18 +1494,6 @@ PROCEDURE GETSHARETRANSFERS
   END
 
 END [PROCEDURE GET SHARE XFRS]
-
-PROCEDURE CHECKFORSHARETRANSFERS
-[* This procedure finds eligble shares.
-*]
- XFERSHAREFOUND=0
- FOR EACH SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
-                      SHARE:CHARGEOFFDATE='--/--/--' AND
-                      SHARE:AVAILABLEBALANCE>$0.00)
-  DO
-   XFERSHAREFOUND=XFERSHAREFOUND+1
-  END
-END [PROCEDURE CHECK FOR SHARE XFERS]
 
 PROCEDURE BUILDSERVICEARRAY
  FOR I=1 TO 99
