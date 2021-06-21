@@ -10,6 +10,8 @@
 **
 **  Modification History:
 **    Ver. 1.0.0  11/16/20 T. Kainz - Original Programming
+**    Ver. 1.0.1  05/28/21 T. Kainz - Added additional scenario check (scenario 0)
+**                         Added additional program info and debug info to JSON output.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 **
@@ -24,20 +26,63 @@
 **
 **  LOGIC FLOW
 **
-**   IF @RGSTATE="LINKTRACKING" this is an existing member
+**   IF @RGSTATE="LINKTRACKING" (This is the existing member's' data passed back to the PowerOn)
 **       @RGUSERNUM1 - Preference Locator
-**       @RGUSERCHR1 - Name Types (from banno setting)
+**       @RGUSERCHR1 - Name Types (from Banno setting)
 **       @RGUSERCHR2 - Banno user ID
-**       @RGUSERCHR3 - Banno user birthdate YYYYMMDD Depending upon scenario - may not contain
+**       @RGUSERCHR3 - Banno user birthdate YYYYMMDD (Depending upon scenario - may be blank)
 **                     birthdate
 **       @RGUSERCHR4 - [blank]
 **
-**   IF @RGSTATE="CREATETRACKING" this is a new member
+**   IF @RGSTATE="CREATETRACKING" This is the new member's data passed back)
 **       @RGUSERNUM1 - Preference Locator
-**       @RGUSERCHR1 - Name Types (from banno setting)
+**       @RGUSERCHR1 - Name Types (from Banno setting)
 **       @RGUSERCHR2 - Banno user ID
 **       @RGUSERCHR3 - Member number link
 **       @RGUSERCHR4 - Address number link
+**
+**
+**  NEW MEMBER ENROLLMENT (CREATETRACKING State)
+**
+**  1. Check for existing tracking with matching ID and Pref Loc, return SUCCESS
+**  2. Tracking 8 with matching ID and Pref Loc not found, Create tracking & return SUCCESS
+**
+**  EXISTING MEMBER (LINKTRACKING State)
+**
+**  0.  Check for existing tracking with matching name and address links but no Banno ID.
+**      If found, update tracking with Banno ID passed back.
+**
+**  1.  If no tracking 08 found with matching Banno user #
+**  1a.   If only 1 name record with valid name type, create tracking 08 with Banno user #,
+**        Preference LOC, the member link number, and the address link number.  Return success.
+**  1b.   If more than 1 name record with valid name type, create tracking with Banno user #,
+**        Preference LOC.  Return COMPLETE WITH ERROR and add note "multiple valid name records found"
+**
+**  2.  If tracking 08 found with matching Banno user # but not matching Preference LOC
+**  2a.   W/1 valid name rec: revise tracking by changing Preference LOC, and adding
+**        the member link number and the address link number (if available).  Return SUCCESS
+**  2b.   W/more than 1 valid name rec: revise tracking by changing Preference LOC. Return COMPLETE
+**        WITH ERROR and add note "multiple valid name records found"
+**
+**  3.  If tracking 08 found with both matching Preference LOC and Banno user #
+**  3a.   If both member link and address link number are blank AND only 1 name record with
+**        valid name type, revise tracking 08 with the member link number and the address
+**        link number (if available).  Return success.
+**  3b.   If both member link and address link numbers are blank AND more than 1 name record
+**        with valid name type, return COMPLETE WITH ERROR and add note "multiple valid name
+**        records found"
+**  3c.   If both member link and address link number are filled in, look for a Name record
+**        with valid name type and matching both link numbers.
+**  3c1.    If both numbers are found in a single name record, return success.
+**  3c2.    If no name records with either link numbers, remove both numbers from tracking 08.
+**          Return COMPLETE WITH ERROR and add note "invalid name links removed from tracking 08"
+**  3c3a.     If only member link matches & If new address link found, revise tracking 08
+**            with address link # found. Return success
+**  3c3b.     If no new address link # found, revise tracking 08 blanking out address link field.
+**            Return COMPLETE WITH ERROR and add note "invalid address link removed from tracking 08"
+**  3c4.    If only address link matches, revise tracking 08 blanking out both member link and
+**           address link fields.  Return COMPLETE WITH ERROR and add note "invalid member and
+**           address links removed from tracking 08"
 *]
 
 SYMCONNECT
@@ -49,15 +94,19 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- TRUE                      = 1
+ BNODEBUGMSGMAX            = 99
+ DATENULL                  = '--/--/--'
+ DEBUGMODEOFF              = 0
+ DEBUGMODEON               = 1
  FALSE                     = 0
  FMSUCCESSFUL              = 1
- FMUNSUCCESSFUL            = 2
  FMUNCHANGED               = 3
- STATELINKTRACKING         = "LINKTRACKING"
+ FMUNSUCCESSFUL            = 2
+ INDENTMAX                 = 9
  STATECREATETRACKING       = "CREATETRACKING"
  STATEEND                  = "STATEEND"
- DATENULL                  = '--/--/--'
+ STATELINKTRACKING         = "LINKTRACKING"
+ TRUE                      = 1
  VALIDSOURCECODELIST       = "ABCDEFGHIJKLNOPRSTVW"
 
  ACCTFOUND                 = NUMBER
@@ -69,10 +118,14 @@ DEFINE
  BANNOUSERID               = CHARACTER
  BASESHAREFOUND            = NUMBER
  BASESID                   = CHARACTER
+ BNODEBUGCOUNT             = NUMBER
+ BNODEBUGMSG               = CHARACTER
+ BNODEBUGMSGLIST           = CHARACTER ARRAY(99)
  BOOLEANCHR                = CHARACTER ARRAY(1)
  CHR                       = NUMBER
  CHRVAL                    = NUMBER
  COMMAPOS                  = NUMBER
+ DEBUGLOOP                 = NUMBER
  DEBUGMODE                 = NUMBER
  DONE                      = NUMBER
  ERRORCODE                 = NUMBER
@@ -88,7 +141,10 @@ DEFINE
  FOUNDMBRLINK              = CHARACTER
  FOUNDUSERID               = CHARACTER
  IDLENGTH                  = NUMBER
+ INDENT                    = CHARACTER ARRAY(9)
  INVALIDCONFIGPARAMS       = NUMBER
+ LASTMODDATE               = DATE
+ LASTMODTIME               = CHARACTER
  LFERROR                   = CHARACTER
  LFLINE                    = CHARACTER
  LFNUMBER                  = NUMBER
@@ -158,6 +214,9 @@ DEFINE
  PREFLOC                   = NUMBER
  PREFLOCFOUND              = NUMBER
  PRIMARYNAMELOC            = NUMBER
+ PROGRAMUPDATENOTE1        = CHARACTER
+ PROGRAMUPDATENOTE2        = CHARACTER
+ PROGRAMVERSION            = CHARACTER
  Q                         = CHARACTER
  READCONFIGERROR           = NUMBER
  READCONFIGERRORMSG        = CHARACTER
@@ -214,13 +273,21 @@ DEFINE
  WARNINGFOUND              = NUMBER
  WARNINGSACCT              = NUMBER ARRAY(999)
  WARNINGSSHARE             = NUMBER ARRAY(999)
-
 END [DEFINE]
 
 SETUP
+ DEBUGMODE=DEBUGMODEON
  Q=CTRLCHR(34)
- NOTEEXPIREDAYS=7
- DEBUGMODE=FALSE
+ NOTEEXPIREDAYS=30
+ PROGRAMVERSION="1.0.1"
+ LASTMODDATE='05/28/21'
+ LASTMODTIME="10:30 MT"
+ PROGRAMUPDATENOTE1="Added Program info and @RG detail to JSON Output"
+ PROGRAMUPDATENOTE2="Added additional error handling when Tracking 8 is not being created"
+ FOR TMPLOOP=1 TO INDENTMAX
+  DO
+   INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
+  END
 END [SETUP]
 
 PRINT TITLE="BANNO.DATABASE.CHECK.V1.POW"
@@ -242,16 +309,27 @@ PRINT TITLE="BANNO.DATABASE.CHECK.V1.POW"
  NAMEBYLINKFOUND=FALSE
  TRACKINGCOMPLETE=FALSE
 
+ BNODEBUGMSG="ACCOUNT: "+ACCOUNT:NUMBER
+ CALL BNODEBUGMSGADD
+
 [* If a tracking 08 with the matching Banno user number, preference
 ** locator (USERCHAR 12), member link number and address link number
 *]
  IF ERRORCODE=0 AND
     @RGSTATE=STATECREATETRACKING THEN
   DO
+
+[****************************************** CREATETRACKING State ************************************]
+   DONE=FALSE
+   TRACKINGFOUNDLOC=0
+
+
 [* Scenario #1: Check for existing tracking with matching ID and Pref Loc, return SUCCESS
 *]
-   TRACKINGFOUNDLOC=0
-   IF TRACKINGLISTCOUNT>0 THEN
+
+   IF DONE=FALSE AND
+      TRACKINGFOUNDLOC=0 AND
+      TRACKINGLISTCOUNT>0 THEN
     DO
      FOR TRACKINGLISTLOOP=1 TO TRACKINGLISTCOUNT
       DO
@@ -259,31 +337,65 @@ PRINT TITLE="BANNO.DATABASE.CHECK.V1.POW"
           TRACKINGLISTPREFLOC(TRACKINGLISTLOOP)=TARGETPREFLOC AND
           TRACKINGLISTMBRID(TRACKINGLISTLOOP)=TARGETUSERID THEN
         DO
+         BNODEBUGMSG="CREATETRACKING Logic Scenario #1 applied"
+         CALL BNODEBUGMSGADD
          TRACKINGFOUNDLOC=TRACKINGLISTLOC(TRACKINGLISTLOOP)
          CALL SENDCOMPLETE
+         DONE=TRUE
         END
       END
     END
 
-[* Scenario #2: Tracking 8 with matching ID and Pref Loc not found, Create tracking & return 
-SUCCESS
+[* Scenario #2: Tracking 8 with matching ID and Pref Loc not found, Create tracking & return SUCCESS
 *]
-   IF TRACKINGFOUNDLOC=0 THEN
+
+   IF DONE=FALSE AND
+      TRACKINGFOUNDLOC=0 THEN
     DO
+     BNODEBUGMSG="CREATETRACKING Logic Scenario #2 applied"
+     CALL BNODEBUGMSGADD
      CALL CREATETRACKING
      IF FMERROR="" THEN
       CALL SENDCOMPLETE
      ELSE
       CALL SENDCOMPLETEERROR
+     DONE=TRUE
     END
   END [ERRORCODE=0 AND @RGSTATE=STATECREATETRACKING]
 
-[******************************************* LINKTRACKING State 
-*************************************]
- ELSE IF ERRORCODE=0 AND
-         @RGSTATE=STATELINKTRACKING THEN
+[******************************************* LINKTRACKING State *************************************]
+
+ IF ERRORCODE=0 AND
+    @RGSTATE=STATELINKTRACKING THEN
   DO
    DONE=FALSE
+
+[* Scenario #0: Check for existing tracking with matching name and address links but no Banno ID.
+** If found, update tracking with Banno ID paseed back.
+*]
+
+   IF TRACKINGLISTCOUNT>0 THEN
+    DO
+     FOR TRACKINGLISTLOOP=1 TO TRACKINGLISTCOUNT
+      DO
+       IF DONE=FALSE AND
+          TRACKINGLISTPREFLOC(TRACKINGLISTLOOP)=TARGETPREFLOC  AND
+          TRACKINGLISTMBRLINK(TRACKINGLISTLOOP)=TARGETMBRNUMLINK AND
+          TRACKINGLISTADDRLINK(TRACKINGLISTLOOP)=TARGETMBRADDRLINK AND
+          TRACKINGLISTMBRID(TRACKINGLISTLOOP)="" THEN
+        DO
+         BNODEBUGMSG="LINKTRACKING Logic Scenario #0 applied"
+         CALL BNODEBUGMSGADD
+         TRACKINGFOUNDLOC=TRACKINGLISTLOC(TRACKINGLISTLOOP)
+         CALL REVISETRACKING
+         IF FMERROR="" THEN
+          CALL SENDCOMPLETE
+         ELSE
+          CALL SENDCOMPLETEERROR
+         DONE=TRUE
+        END
+      END
+    END
 
 [* Scenario #1: If no tracking 08 found with matching Banno user #]
    TRACKINGFOUNDLOC=0
@@ -305,6 +417,8 @@ SUCCESS
        Preference LOC, the member link number, and the address link number.  Return success.]
      IF NAMELISTCOUNT=1 THEN
       DO
+       BNODEBUGMSG="LINKTRACKING Logic Scenario #1.a applied"
+       CALL BNODEBUGMSGADD
        TARGETMBRNUMLINK=NAMELISTMBRLINK(1)
        TARGETMBRADDRLINK=NAMELISTADDRLINK(1)
        CALL CREATETRACKING
@@ -315,9 +429,10 @@ SUCCESS
       END
      ELSE
 [* 1.b If more than 1 name record with valid name type, create tracking with Banno user #,
-       Preference LOC.  Return COMPLETE WITH ERROR and add note "multiple valid name records 
-       found"]
+       Preference LOC.  Return COMPLETE WITH ERROR and add note "multiple valid name records found"]
       DO
+       BNODEBUGMSG="LINKTRACKING Logic Scenario #1.b applied"
+       CALL BNODEBUGMSGADD
        TARGETMBRNUMLINK=""
        TARGETMBRADDRLINK=""
        CALL CREATETRACKING
@@ -353,6 +468,8 @@ SUCCESS
 
        IF NAMELISTCOUNT=1 THEN
         DO
+         BNODEBUGMSG="LINKTRACKING Logic Scenario #2.a applied"
+         CALL BNODEBUGMSGADD
          TARGETMBRNUMLINK=NAMELISTMBRLINK(1)
          TARGETMBRADDRLINK=NAMELISTADDRLINK(1)
          CALL REVISETRACKING
@@ -365,6 +482,8 @@ SUCCESS
                                          Preference LOC. Return COMPLETE WITH ERROR and add note
                                          "multiple valid name records found"]
         DO
+         BNODEBUGMSG="LINKTRACKING Logic Scenario #2.b applied"
+         CALL BNODEBUGMSGADD
          TARGETMBRNUMLINK=""
          TARGETMBRADDRLINK=""
          CALL REVISETRACKING
@@ -411,6 +530,9 @@ SUCCESS
             TRACKINGLISTADDRLINK(TRACKINGFOUNDINDEX)="" AND
             NAMELISTCOUNT=1 THEN
           DO
+           BNODEBUGMSG="LINKTRACKING Logic Scenario #3.a applied"
+           CALL BNODEBUGMSGADD
+
            TARGETMBRNUMLINK=TRACKINGLISTMBRLINK(1)
            TARGETMBRADDRLINK=TRACKINGLISTADDRLINK(1)
            CALL REVISETRACKING
@@ -431,6 +553,8 @@ SUCCESS
           TRACKINGLISTADDRLINK(TRACKINGFOUNDINDEX)="" AND
           NAMELISTCOUNT>1 THEN
         DO
+         BNODEBUGMSG="LINKTRACKING Logic Scenario #3.b applied"
+         CALL BNODEBUGMSGADD
          NOTECHR="multiple valid name records found"
          NOTECHR1=""
          CALL CREATENOTERECORD
@@ -460,6 +584,8 @@ SUCCESS
 [* 3.c.1. If both numbers are found in a single name record, return success.]
          IF NAMEFOUNDINDEX>0 THEN
           DO
+           BNODEBUGMSG="LINKTRACKING Logic Scenario #3.c.1 applied"
+           CALL BNODEBUGMSGADD
            CALL SENDCOMPLETE
            DONE=TRUE
           END
@@ -480,6 +606,8 @@ SUCCESS
            IF MBRLINKFOUND=TRUE OR
               ADDRLINKFOUND=TRUE THEN
             DO
+             BNODEBUGMSG="LINKTRACKING Logic Scenario #3.c.2 applied"
+             CALL BNODEBUGMSGADD
              TARGETMBRNUMLINK=""
              TARGETMBRADDRLINK=""
              CALL REVISETRACKING
@@ -513,6 +641,8 @@ SUCCESS
             END [FOR NAMELISTLOOP=1 TO NAMELISTCOUNT]
            IF NAMEFOUNDINDEX>0 THEN
             DO
+             BNODEBUGMSG="LINKTRACKING Logic Scenario #3.c.3.a applied"
+             CALL BNODEBUGMSGADD
              TARGETMBRNUMLINK=NAMELISTMBRLINK(NAMEFOUNDINDEX)
              TARGETMBRADDRLINK=NAMELISTADDRLINK(NAMEFOUNDINDEX)
              CALL REVISETRACKING
@@ -522,8 +652,7 @@ SUCCESS
           END [IF DONE=FALSE]
 
 [* 3.c.3.b If no new address link # found, revise tracking 08 blanking out address link field.
-           Return COMPLETE WITH ERROR and add note "invalid address link removed from tracking 
-           08"]
+           Return COMPLETE WITH ERROR and add note "invalid address link removed from tracking 08"]
 
          IF DONE=FALSE THEN
           DO
@@ -542,6 +671,8 @@ SUCCESS
             END [FOR NAMELISTLOOP=1 TO NAMELISTCOUNT]
            IF NAMEFOUNDINDEX>0 THEN
             DO
+             BNODEBUGMSG="LINKTRACKING Logic Scenario #3.c.3.b applied"
+             CALL BNODEBUGMSGADD
              TARGETMBRNUMLINK=NAMELISTMBRLINK(NAMEFOUNDINDEX)
              TARGETMBRADDRLINK=""
              CALL REVISETRACKING
@@ -576,6 +707,8 @@ SUCCESS
             END [FOR NAMELISTLOOP=1 TO NAMELISTCOUNT]
            IF NAMEFOUNDINDEX>0 THEN
             DO
+             BNODEBUGMSG="LINKTRACKING Logic Scenario #3.c.4 applied"
+             CALL BNODEBUGMSGADD
              TARGETMBRNUMLINK=""
              TARGETMBRADDRLINK=""
              CALL REVISETRACKING
@@ -738,7 +871,9 @@ PROCEDURE GETRGVALUES
  TARGETUSERBIRTHDATE=DATENULL
 
  TARGETPREFLOC=@RGUSERNUM1
- TARGETUSERID=@RGUSERCHR2
+ TMPCHR=@RGUSERCHR2
+ CALL NLTS
+ TARGETUSERID=TMPCHR
 
  IF TARGETPREFLOC>0 THEN
   DO
@@ -750,12 +885,20 @@ PROCEDURE GETRGVALUES
  IF @RGSTATE=STATELINKTRACKING THEN
   DO
    IF @RGUSERCHR3<>"" THEN
-    TARGETUSERBIRTHDATE=DATEVALUE(@RGUSERCHR3)
+    DO
+     TMPCHR=@RGUSERCHR3
+     CALL NLTS
+     TARGETUSERBIRTHDATE=DATEVALUE(TMPCHR)
+    END
   END [IF @RGSTATE=STATELINKTRACKING]
  ELSE IF @RGSTATE=STATECREATETRACKING THEN
   DO
-   TARGETMBRNUMLINK=@RGUSERCHR3
-   TARGETMBRADDRLINK=@RGUSERCHR4
+   TMPCHR=@RGUSERCHR3
+   CALL NLTS
+   TARGETMBRNUMLINK=TMPCHR
+   TMPCHR=@RGUSERCHR4
+   CALL NLTS
+   TARGETMBRADDRLINK=TMPCHR
   END
 END [PROCEDURE]
 
@@ -868,7 +1011,11 @@ PROCEDURE SENDCOMPLETE
 *]
  NEWLINE
  CALL JSONOPEN
- PRINT Q+"results"+Q+": COMPLETE"
+ CALL PRINTPROGRAMINFO
+ CALL PRINTRGDATA
+ IF DEBUGMODE=DEBUGMODEON THEN
+  CALL BNOPRINTDEBUG
+ PRINT Q+"results"+Q+": "+Q+"COMPLETE"+Q
  NEWLINE
  CALL JSONCLOSE
 END [PROCEDURE]
@@ -878,7 +1025,11 @@ PROCEDURE SENDCOMPLETEERROR
 *]
  NEWLINE
  CALL JSONOPEN
- PRINT Q+"results"+Q+": COMPLETE WITH ERROR"
+ CALL PRINTPROGRAMINFO
+ CALL PRINTRGDATA
+ IF DEBUGMODE=DEBUGMODEON THEN
+  CALL BNOPRINTDEBUG
+ PRINT Q+"results"+Q+": "+Q+"COMPLETE WITH ERROR"+Q
  NEWLINE
  CALL JSONCLOSE
 END [PROCEDURE]
@@ -969,7 +1120,11 @@ PROCEDURE POLLTRACKING
   END
  TRACKINGLISTCOUNT=0
 
+[* USERCHAR12 is the preference Locator and connects a specific tracking 8 to
+** the member logged in. USERCHAR12 is only filled in for BANNO use.
+*]
  FOR EACH TRACKING WITH (TRACKING:TYPE=8 AND
+                         VALUE(TRACKING:USERCHAR12)>0 AND
                         (TRACKING:EXPIREDATE=DATENULL OR
                          TRACKING:EXPIREDATE>SYSTEMDATE))
   DO
@@ -981,9 +1136,95 @@ PROCEDURE POLLTRACKING
      TRACKINGLISTMBRID(TRACKINGLISTCOUNT)=TRACKING:USERCHAR13
      TRACKINGLISTMBRLINK(TRACKINGLISTCOUNT)=TRACKING:USERCHAR14
      TRACKINGLISTADDRLINK(TRACKINGLISTCOUNT)=TRACKING:USERCHAR15
+
+     BNODEBUGMSG="TRKG8 "+
+                 FORMAT("999-",TRACKINGLISTCOUNT)+
+                 FORMAT("LOC:9999 ",TRACKINGLISTLOC(TRACKINGLISTCOUNT))+
+                 FORMAT("PREFLOC:99999 ",TRACKINGLISTPREFLOC(TRACKINGLISTCOUNT))+
+                 "MID:"+TRACKINGLISTMBRID(TRACKINGLISTCOUNT)+" "+
+                 "MLNK:"+TRACKINGLISTMBRLINK(TRACKINGLISTCOUNT)+" "+
+                 "ALNK:"+TRACKINGLISTADDRLINK(TRACKINGLISTCOUNT)
+     CALL BNODEBUGMSGADD
     END
   END
 END [PROCEDURE]
+
+PROCEDURE PRINTPROGRAMINFO
+[* Print program info to JSON output
+*]
+ PRINT INDENT(1)+Q+"programInfo"+Q+": {"
+ NEWLINE
+ PRINT INDENT(2)+Q+"programName"+Q+": "+Q+"BANNO.DATABASE.CHECK.V1.POW"+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programNote1"+Q+": "+Q+PROGRAMUPDATENOTE1+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"programNote2"+Q+": "+Q+PROGRAMUPDATENOTE2+Q
+ NEWLINE
+ PRINT INDENT(1)+"},"
+ NEWLINE
+END [PROCEDURE]
+
+PROCEDURE PRINTRGDATA
+ PRINT INDENT(1)+Q+"@RG Data"+Q+": {"
+ NEWLINE
+ PRINT INDENT(2)+Q+"@RGSTATE"+Q+": "+Q+@RGSTATE+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"@RGUSERCHR1"+Q+": "+Q+@RGUSERCHR1+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"@RGUSERCHR2"+Q+": "+Q+@RGUSERCHR2+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"@RGUSERCHR3"+Q+": "+Q+@RGUSERCHR3+Q+","
+ NEWLINE
+ PRINT INDENT(2)+Q+"@RGUSERCHR4"+Q+": "+Q+@RGUSERCHR4+Q+","
+ NEWLINE
+
+ PRINT INDENT(2)+Q+"@RGUSERNUM1"+Q+": "+Q
+ PRINT @RGUSERNUM1
+ PRINT Q
+ NEWLINE
+
+ PRINT INDENT(1)+"},"
+ NEWLINE
+END
+
+PROCEDURE BNOPRINTDEBUG
+[* Print debug output in proper JSON format
+**  PASS  DEBUGMODE  Boolean: Print debug data, T/F
+**  PASS  BNODEBUGMSGLIST()  Array of debug messages to print
+*]
+ IF DEBUGMODE=DEBUGMODEON THEN
+  DO
+   PRINT INDENT(2)+Q+"debugData"+Q+": ["
+   NEWLINE
+   FOR DEBUGLOOP=1 TO BNODEBUGCOUNT
+    DO
+     PRINT INDENT(2)+Q+BNODEBUGMSGLIST(DEBUGLOOP)+Q
+     IF DEBUGLOOP<BNODEBUGCOUNT THEN
+      PRINT ","
+     NEWLINE
+    END
+   PRINT INDENT(2)+"],"
+   NEWLINE
+  END
+END [PROCEDURE]
+
+PROCEDURE BNODEBUGMSGADD
+[* Add a message to the debug message array
+** PASS    BNODEBUGCOUNT  Current array index
+** PASS    BNODEBUGMSG  Debug message to add to array
+*]
+ IF BNODEBUGCOUNT<BNODEBUGMSGMAX THEN
+  DO
+   BNODEBUGCOUNT=BNODEBUGCOUNT+1
+   BNODEBUGMSGLIST(BNODEBUGCOUNT)=BNODEBUGMSG
+   BNODEBUGMSG=""
+  END
+END [PROCEDURE]
+
 
 #INCLUDE "RB.LISTEXPAND"
 
