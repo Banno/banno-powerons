@@ -14,7 +14,7 @@
 **  made by unauthorized personnel.
 **
 **  Modification History:
-**    Ver. 1.0.0  07/14/21 T. Kainz - Original Programming
+**    Ver. 1.0.0  07/21/21 T. Kainz - Original Programming
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -278,10 +278,10 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- LASTMODDATE               = '07/14/21'
- LASTMODTIME               = "09:30 MT"
- PROGRAMUPDATENOTE1        = "Ver. 1.0.0 - Original Programming"
- PROGRAMUPDATENOTE2        = "Modified JSON History amount formatting "
+ LASTMODDATE               = '07/21/21'
+ LASTMODTIME               = "12:15 MT"
+ PROGRAMUPDATENOTE1        = "Program currently in BETA testing status."
+ PROGRAMUPDATENOTE2        = "Added addt'l requirements to validate credit shares"
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
  NTACCESSTYPE              = NTACCESSTYPEIQ
@@ -631,7 +631,9 @@ PROCEDURE VALIDATETARGETACCOUNT
       DO
        IF TARGETSLTYPE="S" THEN
         DO
-         FOR EACH SHARE WITH (SHARE:ID=TARGETSLID)
+         FOR EACH SHARE WITH (SHARE:ID=TARGETSLID AND
+                              SHARE:IRSCODE=0 AND
+                              SHARE:SHARECODE<=1)
           DO
            IF SHARE:CLOSEDATE<>DATENULL THEN
             TARGETSLCLOSECODATE=SHARE:CLOSEDATE
@@ -683,7 +685,9 @@ PROCEDURE VALIDATETARGETACCOUNT
            UPPERCASE(TARGETACCTTYPE)="CHECKING") THEN
         DO
          FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
-                              SHARE:CHARGEOFFDATE=DATENULL)
+                              SHARE:CHARGEOFFDATE=DATENULL AND
+                              SHARE:IRSCODE=0 AND
+                              SHARE:SHARECODE<=1)
           DO
            IF (UPPERCASE(TARGETACCTTYPE)="SAVINGS" AND
                SHARE:SHARECODE<>1 AND
@@ -821,7 +825,6 @@ PROCEDURE JSONOUTTRANSUCCESS
  PRINT INDENT(BASEINDENT+3)+Q+"transferLoc"+Q+": "+Q+NLTSCHR+Q+","
  NEWLINE
 
- [tek - added 3/25/21]
  IF NEWTRANRECIPLOC>0 THEN
   NLTSCHR=FORMAT("#######9",NEWTRANRECIPLOC)
  ELSE
@@ -1124,7 +1127,6 @@ PROCEDURE CREATEIMMEDIATETRANSFER
 END
 
 PROCEDURE CREATEFUTURETRANSFER
-
 [* NEED TO ADD >> Perform a final check to make sure limits aren't being exceeded and if so
 ** return an error message
 *]
