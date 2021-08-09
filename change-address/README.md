@@ -29,8 +29,8 @@ A successful address update by the program or program errors encountered while a
 ## PowerOn installation
 An Overview
 * Install the programs (BANNO.CHANGE.ADDR.V1.POW & BANNO.DATABASE.CHECK.V1.POW) to the REPWRITERSPECS directory*
+* Add both programs to SymXchange Common parameters and refresh SymXchange
 * Install the configuration Letter file (BANNO.CHANGE.ADDR.V1.CFG) to the LETTERSPECS directory and update the settings as necessary*
-* Add the program to SymXchange Common parameters and refresh SymXchange
 * In Banno People, set the appropriate settings and activate the program.
 
 In Detail
