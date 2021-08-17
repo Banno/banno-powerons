@@ -15,7 +15,7 @@
   "rgSession": 1
 }
 ```
- - userCharList[1]: Comma delimited list of valid name types
+ - userCharList[1]: Comma delimited list of valid name types or "all"
  - userCharList[2]: Banno logged-in user ID
  - userCharList[3]: Member number link (from linked name record)
  - userCharList[4]: Member address number link (from linked name record)
@@ -45,7 +45,7 @@ The "logging error message detail" will be a different message based upon the lo
   "rgSession": 1
 }
 ```
- - userCharList[1]: Comma delimited list of valid name types
+ - userCharList[1]: Comma delimited list of valid name types or "all"
  - userCharList[2]: Banno logged-in user ID
  - userNumList[1]: Preference record locator
 ### PowerOn Response
@@ -70,5 +70,5 @@ The "logging error message detail" will be a different message based upon the lo
 - LINKTRACKING Logic Scenario #3.c.4 applied
 
 ## Note:
-*The "loggingErrorMessage" and related detail are used by the UX and are only output for purposes of more easily determining which logic scenario was used by the program for a given request to assist with 
-troubleshooting individual case scenarios*
+*The "loggingErrorMessage" and related detail are not used by the UX and are only output for purposes of more easily determining which logic scenario was used by the program for a given request to assist with
+troubleshooting individual case scenarios.
