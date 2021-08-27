@@ -62,7 +62,9 @@ This is a repository for development of Banno PowerOns
 
 3. Find the next available `Custom Specfile` slot and enter your PowerOn's name in it. You will get a warning that this might adversely affect services - this specific change will not interrupt any services.
 
-4. Click the `OK` button to confirm the changes.
+5. Ensure the Specfile Load Method is set to "Individual" 
+
+7. Click the `OK` button to confirm the changes.
 
 ### Refresh SymXchange
 
