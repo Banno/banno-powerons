@@ -1,9 +1,8 @@
-# ODT Opt-in JSON contract
+# ODT Opt-in JSON Contract
 
-PLEASE NOTE: The program will not proceed if the system is in Memo Post Mode
+## PRELOADDATA state
 
-## PRELOADDATA
-The client will send the initial PRELOADDATA request.
+### PowerOn Input
 ```json
 {
   "rgState": "PRELOADDATA",
@@ -13,60 +12,27 @@ The client will send the initial PRELOADDATA request.
   "rgSession": 1
 }
 ```
+### PowerOn Response
 
-Poweron response - when system is in Memo Mode:
+**When system is in Memo Mode - The program will not proceed:**
 ```json
 {
   "memoMode": true
 }
 ```
-
-Poweron response - Config File read error:
+**When error condition is encountered:**
 ```json
 {
-  "errorCode":"501",
-  "loggingErrorMessage": "Error reading from config file:"+[detail]
+ "errorCode":"xxx",
+ "loggingErrorMessage": "[error message detail]"
 }
 ```
-
-Poweron response - Config File validation error:
-```json
-{
-  "errorCode":"502",
-  "loggingErrorMessage": "Config file validation error"
-}
-```
-
-Poweron response - If no eligible shares:
-```json
-{
-  "errorCode":"503",
-  "loggingErrorMessage": "No Eligible Shares"
-}
-```
-
-Poweron response - Invalid Account type error:
-```json
-{
-   "errorCode":"504",
-   "loggingErrorMessage": "Ineligible account type [account type] found"
-}
-```
-
-Poweron response - Account warning code error:
-```json
-{
-   "errorCode":"505",
-   "loggingErrorMessage": "Account warning [acount warning] exists"
-}
-```
-
-Poweron response - With eligible shares:
+ **Successful response:**
 ```json
 {
  "memoMode": false,
  "results": {
-  "maxSharesExceeded": false, //'true' if the number of shares found exceeds processing capbilities (130 shares)
+  "maxSharesExceeded": false,
   "shareDetail": [{
     "SID": "0000",
     "name": "My Primary Share",
@@ -104,17 +70,29 @@ Poweron response - With eligible shares:
  }
 }
 ```
+**Response detail:**
+ - memoMode: boolean - true/false. Is the system in memo mode?
+ - results
+	 - maxSharesExceeded: boolean true/false. Did the program find more than 13 eligible shares for this member?
+	 - shareDetail
+		 - SID: Share ID [SHARE:ID]
+		 - name: Share description [SHARE:DESCRIPTION]
+		 - balance: Share available balance [SHARE:AVAILABLEBALANCE]
+		 - currentState: boolean - true/false. Is the share enrolled in ODT services
+ - terms: Custom Terms
+ - fee Disclosure: Custom fee disclosure
+ - revocationInstruuctions: Custom revocation instructions
 
-## PROCESSDATA
-
-UX returns updated state of each share
+## PROCESSDATA state
+### PowerOn Input
+UX returns updated state of each share. Share IDs listed are to be enrolled into ODT services. Valid share IDs not explicitly listed are not to be enrolled into ODT services
 ```json
 {
   "rgState": "PROCESSDATA",
   "powerOnFileName": "BANNO.ODTOPTIN.V1.POW",
   "userChrList": [
-    {"id": 1, "value": "0000,0010,0012,0014"},  //comma dilineated list of 4-digit share ID for those shares which are
-    {"id": 2, "value": ""},                     //to be enrolled into ODT services. All 5 userChr lists can be used
+    {"id": 1, "value": "0000,0010,0012,0014"},
+    {"id": 2, "value": ""},
     {"id": 3, "value": ""},
     {"id": 4, "value": ""},
     {"id": 5, "value": ""}
@@ -123,24 +101,16 @@ UX returns updated state of each share
   "rgSession": 1
 }
 ```
-
-PowerOn Response if error while updating tracking record
+@RGUSERCHR[1-5]: Comma delimited list of 4-digit share IDs to be enrolled into ODT services. Each @RGUSERCHR can contain up to 26, 4-character share IDs for a maximum of 130.
+### PowerOn Response
+**When error condition is encountered:**
 ```json
 {
-  "errorCode":"506",
-  "loggingErrorMessage": "Error attempting to update share tracking: [error detail]"
+      "errorCode":"xxx",
+      "loggingErrorMessage": "[error message detail]"
 }
 ```
-
-PowerOn Response if error while updating share record
-```json
-{
-  "errorCode":"507",
-  "loggingErrorMessage": "Error updating sourcecode & auth/fee fields: [error detail]"
-}
-```
-
-PowerOn Response if successful
+**Successful response:**
 ```json
 {
  "memoMode": false,
@@ -162,14 +132,20 @@ PowerOn Response if successful
  }
 }
 ```
+**Response Detail:**
 
-Error Codes // Individual error codes are for ease of researching issues.
-            // All error codes except for '503' will be returned to the UX as '500'
+ - Response detail will duplicate PRELOADDATA state response detail but with updated values
 
-501 - Config file read error
-502 - Config file validation error
-503 - No eligible shares
-504 - Ineligible account type
-505 - Account warning found
-506 - Error attempting to update share tracking record
-507 - Error updating source code and auth & fee fields
+## Error Codes
+|Error Code|  Logging Error Message|
+|--|--|
+| 501 | Config file read error: *[read error]* |
+| 502 | Config file validation error: *[validation error detail]* |
+| 503 | No eligible shares *|
+| 504 | Ineligible account type |
+| 505 | Account warning found |
+| 506 | Error attempting to update share tracking record |
+| 507 | Error updating source code and auth & fee fields |
+* Individual error codes are for ease of researching issues.
+* All error codes except for '503' will be returned to the UX as '500'
+
