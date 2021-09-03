@@ -18,6 +18,8 @@
 **    Ver. 1.0.1  09/18/20 T. Kainz - Corrected end of line spacing for disclosures
 **    Ver. 1.0.2  02/11/21 T. Kainz - Mod to terms, Discl & revoke inst.to allow for
 **                         blank line. Added program info to JSON output.
+**    Ver. 1.0.3  09/03/21 T. Kainz - Increased the TOC and Disclosure lines max to
+**                         999 and the revoke instructions to 99.
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
 
@@ -59,14 +61,14 @@ DEFINE
  PARAMSC1FALSE             = CHARACTER
  PARAMAF1TRUE              = NUMBER
  PARAMAF1FALSE             = NUMBER
- PARAMCUSTOMTERMS          = CHARACTER ARRAY(99)
- PARAMFEEDISCL             = CHARACTER ARRAY(99)
- PARAMREVOKEINST           = CHARACTER ARRAY(9)
+ PARAMCUSTOMTERMS          = CHARACTER ARRAY(999)
+ PARAMFEEDISCL             = CHARACTER ARRAY(999)
+ PARAMREVOKEINST           = CHARACTER ARRAY(99)
  PARAMCUSTOMTERMLINES      = NUMBER
  PARAMFEEDISCLLINES        = NUMBER
  PARAMREVOKEINSTLINES      = NUMBER
- PARAMCUSTOMTERMLINESMAX   = 99
- PARAMREVOKEINSTLINESMAX   = 9
+ PARAMCUSTOMTERMLINESMAX   = 999
+ PARAMREVOKEINSTLINESMAX   = 99
  PARAMNAME                 = CHARACTER
  PARAMVALUE                = CHARACTER
  PARAMVALIDATIONERROR      = NUMBER
@@ -1172,9 +1174,9 @@ PROCEDURE PRINTPROGRAMINFO
  NEWLINE
  PRINT "    "+Q+"programName"+Q+": "+Q+"BANNO.ODTOPTIN.V1.POW"+Q+","
  NEWLINE
- PRINT "    "+Q+"programVersion"+Q+": "+Q+"1.0.2"+Q+","
+ PRINT "    "+Q+"programVersion"+Q+": "+Q+"1.0.3"+Q+","
  NEWLINE
- PRINT "    "+Q+"programLastModDate"+Q+": "+Q+"02/11/2021"+Q
+ PRINT "    "+Q+"programLastModDate"+Q+": "+Q+"09/3/2021"+Q
  NEWLINE
  PRINT "  "+"},"
  NEWLINE
