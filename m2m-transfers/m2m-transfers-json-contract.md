@@ -137,7 +137,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "9876543210|HUB|accountType" }// [member id][first 3 of last name or business name][accountType]
+    { "id": 1, "value": "9876543210|HUB|accountType|0234" }// [member id][first 3 of last name or business name][accountType][accountId]
   ],
   "userNumList": [],
   "rgSession": 1
