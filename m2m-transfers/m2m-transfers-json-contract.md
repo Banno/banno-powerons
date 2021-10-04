@@ -348,6 +348,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 507 - Error creating/updating/deleting transfer
 508 - Undefined error
 509 - Member unverified
+510 - AccountId incorrect
 
 ### Transfer Frequencies
 The following strings are all valid transfer frequencies:
