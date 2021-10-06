@@ -45,11 +45,12 @@ Poweron response:
               },
               {
                 "rate": "1.200",
+                "apy": "1.210", // apy is optional
                 "minBalance": "5.00",
                 "maxBalance": "99.99"
               }
             ],
-            "apy": "2.380"// APY is optional
+            
           },
           {
             "shareType": "1",
