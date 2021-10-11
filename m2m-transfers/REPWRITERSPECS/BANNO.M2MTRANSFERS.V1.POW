@@ -15,14 +15,14 @@
 **
 **  Modification History:
 **   Ver. 1.0.0  07/21/21 T. Kainz - Original Programming
-**   Ver. 1.1.0  08/31/21 T. Kainz - Adding check for service code for
+**   Ver. 1.1.0  10/11/21 T. Kainz - Adding check for service code for
 **               transfer in on credited share. Added check for IRS code
 **               on credited share - must be 0. Added parameter options
-**               to allow transfers into clubs or certs except when share
-**               ID is unknown in which case clubs and certs are not
-**               targeted. Corrected issue preventing recurring transfers
-**               to loans. Set debugmode to on as default for first 45
-**               days after latest update.
+**               to allow transfers into clubs or certs. Corrected issue
+**               preventing recurring transfers to loans. Set debugmode
+**               to on as default for first 45 days after latest update.
+**               Removed ability for the user to send funds to account
+**               type only, now requiring a specific share or loan ID
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -299,10 +299,10 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- LASTMODDATE               = '08/31/21'
+ LASTMODDATE               = '10/11/21'
  LASTMODTIME               = "12:00 MT"
  PROGRAMUPDATENOTE1        = "Program currently in BETA testing status."
- PROGRAMUPDATENOTE2        = "Added club, cert options. IRS code checks."
+ PROGRAMUPDATENOTE2        = "Added club, cert options. IRS code checks. S/L ID Requirement"
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
  NTACCESSTYPE              = NTACCESSTYPEIQ
@@ -583,9 +583,6 @@ PROCEDURE VALIDATETARGETACCOUNT
  TARGETACCTCLOSEDATE=DATENULL
  TARGETSLCLOSECODATE=DATENULL
 
- BNODEBUGMSG="PROCEDURE VALIDATETARGETACCOUNT"
- CALL BNODEBUGMSGADD
-
  BNODEBUGMSG="PROCEDURE VALIDATETARGETACCOUNT - TARGETING - ACCT TYPE:"+
               UPPERCASE(TARGETACCTTYPE)+"  "+
              "TARGETSLTYPE="+TARGETSLTYPE+"  "+
@@ -609,24 +606,20 @@ PROCEDURE VALIDATETARGETACCOUNT
      BNODEBUGMSG=FORMAT("END OF NAME CHECK - NAME FOUND:9",NAMEFOUND)
      CALL BNODEBUGMSGADD
 
-[* Attempt to find a valid open share or loan by requested account type.
-** Since we're looking for an account category (checking/savings) andd
-** the first available share of that type, clubs & certs are off limits
-** even if the paramter setting is on. Logic is validating for a
-** transfer in svc code.
-*]
+[*Attempt to validate the share/loan account type and share/loan ID
+]
+
      IF NAMEFOUND=TRUE THEN
       DO
+
        IF (UPPERCASE(TARGETACCTTYPE)="SAVINGS" OR
            UPPERCASE(TARGETACCTTYPE)="CHECKING") THEN
         DO
-         FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
+         FOR EACH SHARE WITH (SHARE:ID=TARGETSLID AND
+                              SHARE:CLOSEDATE=DATENULL AND
                               SHARE:CHARGEOFFDATE=DATENULL AND
                               SHARE:IRSCODE=0 AND
-                            ((UPPERCASE(TARGETACCTTYPE)="SAVINGS" AND
-                              SHARE:SHARECODE=0) OR
-                             (UPPERCASE(TARGETACCTTYPE)="CHECKING" AND
-                              SHARE:SHARECODE=1)))
+                              PARAMALLOWABLESHARECODES(SHARE:SHARECODE)=TRUE)
           DO
            SVCCODEFOUND=FALSE
            FOR TMPLOOP=1 TO SVCCODEMAX
@@ -635,27 +628,17 @@ PROCEDURE VALIDATETARGETACCOUNT
                 ANYSERVICE(SHARE,TMPLOOP) THEN
               DO
                SVCCODEFOUND=TRUE
+               SLFOUND=TRUE
                TMPLOOP=SVCCODEMAX
               END
             END
-           IF SVCCODEFOUND=TRUE THEN
-            DO
-             IF (UPPERCASE(TARGETACCTTYPE)="SAVINGS" AND
-                 SHARE:SHARECODE<>1) OR
-                (UPPERCASE(TARGETACCTTYPE)="CHECKING" AND
-                 SHARE:SHARECODE=1) THEN
-              DO
-               SLFOUND=TRUE
-
-               BNODEBUGMSG="Share ID found - BY TARGET TYPE: "+SHARE:ID
-               CALL BNODEBUGMSGADD
-              END
-            END
-          END UNTIL SLFOUND=TRUE
+          END
         END
        ELSE IF UPPERCASE(TARGETACCTTYPE)="LOAN" THEN
         DO
-         FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL AND
+
+         FOR EACH LOAN WITH (LOAN:ID=TARGETSLID AND
+                             LOAN:CLOSEDATE=DATENULL AND
                              LOAN:CHARGEOFFDATE=DATENULL AND
                              LOAN:PAYOFFAMOUNT>$0.00)
           DO
@@ -666,18 +649,18 @@ PROCEDURE VALIDATETARGETACCOUNT
                 ANYSERVICE(LOAN,TMPLOOP) THEN
               DO
                SVCCODEFOUND=TRUE
+               SLFOUND=TRUE
                TMPLOOP=SVCCODEMAX
               END
             END
            IF SVCCODEFOUND=TRUE THEN
             DO
-             SLFOUND=TRUE
              BNODEBUGMSG="Loan ID found - BY TARGET TYPE: "+LOAN:ID
              CALL BNODEBUGMSGADD
             END
           END UNTIL SLFOUND=TRUE
         END
-      END [IF NAMEFOUND=TRUE AND SHAREFOUND=FALSE]
+      END
     END [IF TARGETACCTCLOSEDATE=DATENULL]
   END [FOR ACCOUNT]
 
@@ -1912,7 +1895,6 @@ PROCEDURE READCONFIGFILESETTINGS
 **  RETURN MEMOMODE                   Is the system in memo mode (boolean)
 **  RETURN DEBUGMODE                  Add debugging code to JSON Ouput (boolean)
 
-
 *]
  READCONFIGERROR=FALSE
  READCONFIGERRORMSG=""
@@ -2454,7 +2436,7 @@ PROCEDURE PULLRGDATA
 ** state.
 **
 ** STATE VERIFYMEMBER
-**   PASS    @RGUSERCHR1     Member ID | First 3 of last name or business | account type
+**   PASS    @RGUSERCHR1     Member ID | First 3 of last name or business | account type | account ID
 ** STATE CREATETRAN
 **   PASS    @RGUSERCHR1  Source Account | Recip Member ID | Acct Type or ID |
 **                        Frequency | Start Date | Day 1 | Day 2
@@ -2512,12 +2494,16 @@ PROCEDURE PULLRGDATA
    TARGETACCOUNT=DATALINEFIELD(1)
    TARGETVERIFY3=UPPERCASE(DATALINEFIELD(2))
    TARGETACCTTYPE=DATALINEFIELD(3)
-[* Determined that we will only be validating against CHECKING, SAVINGS
-** or LOAN and not specific ID. Leaving here for possible future use
+   IF SEGMENT(TARGETACCTTYPE,1,1)="L" THEN
+    TARGETSLTYPE="L"
+   ELSE
+    TARGETSLTYPE="S"
 
-   TARGETSLTYPE=UPPERCASE(SEGMENT(DATALINEFIELD(4),1,1))
-   TARGETSLID=SEGMENT( DATALINEFIELD(4),2,LENGTH(DATALINEFIELD(4)) )
-]
+   TARGETSLID=DATALINEFIELD(4)
+
+   TMPCHR="0000"+TARGETSLID
+   TARGETSLID=SEGMENT(TMPCHR,LENGTH(TMPCHR)-SLIDLEN+1,LENGTH(TMPCHR))
+
    IF LENGTH(TARGETACCOUNT)<10 THEN
     TARGETACCOUNT=REPEATCHR("0",10-LENGTH(TARGETACCOUNT))+TARGETACCOUNT
   END
@@ -2943,3 +2929,4 @@ END [PROCEDURE]
 
 #INCLUDE "BNO.INTERACTIVE.PRO"
 #INCLUDE "RB.LISTEXPAND"
+
