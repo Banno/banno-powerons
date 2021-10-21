@@ -24,7 +24,7 @@
 **                         Enhanced CFG file validation
 **                         Added Program Info & CFG LF JSON output
 **                         Corrected CFG read error JSON
-**    Ver. 1.0.3  10/18/21 J. Keenan - Updated so CFG Letter File defaults 
+**    Ver. 1.0.3  10/21/21 J. Keenan - Updated so CFG Letter File defaults 
 **                         properly handle blank input settings. Added logic
 **                         to check for same loan type in multiple categories
 **                         (home,auto,boat,secure loan)
@@ -160,7 +160,7 @@ SETUP
  INTERESTDESC(8)="Scheduled/364"
 
  PROGRAMVERSION="1.0.3"
- LASTMODDATE='10/18/21'
+ LASTMODDATE='10/21/21'
  LASTMODTIME="16:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=60
@@ -313,7 +313,7 @@ PRINT TITLE="BANNO.LOAN.PAYOFF.V1.POW"
    PRINT "  "+Q+"disclaimerText"+Q+":["
    NEWLINE
    I=1
-   WHILE I<TERMSMAXLINES AND TERMS(I)<>""
+   WHILE I<TERMSMAXLINES
     DO
      IF I>1 THEN
       PRINT ","
@@ -394,8 +394,6 @@ PROCEDURE READCONFIGFILESETTINGS
          CALL TMPCHRNLTS
          LELISTINPUT=TMPCHR
          LTCHR=LELISTINPUT
-         IF LELISTINPUT="" THEN
-          LELISTINPUT="ALL"
          CALL LISTEXPAND
          FOR I=0 TO TYPESMAX
           DO
