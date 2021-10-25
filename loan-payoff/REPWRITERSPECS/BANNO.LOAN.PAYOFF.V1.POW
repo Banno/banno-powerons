@@ -24,10 +24,12 @@
 **                         Enhanced CFG file validation
 **                         Added Program Info & CFG LF JSON output
 **                         Corrected CFG read error JSON
-**    Ver. 1.0.3  10/21/21 J. Keenan - Updated so CFG Letter File defaults 
+**    Ver. 1.0.3  10/25/21 J. Keenan - Updated so CFG Letter File defaults 
 **                         properly handle blank input settings. Added logic
 **                         to check for same loan type in multiple categories
 **                         (home,auto,boat,secure loan)
+**                         Added fixes for invalid punctuation in disclosure 
+**                         Corrected processing of disclosure blank lines
 *]
 
 SYMCONNECT
@@ -50,6 +52,7 @@ DEFINE
  TERMS	  	           = CHARACTER     ARRAY(40)
  TERMSMAXLINES	           = 40
  TERMSLINESCOUNT           = NUMBER
+ TERMSLASTLINEUSED         = NUMBER
 
  LOANINELIGIBLEREASON      = CHARACTER(60)
  PAYOFFACCOUNTNUM          = CHARACTER(10)
@@ -144,6 +147,13 @@ DEFINE
  SLTCHR                    = CHARACTER
  PRINTCONFIGINFODAYS       = NUMBER
  PRINTCONFIGINFO           = NUMBER
+
+ TMPTEXT                   = CHARACTER
+ TMPTEXTLOOP               = NUMBER
+ CHRVAL                    = NUMBER
+ VALIDCHRINPUT1            = CHARACTER
+ VALIDCHARS                = NUMBER ARRAY(999)
+ MAXCHRVALUE               = 255
 END
 
 SETUP
@@ -159,8 +169,10 @@ SETUP
  INTERESTDESC(7)="Actual/364"
  INTERESTDESC(8)="Scheduled/364"
 
+ VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
+
  PROGRAMVERSION="1.0.3"
- LASTMODDATE='10/21/21'
+ LASTMODDATE='10/25/21'
  LASTMODTIME="16:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=60
@@ -313,7 +325,7 @@ PRINT TITLE="BANNO.LOAN.PAYOFF.V1.POW"
    PRINT "  "+Q+"disclaimerText"+Q+":["
    NEWLINE
    I=1
-   WHILE I<TERMSMAXLINES
+   WHILE I<TERMSMAXLINES AND I<=TERMSLASTLINEUSED
     DO
      IF I>1 THEN
       PRINT ","
@@ -382,6 +394,7 @@ PROCEDURE READCONFIGFILESETTINGS
  ELSE
   DO
    TERMSLINESCOUNT=0
+   TERMSLASTLINEUSED=0
    WHILE LFERROR=""
     DO
      FILEREADLINE(LFNUMBER,LFLINE,LFERROR)
@@ -578,7 +591,11 @@ PROCEDURE READCONFIGFILESETTINGS
        IF SEGMENT(LFLINE,1,3)="TC:" AND TERMSLINESCOUNT<TERMSMAXLINES THEN
         DO
          TERMSLINESCOUNT=TERMSLINESCOUNT+1
-         TERMS(TERMSLINESCOUNT)=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         TMPCHR=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         CALL CLEANUPTEXT
+         TERMS(TERMSLINESCOUNT)=TMPCHR
+         IF TERMS(TERMSLINESCOUNT)<>"" THEN
+          TERMSLASTLINEUSED=TERMSLINESCOUNT
         END
 
       [ Print config info]
@@ -1020,6 +1037,43 @@ PROCEDURE TMPCHRNTS
   END
 END
 
+PROCEDURE CLEANUPTEXT
+[* 10/25/21
+** Check character string and remove out any characters or hidden
+** characters which have an ASCII value which is not established in
+** the VALIDCHRINPUT1 string in the SETUP division . This is to avoid
+** display issues with displaying the terms or conditions. Additionally,
+** if a back-slash or double quote is encountered, add a preceding
+** backslash
+**  PASS       TMPCHR   String to test
+**  RETURN     TMPCHR   Updated string
+*]
+ LELISTINPUT=VALIDCHRINPUT1
+ CALL LISTEXPAND
+ FOR TMPLOOP=0 TO MAXCHRVALUE
+  DO
+   VALIDCHARS(TMPLOOP)=LELIST(TMPLOOP)
+  END
+ TMPTEXT=""
+
+ IF TMPCHR<>"" THEN
+  DO
+   FOR TMPTEXTLOOP=1 TO LENGTH(TMPCHR)
+    DO
+     CHRVAL=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
+     IF  VALIDCHARS(CHRVAL)=TRUE THEN
+      DO
+[* Check for back-slash or double-quote. If found, precede with a back-slash
+*]
+       IF (CHRVAL=92 OR CHRVAL=34) THEN
+        TMPTEXT=TMPTEXT+"\"+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+       ELSE
+        TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+      END
+    END
+  END
+ TMPCHR=TMPTEXT
+END [PROCEDURE]
 
 PROCEDURE GETCOLLATERALFIELDDATA
 
