@@ -8,6 +8,8 @@
 **  04/16/2020: fixes for invalid punctuation in share descriptions
 **  06/16/2020: Correct new due date and maturity date to insure
 **              it falls on the correct day of the week.
+**  10/28/2021: Correct processing of disclosure blank lines. Added
+**              forced space between consecutive lines of text
 **
 **  This Banno service PowerOn allow the user to select one or more
 **  eligible loans and, for a fee, have the loan due date advanced
@@ -104,6 +106,7 @@ DEFINE
  TERMS               = CHARACTER ARRAY(40)
  TERMSMAXLINES       = 40
  TERMSLINESCOUNT     = NUMBER
+ TERMSLASTLLINEUSED  = NUMBER
 
  GETPRELOADDATA      = "GETPRELOADDATA"
  PERFORMSKIPAPAYMENT = "PERFORMSKIPAPAYMENT"
@@ -143,7 +146,7 @@ DEFINE
  DEFAULTMAXSKIPS           = 2
  DEFAULTMINMONTHSINCE      = 2
  DEFAULTSUBSOURCECODE      = 33 [Skip Payment Fee]
- DEFAULTOTHERACTION        = 1  [Use "FEE OTHER" OTHERACTION with Fee]
+ DEFAULTOTHERACTION        = 0  [Use "FEE OTHER" OTHERACTION with Fee]
  DEFAULTFEECOMMENT         = ""
  DEFAULTLOANMINPAYMENT     = $0.00
  DEFAULTLOANMAXPAYMENT     = $0.00
@@ -247,11 +250,18 @@ PROCEDURE PROCGETPRELOADDATA
  PRINT "  "+Q+"terms"+Q+":["
  NEWLINE
  I=1
- WHILE I<TERMSMAXLINES AND TERMS(I)<>""
+ WHILE I<TERMSMAXLINES AND
+       I<=TERMSLASTLLINEUSED
   DO
    IF I>1 THEN
     PRINT ","
-   PRINT Q+TERMS(I)+" "+Q
+   PRINT Q+TERMS(I)
+
+   IF TERMS(I)<> "" AND
+      I<TERMSLASTLLINEUSED AND
+      TERMS(I)<>"" THEN
+    PRINT " "
+   PRINT Q
    NEWLINE
    I=I+1
   END
@@ -653,6 +663,8 @@ PROCEDURE READCONFIGFILESETTINGS
          CALL CLEANUPTEXT
 
          TERMS(TERMSLINESCOUNT)=TMPCHR
+         IF TMPCHR<>"" THEN
+          TERMSLASTLLINEUSED=TERMSLINESCOUNT
         END
 [ Loan types]
        IF SEGMENT(LFLINE,1,3)="LT:" THEN
@@ -1050,3 +1062,4 @@ PROCEDURE CLEANUPTEXT
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
