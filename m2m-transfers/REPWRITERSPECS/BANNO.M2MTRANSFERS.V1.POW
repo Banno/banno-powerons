@@ -23,6 +23,8 @@
 **               to on as default for first 45 days after latest update.
 **               Removed ability for the user to send funds to account
 **               type only, now requiring a specific share or loan ID
+**   Ver. 1.1.1  11/02/21 T. Kainz - Corrected transfer locator format
+**               issue in JSON output when locator is over 999
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -1263,11 +1265,14 @@ PROCEDURE PRINTCURRENTSTATE
 
    PRINT INDENT(BASEINDENT+3)+"{"
    NEWLINE
-
    PRINT INDENT(BASEINDENT+4)+Q+"transferLoc"+Q+": "+Q
-   PRINT TRANLOC(TMPLOOP)
+
+   NLTSCHR=FORMAT("#######9",TRANLOC(TMPLOOP))
+   CALL NLS
+   PRINT NLTSCHR
    PRINT Q+","
    NEWLINE
+
    PRINT INDENT(BASEINDENT+4)+Q+"sourceAccount"+Q+": "+Q+TRANSOURCEACCT(TMPLOOP)+Q+","
    NEWLINE
 
