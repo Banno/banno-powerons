@@ -24,12 +24,13 @@
 **                         Enhanced CFG file validation
 **                         Added Program Info & CFG LF JSON output
 **                         Corrected CFG read error JSON
-**    Ver. 1.0.3  10/25/21 J. Keenan - Updated so CFG Letter File defaults 
+**    Ver. 1.0.3  11/02/21 J. Keenan - Updated so CFG Letter File defaults 
 **                         properly handle blank input settings. Added logic
 **                         to check for same loan type in multiple categories
 **                         (home,auto,boat,secure loan)
 **                         Added fixes for invalid punctuation in disclosure 
 **                         Corrected processing of disclosure blank lines
+**                         Added forced space between consecutive lines of text 
 *]
 
 SYMCONNECT
@@ -172,7 +173,7 @@ SETUP
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
  PROGRAMVERSION="1.0.3"
- LASTMODDATE='10/25/21'
+ LASTMODDATE='11/02/21'
  LASTMODTIME="16:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=60
@@ -325,11 +326,18 @@ PRINT TITLE="BANNO.LOAN.PAYOFF.V1.POW"
    PRINT "  "+Q+"disclaimerText"+Q+":["
    NEWLINE
    I=1
-   WHILE I<TERMSMAXLINES AND I<=TERMSLASTLINEUSED
+   WHILE I<TERMSMAXLINES AND
+         I<=TERMSLASTLINEUSED
     DO
      IF I>1 THEN
       PRINT ","
-     PRINT Q+TERMS(I)+" "+Q
+     PRINT Q+TERMS(I)
+     
+     IF TERMS(I)<>"" AND
+      I<TERMSLASTLINEUSED AND
+      TERMS(I+1)<>"" THEN
+      PRINT " "
+     PRINT Q
      NEWLINE
      I=I+1
     END
@@ -1460,4 +1468,5 @@ PROCEDURE DISPLAYCONFIGINFO
 END
 
 #INCLUDE "RB.LISTEXPAND"
+
 
