@@ -1,0 +1,129 @@
+[*
+**  PowerOn Name:       BANNO.XFRTODQLOAN.RPT
+**
+**  Copyright 2020 Jack Henry and Associates
+**
+**  This Banno report PowerOn provides a listing of share>loan
+**  transfers where the loan is delinquent. This allows collections
+**  to review the accounts.
+**
+**  For more information check
+**  https://github.com/Banno/banno-powerons
+**
+**  Banno is not responsible for any modifications to this file
+**  made by unauthorized personnel.
+**
+**  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
+*]
+
+TARGET=ACCOUNT
+
+DEFINE
+ FROMACCT=CHARACTER
+ TOACCT=CHARACTER
+ FROMID=CHARACTER
+ TOID=CHARACTER
+ XFRDATE=DATE
+ FROMDATE=DATE
+ TODATE=DATE
+ COUNT=NUMBER
+ SHAREOWNER=CHARACTER
+ LOANOWNER=CHARACTER
+END
+
+SETUP
+ FROMDATE=DATEREAD("Enter from date")
+ TODATE=DATEREAD("Enter to date")
+ COUNT=0
+END
+
+SELECT
+ ACCOUNT:CLOSEDATE='--/--/--' AND
+ ANY SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
+                 SHARE:CHARGEOFFDATE='--/--/--') AND
+ ANY SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND
+                          SHARE TRANSFER:TYPE=3 AND
+                         (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
+                          SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE)) 
+END
+
+PRINT TITLE="Share Transfers to DQ Loans" REPORTCATEGORY="COLLECTION"
+ HEADERS
+  COL=001 "ACCOUNT-FROM"
+  COL=019 "SHARE OWNER"
+  COL=037 "ACCOUNT-TO"
+  COL=056 "LOAN OWNER"
+  COL=080 "DUE DATE"
+  COL=094 "XFR DATE"
+  NEWLINE
+ END
+
+ SHAREOWNER=NAME:SHORTNAME
+
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
+                      SHARE:CHARGEOFFDATE='--/--/--')
+  DO
+   IF ANY SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND     [LOAN]
+                               SHARE TRANSFER:TYPE=3 AND
+                              (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
+                               SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE)) THEN
+    DO
+     FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND     [LOAN]
+                                   SHARE TRANSFER:TYPE=3 AND
+                                  (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
+                                   SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE))
+      DO
+       FROMACCT=ACCOUNT:NUMBER+"-S"
+       FROMID=SHARE:ID
+       TOACCT=SHARE TRANSFER:ACCOUNTNUMBER+"-L"
+       TOID=SHARE TRANSFER:ID
+
+       IF SHARE TRANSFER:FREQUENCY=0     [ONE TIME] THEN
+        XFRDATE=SHARE TRANSFER:EFFECTIVEDATE
+       ELSE IF SHARE TRANSFER:FREQUENCY>0 THEN
+        XFRDATE=SHARE TRANSFER:NEXTDATE
+
+       IF XFRDATE>=FROMDATE AND
+          XFRDATE<=TODATE THEN
+        DO
+         FOR ACCOUNT WITH NUMBER SHARE TRANSFER:ACCOUNTNUMBER
+          DO
+           LOANOWNER=NAME:SHORTNAME
+           FOR EACH LOAN WITH (LOAN:BALANCE>$0.00 AND
+                               LOAN:CLOSEDATE='--/--/--' AND
+                               LOAN:ID=TOID)
+            DO
+             IF LOAN:DUEDATE<XFRDATE THEN
+              DO
+               COUNT=COUNT+1 
+               CALL PRINTITOUT
+              END
+            END  [FOR EACH LOAN]
+          END  [FOR ACCT]
+        END  [TRANSFER DATE CHECK]
+      END  [FOR EACH]
+    END   [IF ANY]
+  END
+
+END
+
+TOTAL
+ NEWLINE
+ COL=001 "Number found: "
+ COL=019 COUNT
+ NEWLINE
+ NEWLINE
+ COL=001 "PowerOn Name: BANNO.XFRTODQLOAN.RPT"
+END
+
+PROCEDURE PRINTITOUT
+ COL=001 FROMACCT
+ COL=013 FROMID
+ COL=019 SHAREOWNER
+ COL=037 TOACCT
+ COL=049 TOID
+ COL=056 LOANOWNER
+ COL=087 LOAN:DUEDATE
+ COL=101 XFRDATE
+ NEWLINE
+END
