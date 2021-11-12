@@ -1,7 +1,7 @@
 [*
 **  PowerOn Name:       BANNO.XFRTODQLOAN.RPT
 **
-**  Copyright 2020 Jack Henry and Associates
+**  Copyright 2021 Jack Henry and Associates
 **
 **  This Banno report PowerOn provides a listing of share>loan
 **  transfers where the loan is delinquent. This allows collections
@@ -32,8 +32,12 @@ DEFINE
 END
 
 SETUP
- FROMDATE=DATEREAD("Enter from date")
- TODATE=DATEREAD("Enter to date")
+ FROMDATE=DATEREAD("Enter from date, default = SystemDate-1")
+ TODATE=DATEREAD("Enter to date, Default = SystemDate-1")
+ IF FROMDATE='--/--/--' THEN
+  FROMDATE=SYSTEMDATE-1
+ IF TODATE='--/--/--' THEN
+  TODATE=SYSTEMDATE-1
  COUNT=0
 END
 
@@ -63,46 +67,39 @@ PRINT TITLE="Share Transfers to DQ Loans" REPORTCATEGORY="COLLECTION"
  FOR EACH SHARE WITH (SHARE:CLOSEDATE='--/--/--' AND
                       SHARE:CHARGEOFFDATE='--/--/--')
   DO
-   IF ANY SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND     [LOAN]
-                               SHARE TRANSFER:TYPE=3 AND
-                              (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
-                               SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE)) THEN
+   FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND     [LOAN]
+                                 SHARE TRANSFER:TYPE=3 AND
+                                (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
+                                 SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE))
     DO
-     FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:IDTYPE=1 AND     [LOAN]
-                                   SHARE TRANSFER:TYPE=3 AND
-                                  (SHARE TRANSFER:EXPIRATIONDATE='--/--/--' OR
-                                   SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE))
+     FROMACCT=ACCOUNT:NUMBER+"-S"
+     FROMID=SHARE:ID
+     TOACCT=SHARE TRANSFER:ACCOUNTNUMBER+"-L"
+     TOID=SHARE TRANSFER:ID
+      IF SHARE TRANSFER:FREQUENCY=0     [ONE TIME] THEN
+      XFRDATE=SHARE TRANSFER:EFFECTIVEDATE
+     ELSE IF SHARE TRANSFER:FREQUENCY>0 THEN
+      XFRDATE=SHARE TRANSFER:NEXTDATE
+
+     IF XFRDATE>=FROMDATE AND
+        XFRDATE<=TODATE THEN
       DO
-       FROMACCT=ACCOUNT:NUMBER+"-S"
-       FROMID=SHARE:ID
-       TOACCT=SHARE TRANSFER:ACCOUNTNUMBER+"-L"
-       TOID=SHARE TRANSFER:ID
-
-       IF SHARE TRANSFER:FREQUENCY=0     [ONE TIME] THEN
-        XFRDATE=SHARE TRANSFER:EFFECTIVEDATE
-       ELSE IF SHARE TRANSFER:FREQUENCY>0 THEN
-        XFRDATE=SHARE TRANSFER:NEXTDATE
-
-       IF XFRDATE>=FROMDATE AND
-          XFRDATE<=TODATE THEN
+       FOR ACCOUNT WITH NUMBER SHARE TRANSFER:ACCOUNTNUMBER
         DO
-         FOR ACCOUNT WITH NUMBER SHARE TRANSFER:ACCOUNTNUMBER
+         LOANOWNER=NAME:SHORTNAME
+         FOR EACH LOAN WITH (LOAN:BALANCE>$0.00 AND
+                             LOAN:CLOSEDATE='--/--/--' AND
+                             LOAN:ID=TOID)
           DO
-           LOANOWNER=NAME:SHORTNAME
-           FOR EACH LOAN WITH (LOAN:BALANCE>$0.00 AND
-                               LOAN:CLOSEDATE='--/--/--' AND
-                               LOAN:ID=TOID)
+           IF LOAN:DUEDATE<XFRDATE THEN
             DO
-             IF LOAN:DUEDATE<XFRDATE THEN
-              DO
-               COUNT=COUNT+1 
-               CALL PRINTITOUT
-              END
-            END  [FOR EACH LOAN]
-          END  [FOR ACCT]
-        END  [TRANSFER DATE CHECK]
-      END  [FOR EACH]
-    END   [IF ANY]
+             COUNT=COUNT+1 
+             CALL PRINTITOUT
+            END
+          END  [FOR EACH LOAN]
+        END  [FOR ACCT]
+      END  [TRANSFER DATE CHECK]
+    END  [FOR EACH]
   END
 
 END
