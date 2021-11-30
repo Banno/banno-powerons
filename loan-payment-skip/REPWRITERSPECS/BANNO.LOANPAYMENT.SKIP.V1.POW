@@ -10,6 +10,8 @@
 **              it falls on the correct day of the week.
 **  10/28/2021: Correct processing of disclosure blank lines. Added
 **              forced space between consecutive lines of text
+**  11/30/2021: TKainz - Banno
+**              Changed max DQ grace days from 30 to unlimited
 **
 **  This Banno service PowerOn allow the user to select one or more
 **  eligible loans and, for a fee, have the loan due date advanced
@@ -741,8 +743,8 @@ PROCEDURE READCONFIGFILESETTINGS
 [ Grace days past due]
        IF SEGMENT(LFLINE,1,3)="GD:" THEN
         GRACEDAYS=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-       IF GRACEDAYS>30 THEN
-        GRACEDAYS=30 [MAX]
+       IF GRACEDAYS<0 THEN
+        GRACEDAYS=0
 [ Fee amount(s)]
        IF SEGMENT(LFLINE,1,3)="FA:" THEN
         FEEAMOUNTS(VALUE(SEGMENT(LFLINE,4,5)))=
