@@ -19,6 +19,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```jsonc
 {
   "currentState": {
+    "slidLength":4,
+    "systemDate": "11/30/2021",
     "transferLimits": {
       "enforceLimits": true, // remaining transferLimit properties are optional, if enforceLimits is false
       "countLimit": "5", // if limits are 0 assume no limit
@@ -30,18 +32,21 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "availableShares": [
       {
         "transferSLId": "0000800005S0002",
+        "type": "savings",
         "name": "SUMMER SAVER",
         "available": "50.00",
         "accountOwnerName": "Beth Nussbaum"
       },
       {
         "transferSLId": "0000800005S0010",
+        "type": "checking",
         "name": "REGULAR CHECKING",
         "available": "500.00",
         "accountOwnerName": "Ruth Nordstrom"
       },
       {
         "transferSLId": "0000800005S0015",
+        "type": "checking",
         "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
         "accountOwnerName": "Cliff Woodward"
@@ -50,6 +55,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "scheduledTransfers": [
       {
         "transferLoc": "215",
+        "transferCreateDate": "08/31/2021",
         "sourceAccount": "1234567890S0020",
         "accountName": "Bob's CHECKING",
         "transferAmt": "120.00",
@@ -59,14 +65,15 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001", // optional share or loan id
         "recipientNickname": "Emmy", // optonal, blank if not saved
         "startDate": "07/31/2021",
-	      "nextTransferDate":"08/07/2021",
+        "nextTransferDate":"08/07/2021",
         "transferFrequency": "weekly",
         "day1": "", // semi-monthly - first day
         "day2": "", // semi-monthly - second day
-	      "readOnly": false
+        "readOnly": false
       },
       {
         "transferLoc": "395",
+        "transferCreateDate": "08/31/2021",
         "sourceAccount": "1234567890S0001",
         "accountName": "MY Savings",
         "transferAmt": "120.00",
@@ -76,11 +83,11 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientAccountId": "0001",
         "recipientNickname": "",
         "startDate": "07/03/2021",
-	      "nextTransferDate":"08/07/2021",
+        "nextTransferDate":"08/07/2021",
         "transferFrequency": "semi-monthly",
         "day1": "3",
         "day2": "31",
-	      "readOnly": true
+        "readOnly": true
       }
     ],
     "savedRecipients": [
@@ -270,10 +277,10 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 {
   "rgState": "DELETERECIP",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
-  "userChrList": [],   
+  "userChrList": [],
   "userNumList": [
     {"id": 1, "value": 395} // recipientLoc
-  ],  
+  ],
   "rgSession": 1
 }
 ```
@@ -296,7 +303,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "userChrList": [],
   "userNumList": [
     { "id": 1, "value": 395 } // transferLoc
-  ],  
+  ],
   "rgSession": 1
 }
 ```
