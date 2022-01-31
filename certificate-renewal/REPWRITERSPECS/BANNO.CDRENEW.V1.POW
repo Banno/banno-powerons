@@ -2,45 +2,43 @@
 **  PowerOn Name:       BANNO.CDRENEW.V1.POW
 **  Letterfile Name:    BANNO.CDRENEW.V1.CFG
 **
-**  Copyright 2020 Jack Henry and Associates
+**  Copyright 2020-2022 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to update their
 **  Certificate maturity action.
 **
-**  Persistant Variable Use:
-**    @RGUSERCHR1 All States: Target account and share ID**
-**    @RGUSERCHR2 PROCESSDATA State: Transfer account and share/Loan ID
-**    @RGUSERCHR3 PROCESSDATA State: Transfer Amount
-**    @RGUSERCHR4 Store account number from @RGUSERCHR1 PRELOADDATA State
-**    @RGUSERCHR5 Store share ID from @RGUSERCHR1 PRELOADDATA State
+**  Program states and JSON returns
+**  --------------------------------------------------------------------
+**    STATE: GETPRELOADDATA
+**     PASS:  @RGUSERCHR1 Target account and share ID
+**  PROCESS:  Take account & share ID provided by the UX and based
+**            upon the parameter settings from the configuration Letter
+**            file, return current share state and valid options.
+**   RETURN:  Provide UX with the following data.
+**            Current cert maturity settings.
+**            List of CU approved options for the member to select from.
+**            CU custom messages, TOCs to display to the member.
+**            List of shares available for transfer into or out.
 **
-**    @RGUSERNUM1 PROCESSDATA State: Member option selected
-**    @RGUSERNUM2
-**    @RGUSERNUM3
-**    @RGUSERNUM4
-**    @RGUSERNUM5
+**    STATE: PROCESSDATA
+**     PASS:  @RGUSERCHR1 Target account and share ID
+**            @RGUSERCHR2 Transfer to/from account and share ID
+**            @RGUSERCHR3 Transfer Amount
+**  PROCESS:  Validate the user option selection, perform requested
+**            action.
+**   RETURN:  Receive user input, update share record as necessary.
+**            Create / update ancillary records (i.e.: share transfers).
+**            Return successful completion or not along with updated
+**            status of the targeted share.
 **
-** STATE             OVERVIEW
-** ----------------  -----------------------------------------------------------
-** GETPRELOADDATA    Provide UX with the following data.
-**                    Current cert maturity settings
-**                    List of CU approved options for the member to select from
-**                    CU custom messages, TOCs to display to the member
-**                    List of shares available for transfer into or out of
-**
-**
-** PROCESSDATA       Receive user input, update share record as necessary
-**                   Create / update ancillary records (i.e.: share transfers)
-**                   Returnsuccessful completion or not
-**
-** ErrorCode | loggingErrorMessage
-** ----------|-----------------------------------------------------------------
-** 500       | Generic Error
-** 501       | Configuration file error (error opening, reading or processing)
-** 502       | Invalid account or share (based on account type/share warning)
-** 503       | Maturity selection previously made - contact CU
-** 504       | Processing Error
-** 505       | Cross account access attempt
+**  Error codes and Logging Messages
+**  --------------------------------------------------------------------
+**  500: Generic Error
+**  501: Configuration file error (error opening, reading or processing)
+**  502: Invalid account or share (based on account type/share warning)
+**  503: Maturity selection previously made - contact CU
+**  504: Processing Error
+**  505: Cross account access attempt
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -49,7 +47,12 @@
 **  made by unauthorized personnel.
 **
 **  Modification History:
-**    Ver. 1.0.0  12/11/20 T. Kainz - Original Programming
+**    Ver. 1.0.0  12/11/20 TKainz - Banno
+**                Original Programming
+**    Ver. 1.1.0  01/31/22 TKainz - Banno
+**                Modified parameter settings to allow setting
+**                 maturity options.
+**                Added program info, debug info to JSON output.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -66,21 +69,17 @@ DEFINE
  TRUE                      = 1
  FALSE                     = 0
 
- CONFIGFILENAME            = "BANNO.CDRENEW.V1.CFG"
  STATEPRELOADDATA          = "PRELOADDATA"
  STATEPROCESSDATA          = "PROCESSDATA"
  STATEEND                  = "STATEEND"
  DATENULL                  = '--/--/--'
 
- DEBUGMODE                 = NUMBER
  LFNUMBER                  = NUMBER
  LFERROR                   = CHARACTER
  LFLINE                    = CHARACTER
  READCONFIGERROR           = NUMBER
  READCONFIGERRORMSG        = CHARACTER
  PARAMCHR                  = CHARACTER
-
- PARAMUSEROPTIONS          = CHARACTER
  PARAMINELIGIBLEACCTS      = CHARACTER
  PARAMWARNINGSACCT         = CHARACTER
  PARAMWARNINGSSHARE        = CHARACTER
@@ -89,17 +88,17 @@ DEFINE
  PARAMXFERTOSHARES         = CHARACTER
  PARAMXFERFROMSHARES       = CHARACTER
 
- PARAMPAYEETERMS           = CHARACTER ARRAY(9)
+ PARAMPAYEETERMS           = CHARACTER ARRAY(999)
  PARAMPAYEETERMLINES       = NUMBER
- PARAMPAYEETERMLINESMAX    = 9
+ PARAMPAYEETERMLINESMAX    = 999
 
- PARAMSUSPENDMSG           = CHARACTER ARRAY(9)
+ PARAMSUSPENDMSG           = CHARACTER ARRAY(999)
  PARAMSUSPENDMSGLINES      = NUMBER
- PARAMSUSPENDMSGLINESMAX   = 9
+ PARAMSUSPENDMSGLINESMAX   = 999
 
- PARAMREVIEWMSG            = CHARACTER ARRAY(9)
+ PARAMREVIEWMSG            = CHARACTER ARRAY(999)
  PARAMREVIEWMSGLINES       = NUMBER
- PARAMREVIEWMSGLINESMAX    = 9
+ PARAMREVIEWMSGLINESMAX    = 999
 
  PARAMLOCFOUND             = NUMBER
 
@@ -112,7 +111,6 @@ DEFINE
  WARNINGSSHARE             = NUMBER ARRAY(999)
  VALIDXFERTOSHARETYPES     = NUMBER ARRAY(9999)
  VALIDXFERFROMSHARETYPES   = NUMBER ARRAY(9999)
-
 
  ACCTFOUND                 = NUMBER
  ACCTWARNINGFOUND          = NUMBER
@@ -158,7 +156,6 @@ DEFINE
  MAXCHRVALUE               = 255
  WARNINGFOUND              = NUMBER
  FMUPDATEERRORTRACKING     = NUMBER
- VALIDBLOCKRULES           = NUMBER ARRAY(9999)
  VALIDPARAMS               = NUMBER
  VALIDACCOUNT              = NUMBER
 
@@ -251,9 +248,57 @@ DEFINE
  SYMXCLIENTNUM             = NUMBER
  ALLOWINMEMOMODE           = NUMBER
  PROGRAMVERSION            = CHARACTER
-END [DEFINE]
+
+[* TKainz - added 01/31
+*]
+ BNOCFGFILENAME            = CHARACTER
+ BNODEBUGCOUNT             = NUMBER
+ BNODEBUGLOOP              = NUMBER
+ BNODEBUGMODE              = NUMBER
+ BNODEBUGMODEOFF           = 0
+ BNODEBUGMODEON            = 1
+ BNODEBUGMSG               = CHARACTER
+ BNODEBUGMSGLIST           = CHARACTER ARRAY(999)
+ BNODEBUGMSGMAX            = 999
+ BNOIDLENGTH               = NUMBER
+ BNOINDENT                 = CHARACTER ARRAY(9)
+ BNOINDENTMAX              = 9
+ BNOLASTMODDATE            = DATE
+ BNOLASTMODTIME            = CHARACTER
+ BNOLOCALLOOP              = NUMBER
+ BNOPRINTDEBUGDAYS         = NUMBER
+ BNOPRINTDEBUGINFODAYS     = NUMBER
+ BNOPROGRAMNAME            = CHARACTER
+ BNOPROGRAMVERSION         = CHARACTER
+ BNOSLTYPELENGTH           = NUMBER
+ BNOSLTYPESMAX             = NUMBER
+ BNOTRUEFALSECHR           = CHARACTER ARRAY(2)
+ INCLUDEPROGRAMINFO        = NUMBER
+ OPTIONTYPELOOP            = NUMBER
+ PARAMOPTION1              = CHARACTER
+ PARAMOPTION2              = CHARACTER
+ PARAMOPTION3              = CHARACTER
+ PARAMOPTION4              = CHARACTER
+ PARAMOPTION5              = CHARACTER
+ PARAMOPTION6              = CHARACTER
+ PARAMOPTIONINPUT          = CHARACTER ARRAY(6)
+ PARAMSHARETYPESBYOPTION   = NUMBER ARRAY(6,9999)
+ SHARETYPELOOP             = NUMBER
+ TARGETSHARETYPE           = NUMBER
+ TMPVAL                    = NUMBER
+ END [DEFINE]
 
 SETUP
+ INCLUDEPROGRAMINFO=TRUE
+ BNOLASTMODDATE='01/31/22'
+ BNOLASTMODTIME="11:00 MT"
+ BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
+ BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
+ BNOPROGRAMVERSION="1.1.0"
+ BNOPRINTDEBUGINFODAYS=60
+ IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
+  BNODEBUGMODE=BNODEBUGMODEON
+
  PROGRAMVERSION            = ""
  THISACCOUNT               = ACCOUNT:NUMBER
  Q                         = CTRLCHR(34)
@@ -271,14 +316,20 @@ SETUP
  USEROPTIONSCHR(4)         = "Renew certificate"
  USEROPTIONSCHR(5)         = "Disburse funds by check"
  USEROPTIONSCHR(6)         = "Suspend certificate"
- DEBUGMODE                 = FALSE
  SYMXINSTANCE              = @SYMXINSTANCEID
  SYMXCLIENTNUM             = @CLIENTNUMBER
 
- FOR TMPLOOP=1 TO INDENTMAX
+
+ FOR BNOLOCALLOOP=1 TO BNOINDENTMAX
   DO
-   INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
+   BNOINDENT(BNOLOCALLOOP)=REPEATCHR(" ",BNOLOCALLOOP)
   END
+ BNOIDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
+ BNOSLTYPELENGTH=GETDATANUMBER(GETPARAMTYPELENGTH)
+ BNOSLTYPESMAX=VALUE(SEGMENT("9999",1,BNOSLTYPELENGTH))
+
+ BNOTRUEFALSECHR(TRUE)="true"
+ BNOTRUEFALSECHR(FALSE)="false"
 END [SETUP]
 
 PRINT TITLE="BANNO.CDRENEW.V1.POW"
@@ -385,17 +436,24 @@ PRINT TITLE="BANNO.CDRENEW.V1.POW"
    CALL JSONCLOSE
    @RGSTATE=STATEEND
   END
+
+ CALL BNOPRINTPROGRAMINFO
+ CALL BNOPRINTRGDATA
+ CALL BNOPRINTDEBUG
+ IF BNODEBUGMODE=BNODEBUGMODEOFF THEN
+  DO
+   NEWLINE
+  END
+ PRINT "}"
+ NEWLINE
 END [PRINT]
 
 PROCEDURE GETSHAREDETAILS
 
-IF DEBUGMODE=TRUE THEN
- DO
-  PRINT "IN GETSHAREDETAILS:"+
-        "TARGETACCOUNT="+TARGETACCOUNT+
-        "  TARGETSHAREID="+TARGETSHAREID
-  NEWLINE
- END
+ BNODEBUGMSG="IN GETSHAREDETAILS:"+
+             "TARGETACCOUNT="+TARGETACCOUNT+
+             "  TARGETSHAREID="+TARGETSHAREID
+ CALL BNODEBUGMSGADD
 
  FOR ACCOUNT TARGETACCOUNT
   DO
@@ -483,26 +541,27 @@ IF DEBUGMODE=TRUE THEN
       END
     END
   END
-END
+END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
 [* Read parameter settings from the configuration Letter file.
-**  OPTIONS PARAMUSEROPTIONS      Options available for the member to selec t(in LISTEXPAND format)
-**  LC      PARAMLIMITCHANGES     Limit changes to one per share (TRUE/FALSE)
-**  ET      PARAMDELETEXFERS      Delete share transfer records instead of expiring them (TRUE/FALSE)
-**  IAT     PARAMINELIGIBLEACCTS  Ineligible Account Type(s) (in LISTEXPAND format)
-**  AW      PARAMWARNINGSACCT     Acct level warnings which exclude account (in LISTEXPAND format)
-**  SW      PARAMWARNINGSSHARE    Share level warning which excludes the share (in LISTEXPAND format)
-**  TT      PARAMXFERTOSHARES     Valid share types to transfer funds from cert to share (in LISTEXPAND format)
-**  TF      PARAMXFERFROMSHARES   Valid share types to transfer funds from into cert (in LISTEXPAND format)
-**  PT      PARAMPAYEETERMS       Payee Terms & Conditions (array of up to 9 lines of text)
-**  SM      PARAMSUSPENDMSG       Suspend custom msg. (array of up to 9 lines of text)
-**  RM      PARAMREVIEWMSG        Review custom msg. (array of up to 9 lines of text)
+**  OPTION[6,9999] PARAMSHARETYPESBYOPTION Maturity options available by SHARE TYPE for the member to select from
+**  LC             PARAMLIMITCHANGES       Limit changes to one per share (TRUE/FALSE)
+**  ET             PARAMDELETEXFERS        Delete share transfer records instead of expiring them (TRUE/FALSE)
+**  IAT            PARAMINELIGIBLEACCTS    Ineligible Account Type(s) (in LISTEXPAND format)
+**  AW             PARAMWARNINGSACCT       Acct level warnings which exclude account (in LISTEXPAND format)
+**  SW             PARAMWARNINGSSHARE      Share level warning which excludes the share (in LISTEXPAND format)
+**  TT             PARAMXFERTOSHARES       Valid share types to transfer funds from cert to share (in LISTEXPAND format)
+**  TF             PARAMXFERFROMSHARES     Valid share types to transfer funds from into cert (in LISTEXPAND format)
+**  PT             PARAMPAYEETERMS         Payee Terms & Conditions (array of up to 9 lines of text)
+**  SM             PARAMSUSPENDMSG         Suspend custom msg. (array of up to 9 lines of text)
+**  RM             PARAMREVIEWMSG          Review custom msg. (array of up to 9 lines of text)
+**  DB             BNODEBUGMODE            Debug mode override
 *]
  INVALIDCONFIGPARAMS=FALSE
  READCONFIGERROR=FALSE
 
- FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
+ FILEOPEN("LETTER",BNOCFGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
   ERRORCODE=501
 
@@ -521,17 +580,28 @@ PROCEDURE READCONFIGFILESETTINGS
      CALL NORMALIZEDATA
      IF PARAMNAME<>"" THEN
       DO
-[* Debug Mode
-*]
-       IF PARAMNAME="DEBUGMODE" AND
-               PARAMVALUE="TRUE" THEN
-        DEBUGMODE=TRUE
-
-[* User Options
-*]
-       ELSE IF PARAMNAME="OPTIONS" AND
-          PARAMVALUE<>"" THEN
-        PARAMUSEROPTIONS=PARAMVALUE
+       IF PARAMNAME="OPTION1" OR
+          PARAMNAME="OPTION2" OR
+          PARAMNAME="OPTION3" OR
+          PARAMNAME="OPTION4" OR
+          PARAMNAME="OPTION5" OR
+          PARAMNAME="OPTION6" THEN
+        DO
+         TMPVAL=VALUE(PARAMNAME)
+         IF TMPVAL>0 AND
+            TMPVAL<=USEROPTIONSMAX THEN
+          DO
+           PARAMOPTIONINPUT(TMPVAL)=PARAMVALUE
+           IF PARAMVALUE="" THEN
+            PARAMVALUE="ALL"
+           LELISTINPUT=PARAMVALUE
+           CALL LISTEXPAND
+           FOR TMPLOOP=0 TO BNOSLTYPESMAX
+            DO
+             PARAMSHARETYPESBYOPTION(TMPVAL,TMPLOOP)=LELIST(TMPLOOP)
+            END
+          END
+        END
 
 [* Limit changes to 1
 *]
@@ -622,6 +692,15 @@ PROCEDURE READCONFIGFILESETTINGS
            PARAMREVIEWMSG(PARAMREVIEWMSGLINES)=TMPCHR
           END
         END
+[* Debug mode override
+*]
+       ELSE IF PARAMNAME="DB" THEN
+        DO
+         IF PARAMVALUE="TRUE" THEN
+          BNODEBUGMODE=TRUE
+         ELSE IF PARAMVALUE="FALSE" THEN
+          BNODEBUGMODE=FALSE
+       END
       END
 
      PARAMNAME=""
@@ -638,20 +717,11 @@ PROCEDURE READCONFIGFILESETTINGS
    FILECLOSE(LFNUMBER,LFERROR)
   END
 
-  LELISTINPUT=PARAMUSEROPTIONS
-  CALL LISTEXPAND
-  FOR TMPLOOP=1 TO USEROPTIONSMAX
-   DO
-    USEROPTIONSAVAILABLE(TMPLOOP)=LELIST(TMPLOOP)
-    IF LELIST(TMPLOOP)=TRUE THEN
-     USEROPTIONSMAXUSED=TMPLOOP
-   END
-
  LELISTINPUT=PARAMINELIGIBLEACCTS
  IF LELISTINPUT="" THEN
   LELISTINPUT="NONE"
  CALL LISTEXPAND
- FOR TMPLOOP=0 TO 9999
+ FOR TMPLOOP=0 TO MAXACCTYPES
   DO
    INVALIDACCTYPES(TMPLOOP)=LELIST(TMPLOOP)
   END
@@ -678,7 +748,7 @@ PROCEDURE READCONFIGFILESETTINGS
  IF LELISTINPUT="" THEN
   LELISTINPUT="NONE"
  CALL LISTEXPAND
- FOR TMPLOOP=0 TO 9999
+ FOR TMPLOOP=0 TO BNOSLTYPESMAX
   DO
    VALIDXFERTOSHARETYPES(TMPLOOP)=LELIST(TMPLOOP)
   END
@@ -687,44 +757,54 @@ PROCEDURE READCONFIGFILESETTINGS
  IF LELISTINPUT="" THEN
   LELISTINPUT="NONE"
  CALL LISTEXPAND
- FOR TMPLOOP=0 TO 9999
+ FOR TMPLOOP=0 TO BNOSLTYPESMAX
   DO
    VALIDXFERFROMSHARETYPES(TMPLOOP)=LELIST(TMPLOOP)
   END
 
- IF DEBUGMODE=TRUE THEN
+ IF BNODEBUGMODE=TRUE THEN
   DO
-   PRINT "PARAMUSEROPTIONS="+PARAMUSEROPTIONS
-   NEWLINE
-   PRINT "PARAMLIMITCHANGES="+BOOLEANCHR(PARAMLIMITCHANGES)
-   NEWLINE
-   PRINT "PARAMDELETEXFERS="+BOOLEANCHR(PARAMDELETEXFERS)
-   NEWLINE
-   PRINT "PARAMINELIGIBLEACCTS="+PARAMINELIGIBLEACCTS
-   NEWLINE
-   PRINT "PARAMWARNINGSACCT="+PARAMWARNINGSACCT
-   NEWLINE
-   PRINT "PARAMWARNINGSSHARE="+PARAMWARNINGSSHARE
-   NEWLINE
-   PRINT "PARAMXFERTOSHARES="+PARAMXFERTOSHARES
-   NEWLINE
-   PRINT "PARAMXFERFROMSHARES="+PARAMXFERFROMSHARES
-   NEWLINE
+   BNODEBUGMSG="PARAMOPTIONINPUT(1)="+PARAMOPTIONINPUT(1)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMOPTIONINPUT(2)="+PARAMOPTIONINPUT(2)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMOPTIONINPUT(3)="+PARAMOPTIONINPUT(3)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMOPTIONINPUT(4)="+PARAMOPTIONINPUT(4)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMOPTIONINPUT(5)="+PARAMOPTIONINPUT(5)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMOPTIONINPUT(6)="+PARAMOPTIONINPUT(6)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMLIMITCHANGES="+BOOLEANCHR(PARAMLIMITCHANGES)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMDELETEXFERS="+BOOLEANCHR(PARAMDELETEXFERS)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMINELIGIBLEACCTS="+PARAMINELIGIBLEACCTS
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMWARNINGSACCT="+PARAMWARNINGSACCT
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMWARNINGSSHARE="+PARAMWARNINGSSHARE
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMXFERTOSHARES="+PARAMXFERTOSHARES
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMXFERFROMSHARES="+PARAMXFERFROMSHARES
+   CALL BNODEBUGMSGADD
 
    FOR TMPLOOP=1 TO PARAMPAYEETERMLINES
     DO
-     PRINT PARAMPAYEETERMS(TMPLOOP)
-     NEWLINE
+     BNODEBUGMSG=PARAMPAYEETERMS(TMPLOOP)
+     CALL BNODEBUGMSGADD
     END
    FOR TMPLOOP=1 TO PARAMSUSPENDMSGLINES
     DO
-     PRINT PARAMSUSPENDMSG(TMPLOOP)
-     NEWLINE
+     BNODEBUGMSG=PARAMSUSPENDMSG(TMPLOOP)
+     CALL BNODEBUGMSGADD
     END
    FOR TMPLOOP=1 TO PARAMREVIEWMSGLINES
     DO
-     PRINT PARAMREVIEWMSG(TMPLOOP)
-     NEWLINE
+     BNODEBUGMSG=PARAMREVIEWMSG(TMPLOOP)
+     CALL BNODEBUGMSGADD
     END
   END
 END [PROCEDURE]
@@ -732,15 +812,28 @@ END [PROCEDURE]
 PROCEDURE VALIDATEPARAMS
 [* Validate required parameters to make sure all necessary
 ** parameter settings are present and within required ranges
+**
+** PASS    USEROPTIONSMAX                Max options user can select from
+** PASS    BNOSLTYPESMAX                 Max share/loan types (99 or 9999)
+** PASS    PARAMSHARETYPESBYOPTION(a,a)  Array of eligible share types
+**                                        indexed by user option
+** RETURN  PARAMVALIDATIONERROR          Boolean error flag - invalid parameter file
 *]
-
  PARAMVALIDATIONERROR=FALSE
-
+[* Validate that there is at least one valid user option for given option
+*]
  FOUND=FALSE
  FOR TMPLOOP=1 TO USEROPTIONSMAX
   DO
-   IF USEROPTIONSAVAILABLE(TMPLOOP)=TRUE THEN
-    FOUND=TRUE
+   FOR SHARETYPELOOP=0 TO BNOSLTYPESMAX
+    DO
+     IF PARAMSHARETYPESBYOPTION(TMPLOOP,SHARETYPELOOP)=TRUE THEN
+      DO
+       FOUND=TRUE
+       TMPLOOP=USEROPTIONSMAX
+       SHARETYPELOOP=BNOSLTYPESMAX
+      END
+    END
   END
  IF FOUND=FALSE THEN
   PARAMVALIDATIONERROR=TRUE
@@ -866,15 +959,13 @@ PROCEDURE INITIALIZATIONS
  LFNUMBER=0
  ERRORCODE=0
  USEROPTIONSMAXUSED=0
-
- PARAMUSEROPTIONS="1,2,3,4,5,6"
  PARAMLIMITCHANGES=TRUE
  PARAMINELIGIBLEACCTS="NONE"
  PARAMWARNINGSACCT="NONE"
  PARAMWARNINGSSHARE="NONE"
  PARAMDELETEXFERS=FALSE
 
- FOR TMPLOOP=0 TO 9
+ FOR TMPLOOP=0 TO 999
   DO
    PARAMPAYEETERMS(TMPLOOP)=""
    PARAMSUSPENDMSG(TMPLOOP)=""
@@ -886,7 +977,7 @@ PROCEDURE INITIALIZATIONS
    SERVICECODESIN(TMPLOOP)=FALSE
    SERVICECODESOUT(TMPLOOP)=TRUE
   END
-[TEK]
+
  LELISTINPUT=GETDATACHARACTER(GETPARAMSYMXCHCLSERVICESXIN,SYMXINSTANCE,SYMXCLIENTNUM)
  CALL LISTEXPAND
  FOR TMPLOOP=1 TO SERVICECODEMAX
@@ -994,6 +1085,20 @@ END [PROCEDURE]
 PROCEDURE VALIDATEACCOUNT
 [* Validate the account against targeted account warning codes
 ** and validate account type
+**
+**  PASS    TARGETACCOUNT                 Certificate account number
+**  PASS    INVALIDACCTYPES(a)            Boolean array of invalid acct types
+**  PASS    MAXWARNINGTYPES               Max possible warning types
+**  PASS    WARNINGSACCT(a)               Boolean array of current account warnings
+**  PASS    PARAMSHARETYPESBYOPTION(a,a)  Array of eligible share types
+**                                        indexed by user option
+**  PASS    USEROPTIONSAVAILABLE(a)       Boolean array of eligible maturity options
+**  PASS    PARAMLIMITCHANGES             Boolean - limit member changes to just 1 [T,F]
+**
+**  RETURN  WARANINGFOUND                 Boolean - warning found [T,F]
+**  RETURN  SHARENOTEFOUND                Boolean - share note found [T,F]
+**  RETURN  TARGETSHARETYPE               Targeted share type
+**  RETURN  USEROPTIONSMAXUSED            Highest Option number avail for cert
 *]
  INVALIDACCTTYPEFOUND=FALSE
  IF INVALIDACCTYPES(ACCOUNT:TYPE)=TRUE THEN
@@ -1016,7 +1121,22 @@ PROCEDURE VALIDATEACCOUNT
     DO
      FOR EACH SHARE WITH (SHARE:ID=TARGETSHAREID)
       DO
+[* TEK-01/31/22. Get share type and then determine options available for
+** the share type and the hightest option possible (to facilitate
+** JSON output
+*]
+       TARGETSHARETYPE=SHARE:TYPE
+       BNODEBUGMSG=FORMAT("TARGET SHARE TYPE = 9999",TARGETSHARETYPE)
+       CALL BNODEBUGMSGADD
 
+       FOR TMPLOOP=1 TO USEROPTIONSMAX
+        DO
+         IF PARAMSHARETYPESBYOPTION(TMPLOOP,TARGETSHARETYPE)=TRUE THEN
+          DO
+           USEROPTIONSAVAILABLE(TMPLOOP)=TRUE
+           USEROPTIONSMAXUSED=TMPLOOP
+          END
+        END
        SHARENOTEFOUND=FALSE
        TMPCHR="Banno Maturity Option Selected"
        IF PARAMLIMITCHANGES=TRUE THEN
@@ -1048,6 +1168,16 @@ PROCEDURE VALIDATEACCOUNT
  IF INVALIDACCTTYPEFOUND=TRUE OR
     WARNINGFOUND<>FALSE THEN
   ERRORCODE=502
+
+ BNODEBUGMSG="VALID OPTIONS:"
+ FOR TMPLOOP=1 TO USEROPTIONSMAX
+  DO
+   IF USEROPTIONSAVAILABLE(TMPLOOP)=TRUE THEN
+    BNODEBUGMSG=BNODEBUGMSG+FORMAT(" 99",TMPLOOP)
+  END
+ BNODEBUGMSG=BNODEBUGMSG+FORMAT("   MAXUSED: 99",USEROPTIONSMAXUSED)
+ CALL BNODEBUGMSGADD
+
 END [PROCEDURE]
 
 PROCEDURE CHECKFORMEMOMODE
@@ -1068,7 +1198,8 @@ PROCEDURE CHECKFORMEMOMODE
 END [PROCEDURE]
 
 PROCEDURE RETURNJSON2
-
+[* Send required JSON formatted output
+*]
  PRINT INDENT(0)+"{"
  NEWLINE
  PRINT INDENT(1)+Q+"results"+Q+": "+Q+"success"+Q+","
@@ -1097,8 +1228,6 @@ PROCEDURE RETURNJSON2
  PRINT INDENT(3)+Q+"transferAmount"+Q+": "+Q+TMPCHR+Q
  NEWLINE
  PRINT INDENT(2)+"}"
- NEWLINE
- PRINT INDENT(1)+"}"
  NEWLINE
 END
 
@@ -1404,11 +1533,21 @@ PROCEDURE RETURNJSON1
  NEWLINE
  PRINT INDENT(1)+"}"
  NEWLINE
- PRINT INDENT(0)+"}"
- NEWLINE
 END [PROCEDURE]
 
 PROCEDURE BUILDSHARETRANSFERTOLIST
+[* Compiles a list the member's shares which they can use to transfer
+** funds to upon maturity
+**
+**  PASS    TARGETSHAREID                Certificate Share ID
+**  PASS    VALIDXFERFROMSHARETYPES(a)   Array of eligible share types to transfer from
+**  PASS    SERVICECODESIN(a)            Array of valid service codes allowing transfer out
+**  RETURN  SLTRANSFERLISTTOCOUNT        Number of eligible transfer out shares found
+**  RETURN  SLTRANSFERLISTTOACCT(a)      Array of eligible shares for transfer out in
+**                                       Acct number+S+ID format
+**  RETURN  SLTRANSFERLISTTONAME(a)      Xfer out share nickname or description
+**  RETURN  SLTRANSFERLISTTOAVAILBAL(a)  Xfer out share available balance
+*]
  FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
                       SHARE:ID<>TARGETSHAREID AND
                       VALIDXFERTOSHARETYPES(SHARE:TYPE)=TRUE)
@@ -1445,6 +1584,18 @@ PROCEDURE BUILDSHARETRANSFERTOLIST
 END [PROCEDURE]
 
 PROCEDURE BUILDSHARETRANSFERFROMLIST
+[* Compiles a list the member's share s which they can use to transfer
+** funds from when adding funds to their certificate upon maturity
+**
+**  PASS    TARGETSHAREID                  Certificate Share ID
+**  PASS    VALIDXFERFROMSHARETYPES(a)     Array of eligible share types to transfer from
+**  PASS    SERVICECODESOUT(a)             Array of valid service codes allowing transfer out
+**  RETURN  SLTRANSFERLISTFROMCOUNT        Number of eligible transfer out shares found
+**  RETURN  SLTRANSFERLISTFROMACCT(a)      Array of eligible shares for transfer out in
+**                                         Acct number+S+ID format
+**  RETURN  SLTRANSFERLISTFROMNAME(a)      Xfer out share nickname or description
+**  RETURN  SLTRANSFERLISTFROMAVAILBAL(a)  Xfer out share available balance
+*]
  FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
                       SHARE:ID<>TARGETSHAREID AND
                       VALIDXFERFROMSHARETYPES(SHARE:TYPE)=TRUE)
@@ -1483,6 +1634,12 @@ PROCEDURE GETRGVALUES
 [* Check the values returned in the @USERCHR variables to
 ** determine if there are any values which need to be
 ** processed.
+**
+**  RETURN  TARGETACCOUNT    Targeted certificate account number
+**  RETURN  TARGETSHAREID    Certificate share ID
+**  RETURN  TRANSFERACCOUNT  Transfer to/from account number
+**  RETURN  TRANSFERSLTYPE   Transfer to/from share/loan ID type
+**  RETURN  TRANSFERSLID     Transfer to/from share/loan ID
 *]
  IF @RGSTATE=STATEPRELOADDATA THEN
   DO
@@ -1507,14 +1664,11 @@ PROCEDURE GETRGVALUES
      TARGETSHAREID=SEGMENT(@RGUSERCHR1,12,LENGTH(@RGUSERCHR1))
     END
 
-   IF DEBUGMODE=TRUE THEN
-    DO
-     PRINT FORMAT("action type: 9",actiontype)+
-          "   TARGETACCOUNT="+TARGETACCOUNT+
-          "   TARGETSHAREID="+TARGETSHAREID+
-           FORMAT("   LENGTH(@RGUSERCHR2)=99",LENGTH(@RGUSERCHR2))
-     NEWLINE
-    END
+   BNODEBUGMSG=FORMAT("action type: 9",actiontype)+
+              "   TARGETACCOUNT="+TARGETACCOUNT+
+              "   TARGETSHAREID="+TARGETSHAREID+
+               FORMAT("   LENGTH(@RGUSERCHR2)=99",LENGTH(@RGUSERCHR2))
+   CALL BNODEBUGMSGADD
 
    IF ACTIONTYPE=USEROPTIONINCREASE OR
       ACTIONTYPE=USEROPTIONTRANSFER THEN
@@ -1530,13 +1684,10 @@ PROCEDURE GETRGVALUES
        TRANSFERAMOUNT=MONEY(VALUE(@RGUSERCHR3))
 
 
-       IF DEBUGMODE=TRUE THEN
-        DO
-         PRINT "TRANSFERACCOUNT="+TRANSFERACCOUNT+
-               "   TRANSFERSLTYPE="+TRANSFERSLTYPE+
-               "   TRANSFERSLID="+TRANSFERSLID
-         NEWLINE
-        END
+       BNODEBUGMSG="TRANSFERACCOUNT="+TRANSFERACCOUNT+
+                   "   TRANSFERSLTYPE="+TRANSFERSLTYPE+
+                   "   TRANSFERSLID="+TRANSFERSLID
+       CALL BNODEBUGMSGADD
        FOR ACCOUNT TRANSFERACCOUNT
         DO
          FOR EACH SHARE WITH (SHARE:ID=TARGETSHAREID)
@@ -1550,6 +1701,19 @@ PROCEDURE GETRGVALUES
 END [PROCEDURE]
 
 PROCEDURE CREATETRANSFERIN
+[* Create the share transfer record to transfer in additional funds upon
+** share maturity
+**
+**  PASS    TARGETACCOUNT       Member's account number
+**  PASS    TARGETSHAREID       Member's share ID
+**  PASS    TRANSFERACCOUNT     Transfer "from" account number
+**  PASS    TRANSFERSLID        Transfer "from" share or loan ID
+**  PASS    TRANSFERSLTYPE      Trahsfer "from" share/loan flag
+**  PASS    TARGETMATURITYDATE  Transfer effective date
+**  PASS    TRANSFERAMOUNT      Transfer amount
+**
+**  RETURN  FMERROR             FM Error
+*]
  IF TRANSFERSLTYPE="S" THEN
  DO
   FOR ACCOUNT TRANSFERACCOUNT
@@ -1587,6 +1751,18 @@ PROCEDURE CREATETRANSFERIN
 END [PROCEDURE]
 
 PROCEDURE CREATETRANSFEROUT
+[* Create the share transfer record to transfer out all or part of the funds upon
+** share maturity
+**
+**  PASS    TARGETACCOUNT       Member's account number
+**  PASS    TARGETSHAREID       Member's share ID
+**  PASS    TRANSFERACCOUNT     Transfer "to" account number
+**  PASS    TRANSFERSLID        Transfer "to" share or loan ID
+**  PASS    TRANSFERSLTYPE      Trahsfer "to" share/loan flag
+**  PASS    TARGETMATURITYDATE  Transfer effective date
+**
+**  RETURN  FMERROR             FM Error
+*]
  IF TRANSFERSLTYPE="S" THEN
   DO
    FOR ACCOUNT TARGETACCOUNT
@@ -1620,7 +1796,18 @@ PROCEDURE CREATETRANSFEROUT
 END [PROCEDURE]
 
 PROCEDURE UPDATECERTFM
-
+[* Update the targeted certificate as needed based upon the
+** user input. If the parameter is set to only allow 1 change,
+** create the required note record to restrict the user from making
+** any additional changes.
+**
+**  PASS    TARGETACCOUNT      Member's account number
+**  PASS    TARGETSHAREID      Targeted certificate's Share ID
+**  PASS    SMATURITYPOSTCODE  New maturity post code
+**  PASS    TMPDATE            Expiration date of note record
+**
+**  RETURN  FMERROR           FM Error
+*]
  FOR ACCOUNT TARGETACCOUNT
   DO
    FMPERFORM REVISE SHARE TARGETSHAREID(0,0,FMERROR)
@@ -1635,12 +1822,9 @@ PROCEDURE UPDATECERTFM
   END
  ELSE
   DO
-   IF DEBUGMODE=TRUE THEN
-    DO
-     PRINT "TESTING FOR NOTE CREATION: "+
-           FORMAT("PARAMLIMITCHANGES:9",PARAMLIMITCHANGES)
-     NEWLINE
-    END
+   BNODEBUGMSG="TESTING FOR NOTE CREATION: "+
+                FORMAT("PARAMLIMITCHANGES:9",PARAMLIMITCHANGES)
+   CALL BNODEBUGMSGADD
    IF PARAMLIMITCHANGES=TRUE THEN
     DO
      FOR ACCOUNT TARGETACCOUNT
@@ -1653,17 +1837,16 @@ PROCEDURE UPDATECERTFM
          SET EXPIRATIONDATE TO TMPDATE
         END
       END
-     IF DEBUGMODE=TRUE THEN
-      DO
-       PRINT "NOTE RECORD CREATION RESULT - FMERROR="+FMERROR
-       NEWLINE
-      END
+     BNODEBUGMSG="NOTE RECORD CREATION RESULT - FMERROR="+FMERROR
+     CALL BNODEBUGMSGADD
     END
   END
 END [PROCEDURE]
 
 PROCEDURE EXPIREORDELETEXFERS
-
+[* Built a list of current transfer then depending upon the parameter setting
+** either delete or expire the transfers
+*]
  STRANSFERCOUNT=0
  FOR ACCOUNT TARGETACCOUNT
   DO
@@ -1688,14 +1871,10 @@ PROCEDURE EXPIREORDELETEXFERS
        IF TMPDATE>SYSTEMDATE THEN
         TMPDATE=DATENULL
 
-       IF DEBUGMODE=TRUE THEN
-        DO
-         PRINT "STARTING EXPIRATION OF XFERS"
-         NEWLINE
-         PRINT "TARGETSHAREID="+TARGETSHAREID+"   "+
-               FORMAT("TRANSFER LOC:999",SXFERLOC(TMPLOOP))
-         NEWLINE
-        END
+       BNODEBUGMSG="STARTING EXPIRATION OF XFERS:"+
+                   "TARGETSHAREID="+TARGETSHAREID+"   "+
+                    FORMAT("TRANSFER LOC:999",SXFERLOC(TMPLOOP))
+       CALL BNODEBUGMSGADD
        IF PARAMDELETEXFERS=TRUE THEN
         DO
          FMPERFORM DELETE SHARE TARGETSHAREID TRANSFER LOC SXFERLOC(TMPLOOP)(0,0,FMERROR)
@@ -1732,4 +1911,107 @@ PROCEDURE VALIDATESYSMEMOMODE
   END
 END [PROCEDURE]
 
+PROCEDURE BNOPRINTPROGRAMINFO
+[* Print program info to direct JSON output
+**
+**  PASS    BNOPROGRAMNAME     Program name
+**  PASS    BNOPROGRAMVERSION  Program version
+**  PASS    BNOLASTMODDATE     Last mod date
+**  PASS    BNOLASTMODTIME     Last mod time
+*]
+ PRINT BNOINDENT(1)+","
+ NEWLINE
+ PRINT BNOINDENT(1)+Q+"programInfo"+Q+":"+Q+
+                    BNOPROGRAMNAME+"  "+
+                    BNOPROGRAMVERSION+"  "+
+                    FORMAT("99/99/99 ",BNOLASTMODDATE)+
+                    BNOLASTMODTIME+Q
+END [PROCEDURE]
+
+PROCEDURE BNOPRINTRGDATA
+[* Print @RGUSER[CHR,NUM] data passed from the UX in proper JSON format
+**
+**  PASS    BNODEBUGMODE     Boolean: Print debug data, T/F
+*]
+
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
+  DO
+   PRINT ","
+   NEWLINE
+   PRINT BNOINDENT(1)+Q+"rgData"+Q+": ["
+   NEWLINE
+   PRINT BNOINDENT(2)+Q+"CHR1:'"+@RGUSERCHR1+"' "+
+                     "CHR2:'"+@RGUSERCHR2+"'"+Q+","
+   NEWLINE
+   PRINT BNOINDENT(2)+Q+"CHR3:'"+@RGUSERCHR3+"' "+
+                     "CHR4:'"+@RGUSERCHR4+"'"+Q+","
+
+   NEWLINE
+   PRINT BNOINDENT(2)+Q+"CHR5:'"+@RGUSERCHR5+"' "+
+                     "NUM1:"+FORMAT("#########9 ",@RGUSERNUM1)+
+                     "NUM2:"+FORMAT("#########9 ",@RGUSERNUM2)+
+                     "NUM3:"+FORMAT("#########9 ",@RGUSERNUM3)+
+                     "NUM4:"+FORMAT("#########9 ",@RGUSERNUM4)+
+                     "NUM5:"+FORMAT("#########9",@RGUSERNUM5)+Q
+   NEWLINE
+   PRINT BNOINDENT(1)+"]"
+   NEWLINE
+  END
+END [PROCEDURE]
+
+PROCEDURE BNODEBUGMSGADD
+[* Add a message line to the debug message array
+**
+** PASS    BNODEBUGMSGMAX     Current array index max lines allowed
+** PASS    BNODEBUGMSG        Debug message to add to array
+**
+** RETURN  BNODEBUGCOUNT      Count of debug message lines
+** RETURN  BNODEBUGMSGLIST(A) Debug lines of data to print
+*]
+ IF BNODEBUGCOUNT<BNODEBUGMSGMAX THEN
+  DO
+   BNODEBUGCOUNT=BNODEBUGCOUNT+1
+   BNODEBUGMSGLIST(BNODEBUGCOUNT)=BNODEBUGMSG
+   BNODEBUGMSG=""
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOPRINTDEBUG
+[* Print debug output in proper JSON format. Requires BNODEBUGMODE to be
+** on (or true).
+**
+**  PASS  BNODEBUGMODE        Boolean: Print debug data, T/F
+**  PASS  BNODEBUGMSGLIST(A)  Array of debug messages to print
+**  PASS  BNODEBUGCOUNT       Number of debug lines to print
+*]
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
+  DO
+   PRINT ","
+   NEWLINE
+   PRINT BNOINDENT(2)+Q+"debugData"+Q+": ["
+   NEWLINE
+   PRINT BNOINDENT(2)+Q+"Debug note: Debug lines truncated to 126 characters"+Q
+
+   FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
+    DO
+     IF BNODEBUGLOOP=1 THEN
+      DO
+       IF BNODEBUGLOOP<BNODEBUGCOUNT THEN
+        DO
+         PRINT ","
+         NEWLINE
+        END
+      END
+     PRINT BNOINDENT(3)+Q+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,126)+Q
+     IF BNODEBUGLOOP<BNODEBUGCOUNT THEN
+      PRINT ","
+     NEWLINE
+    END
+
+   PRINT BNOINDENT(2)+"]"
+   NEWLINE
+  END
+END [PROCEDURE]
+
 #INCLUDE "RB.LISTEXPAND"
+
