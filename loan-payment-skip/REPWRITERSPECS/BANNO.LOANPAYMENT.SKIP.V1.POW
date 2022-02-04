@@ -7,8 +7,9 @@
 **  --------------------------------------------------------------------
 **  This Banno service PowerOn allow the user to select one or more
 **  eligible loans and, for a fee, have the loan due date advanced
-**  by a month.
-
+**  by 28 days, 1 month or one payment cycle, depending upon the
+**  parameter settings. Once the new due date has been calculated, the
+**  loan maturity date will also be advanced accordingly.
 **
 **  Modification History
 **  --------------------------------------------------------------------
@@ -22,13 +23,16 @@
 **              Added forced space between consecutive lines of text
 **  Ver. 1.0.5  11/30/2021: TKainz - Banno
 **              Changed max DQ grace days from 30 to unlimited
-**  Ver 1.1.0 0 1/24/2021: TKainz - Banno
+**  Ver. 1.1.0  02/04/2022: TKainz - Banno
 **              Added parameter to allow loan eligibility to also be based
 **               upon loan payment frequencies.
 **              Added parameter to allow CU to keep new payment due date
 **               calc. as it currently operates (28 days/1 month) or allow
 **               the new due date calculation to be based upon the
 **               actual payment frequency.
+**              Added additional logic for skip first/skip last loan
+**               frequencies even though they may be set for the "M"
+**               (1 month/28 day) due date advance option.
 **              Added parameter setting for min. number of payments
 **               requirement (LOAN:PAYMENTHISTORY:1)
 **              Added parameter for loan eligibility to be based upon loan
@@ -41,7 +45,6 @@
 **               when the member runs the program.
 **              Added JSON output of debug code, parameter file settings
 **               and current program test mode and account's test status.
-
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -195,8 +198,7 @@ DEFINE
  VALIDCHARS                = NUMBER ARRAY(999)
  MAXCHRVALUE               = 255
 
-[* 01/21/22 *]
-
+[* 02/04/22 *]
  APPROVALCODESEXCLUDED     = NUMBER ARRAY(9999)
  BNOCFGFILENAME            = CHARACTER
  BNODEBUGCOUNT             = NUMBER
@@ -224,14 +226,14 @@ DEFINE
  CUTOFFDQE                 = NUMBER
  DUEDATECALCTYPE           = CHARACTER ARRAY(13)
  ELEGIBLEFREQUENCIES       = NUMBER ARRAY(13)
+ HONORSKIPS                = NUMBER
  INCLUDEPROGRAMINFO        = NUMBER
  INELIGIBLECODEAPPROVALCODE= 13
  INELIGIBLECODEDQPAYMENTS  = 14
  INELIGIBLECODEFREQ        = 11
- INELIGIBLECODEMINPAYMENTCOUNT=12
+ INELIGIBLECODEMINPMTCOUNT = 12
  LNEWDUEMONTH              = NUMBER
  MINIMUMPAYMENTCOUNT       = NUMBER
- QQ                        = CHARACTER
  TESTACCOUNTLIST           = CHARACTER
  TESTMODE                  = NUMBER
  TMPPOS                    = NUMBER
@@ -242,7 +244,6 @@ END [DEFINE]
 
 SETUP
  Q=CTRLCHR(34)
- QQ=CTRLCHR(34)
  TRUEFALSECHR(FALSE)="FALSE"
  TRUEFALSECHR(TRUE)="TRUE"
  CALL INITIALIZETERMS
@@ -251,8 +252,8 @@ SETUP
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='01/24/22'
- BNOLASTMODTIME="07:00 MT"
+ BNOLASTMODDATE='02/04/22'
+ BNOLASTMODTIME="15:00 MT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.V1.CFG"
  BNOPROGRAMVERSION="1.1.0"
@@ -466,7 +467,8 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
  PRINT "{"+Q+"loansWithPaymentsSkipped"+Q+": ["
  NEWLINE
 
- [ Need the loan data for input validation ]
+[* Need the loan data for input validation
+*]
  CALL GETLOANDATA
 
  TEXT1=@RGUSERCHR2
@@ -484,7 +486,6 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
   DO
    CALL GETNEXTLID
    CALL GETSKIPCRITERIA
-
    I=1
    WHILE I<=TOTALLOANS AND LOANID(I)<>LID
     DO
@@ -668,6 +669,7 @@ PROCEDURE INITIALIZEDATA
  LOANMAXPAYMENT=DEFAULTLOANMAXPAYMENT
  STARTDATE=DEFAULTSTARTDATE
  ENDDATE=DEFAULTENDDATE
+ HONORSKIPS=FALSE
 
  WHILELIMIT=100000
  FOR I=1 TO LOANSMAX
@@ -752,7 +754,7 @@ PROCEDURE INITIALIZEDATA
 [* 01/21/22 *]
  INELIGIBLEREASONS(INELIGIBLECODEFREQ)=
   "Loan payment frequency is ineligible"
- INELIGIBLEREASONS(INELIGIBLECODEMINPAYMENTCOUNT)=
+ INELIGIBLEREASONS(INELIGIBLECODEMINPMTCOUNT)=
   "Minimum payment count not met"
  INELIGIBLEREASONS(INELIGIBLECODEAPPROVALCODE)=
   "Ineligible loan approval code"
@@ -1049,6 +1051,20 @@ PROCEDURE READCONFIGFILESETTINGS
          CALL BNODEBUGMSGADD
          CUTOFFDQE=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
         END
+
+[check for honoring of the skip first / skip last criteria ]
+       IF SEGMENT(LFLINE,1,5)="SFLE:" THEN
+        DO
+         BNODEBUGMSG="    "+LFLINE
+         CALL BNODEBUGMSGADD
+         TEXT1=UPPERCASE(SEGMENT(LFLINE,6,LENGTH(LFLINE)))
+         CALL TEXTNLTS
+         IF UPPERCASE(TEXT1)="TRUE" THEN
+          HONORSKIPS=TRUE
+         BNODEBUGMSG="    SFLE="+TRUEFALSECHR(HONORSKIPS)
+         CALL BNODEBUGMSGADD
+        END
+
 [grab test account list]
        IF SEGMENT(LFLINE,1,4)="TNC:" THEN
         DO
@@ -1216,7 +1232,7 @@ PROCEDURE GETLOANDATA
 [* Minimum Payment Count *]
      IF MINIMUMPAYMENTCOUNT>0 AND
         LOAN:PAYMENTHISTORY:1<MINIMUMPAYMENTCOUNT THEN
-      LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEMINPAYMENTCOUNT)=TRUE
+      LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEMINPMTCOUNT)=TRUE
 
 [* Approval Code Exclusion *]
      IF APPROVALCODESEXCLUDED(LOAN:APPROVALCODE)=TRUE THEN
@@ -1448,12 +1464,62 @@ PROCEDURE GETSKIPCRITERIA
 
        IF LMATURITYDATE<>DATENULL THEN
         LNEWMATURITYDATE=LMATURITYDATE+28
-        BNODEBUGMSG="Evaluating LOAN "+LID+" by 28 day - "+FORMAT("Freq=99",LOAN:PAYMENTFREQUENCY)+
+
+
+[* TEK-01/27 Adding check for skip first, skip last for freqs. 6,7,11,12 and adjusting due date
+** by one payment cycle (plus 2 weeks for freqs. 6 or 7, plus 1 week for freqs. 11 or 12 IF
+** the new payment due falls into the skip first/skip last scenario. Maturity date will also be
+** adjusted accordingly
+*]
+       IF HONORSKIPS=TRUE THEN
+        DO
+         IF LOAN:PAYMENTFREQUENCY=6 THEN [Biweekly, skip first]
+          DO
+           LNEWDUEMONTH=MONTH(LNEWDUEDATE)
+           IF MONTH(LNEWDUEDATE+28)=LNEWDUEMONTH THEN
+            DO
+             LNEWDUEDATE=LNEWDUEDATE+14
+             IF LMATURITYDATE<>DATENULL THEN
+              LNEWMATURITYDATE=LNEWMATURITYDATE+14
+            END
+          END
+         ELSE IF LOAN:PAYMENTFREQUENCY=7 THEN [Biweekly, skip last]
+          DO
+           LNEWDUEMONTH=MONTH(LNEWDUEDATE)
+           IF MONTH(LNEWDUEDATE-28)=LNEWDUEMONTH THEN
+            DO
+             LNEWDUEDATE=LNEWDUEDATE+14
+             IF LMATURITYDATE<>DATENULL THEN
+              LNEWMATURITYDATE=LNEWMATURITYDATE+14
+            END
+          END
+         ELSE IF LOAN:PAYMENTFREQUENCY=11 THEN [Weekly, skip first]
+          DO
+           LNEWDUEMONTH=MONTH(LNEWDUEDATE)
+           IF MONTH(LNEWDUEDATE+28)=LNEWDUEMONTH THEN
+            DO
+             LNEWDUEDATE=LNEWDUEDATE+7
+             IF LMATURITYDATE<>DATENULL THEN
+              LNEWMATURITYDATE=LNEWMATURITYDATE+7
+            END
+          END
+         ELSE IF LOAN:PAYMENTFREQUENCY=12 THEN [Weekly, skip last]
+          DO
+           LNEWDUEMONTH=MONTH(LNEWDUEDATE)
+           IF MONTH(LNEWDUEDATE-28)=LNEWDUEMONTH THEN
+            DO
+             LNEWDUEDATE=LNEWDUEDATE+7
+             IF LMATURITYDATE<>DATENULL THEN
+              LNEWMATURITYDATE=LNEWMATURITYDATE+7
+            END
+          END
+        END [IF HONORSKIPS=TRUE]
+       BNODEBUGMSG="Evaluating LOAN "+LID+" by 28 day - "+FORMAT("Freq=99",LOAN:PAYMENTFREQUENCY)+
                     FORMAT("  OLD DUE:99/99/99",LDUEDATE)+
                     FORMAT("  NEW DUE:99/99/99",LNEWDUEDATE)+
                     FORMAT("  OLD MAT:99/99/99",LMATURITYDATE)+
                     FORMAT("  NEW MAT:99/99/99",LNEWMATURITYDATE)
-        CALL  BNODEBUGMSGADD
+       CALL  BNODEBUGMSGADD
       END
      ELSE
       DO
@@ -1618,12 +1684,12 @@ PROCEDURE BNOPRINTPROGRAMINFO
 *]
  PRINT BNOINDENT(1)+","
  NEWLINE
- PRINT BNOINDENT(1)+QQ+"programInfo"+QQ+":"+QQ+
+ PRINT BNOINDENT(1)+Q+"programInfo"+Q+":"+Q+
                     BNOPROGRAMNAME+"  "+
                     BNOPROGRAMVERSION+"  "+
                     FORMAT("99/99/99 ",BNOLASTMODDATE)+"  "+
                     "TESTMODE:"+TRUEFALSECHR(TESTMODE)+"  "+
-                    "TESTACCT:"+TRUEFALSECHR(VALIDTESTACCOUNT)+QQ
+                    "TESTACCT:"+TRUEFALSECHR(VALIDTESTACCOUNT)+Q
 END [PROCEDURE]
 
 PROCEDURE BNOPRINTRGDATA
@@ -1637,21 +1703,21 @@ PROCEDURE BNOPRINTRGDATA
 
    PRINT ","
    NEWLINE
-   PRINT BNOINDENT(1)+QQ+"rgData"+QQ+": ["
+   PRINT BNOINDENT(1)+Q+"rgData"+Q+": ["
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"CHR1:'"+@RGUSERCHR1+"' "+
-                     "CHR2:'"+@RGUSERCHR2+"'"+QQ+","
+   PRINT BNOINDENT(2)+Q+"CHR1:'"+@RGUSERCHR1+"' "+
+                     "CHR2:'"+@RGUSERCHR2+"'"+Q+","
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"CHR3:'"+@RGUSERCHR3+"' "+
-                     "CHR4:'"+@RGUSERCHR4+"'"+QQ+","
+   PRINT BNOINDENT(2)+Q+"CHR3:'"+@RGUSERCHR3+"' "+
+                     "CHR4:'"+@RGUSERCHR4+"'"+Q+","
 
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"CHR5:'"+@RGUSERCHR5+"' "+
+   PRINT BNOINDENT(2)+Q+"CHR5:'"+@RGUSERCHR5+"' "+
                      "NUM1:"+FORMAT("#########9 ",@RGUSERNUM1)+
                      "NUM2:"+FORMAT("#########9 ",@RGUSERNUM2)+
                      "NUM3:"+FORMAT("#########9 ",@RGUSERNUM3)+
                      "NUM4:"+FORMAT("#########9 ",@RGUSERNUM4)+
-                     "NUM5:"+FORMAT("#########9",@RGUSERNUM5)+QQ
+                     "NUM5:"+FORMAT("#########9",@RGUSERNUM5)+Q
    NEWLINE
    PRINT BNOINDENT(1)+"]"
    NEWLINE
@@ -1687,9 +1753,9 @@ PROCEDURE BNOPRINTDEBUG
   DO
    PRINT ","
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"debugData"+QQ+": ["
+   PRINT BNOINDENT(2)+Q+"debugData"+Q+": ["
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"Debug note: Debug lines truncated to 126 characters"+QQ
+   PRINT BNOINDENT(2)+Q+"Debug note: Debug lines truncated to 126 characters"+Q
 
    FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
     DO
@@ -1701,7 +1767,7 @@ PROCEDURE BNOPRINTDEBUG
          NEWLINE
         END
       END
-     PRINT BNOINDENT(3)+QQ+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,126)+QQ
+     PRINT BNOINDENT(3)+Q+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,126)+Q
      IF BNODEBUGLOOP<BNODEBUGCOUNT THEN
       PRINT ","
      NEWLINE
@@ -1713,3 +1779,5 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
+
