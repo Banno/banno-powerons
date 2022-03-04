@@ -45,6 +45,8 @@
 **               when the member runs the program.
 **              Added JSON output of debug code, parameter file settings
 **               and current program test mode and account's test status.
+**  Ver. 1.1.1  03/04/2022: TKainz - Banno
+**              Corrected Configuration Letterfile name
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -250,10 +252,10 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='02/04/22'
- BNOLASTMODTIME="15:00 MT"
+ BNOLASTMODDATE='03/04/22'
+ BNOLASTMODTIME="13:30 MT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
- BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.V1.CFG"
+ BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
  BNOPROGRAMVERSION="1.1.0"
  BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
