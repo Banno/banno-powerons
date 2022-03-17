@@ -12,7 +12,7 @@
 **    Ver. 1.0.0  11/16/20 T. Kainz - Original Programming
 **    Ver. 1.0.1  03/17/22 T. Kainz - Added additional scenario check (scenario 0)
 **                                    Added program info and debug info to JSON output.
-**                                    Removed procedures not being needed or called
+**                                    Removed procedures not being NEEDED OR CALLED
 **                                    Added additional documentation
 **                                    Added scenario logic used to JSON output
 **
@@ -1042,11 +1042,11 @@ PROCEDURE ERRORHANDLER
 **
 ** ERROR CODES
 **  500 - Program running in memo mode
-**  501 - No elegible name types defined
+**  501 - No eligible name types defined
 *]
  ERRORMSG="loggingErrorMessage"
  ERRORDETAIL(0)="Program running in memo mode"
- ERRORDETAIL(1)="No elegible name types defined"
+ ERRORDETAIL(1)="No eligible name types defined"
 
  ERRORDETAILOFFSET=ERRORCODE-500
  NEWLINE
@@ -1105,6 +1105,9 @@ PROCEDURE POLLNAMES
    NAMELISTADDRLINK(NAMELOOP)=""
   END
 
+ BNODEBUGMSG="Polling current eligible name records"
+ CALL BNODEBUGMSGADD
+
  NAMELISTCOUNT=0
  FOR EACH NAME WITH (NAME:EXPIRATIONDATE=DATENULL OR
                      NAME:EXPIRATIONDATE>SYSTEMDATE)
@@ -1117,6 +1120,13 @@ PROCEDURE POLLNAMES
      NAMELISTLOC(NAMELISTCOUNT)=NAME:LOCATOR
      NAMELISTMBRLINK(NAMELISTCOUNT)=NAME:MEMBERNUMLINK
      NAMELISTADDRLINK(NAMELISTCOUNT)=NAME:MBRADDRNUMLINK
+
+     BNODEBUGMSG=FORMAT("NAME LOC 999999  ",NAMELISTLOC(NAMELISTCOUNT))+
+                 FORMAT("NAME TYPE 99  ",NAME:TYPE)+
+                "MLNK:"+NAMELISTMBRLINK(NAMELISTCOUNT)+"  "+
+                "ALNK:"+NAMELISTADDRLINK(NAMELISTCOUNT)
+     CALL BNODEBUGMSGADD
+
     END
   END
 END [PROCEDURE]
