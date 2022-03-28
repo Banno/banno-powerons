@@ -32,6 +32,11 @@
 **               deleted (expired) or edited, adjust transfer count and
 **               transfer amount total accordingly. Added immed. transfer
 **               comment parameter.
+**   Ver. 1.1.2  3/28/2022 J. Carson - Corrected issue with CREATETRANSFER 
+**               procedure where a stale transfer record is created if the 
+**               start date is before the system date (GOODNIGHT has changed
+**               the date before midnight). Fix will perform an immediate
+**               transfer in that case.  
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -322,11 +327,11 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "1.1.1"
- LASTMODDATE               = '12/03/21'
- LASTMODTIME               = "12:00 MT"
- PROGRAMUPDATENOTE1        = "Xfer loc format fix,xfer edit available fix. "
- PROGRAMUPDATENOTE2        = "Add system info to JSON. Added S/L ID length formatting."
+ PROGRAMVERSION            = "1.1.2"
+ LASTMODDATE               = '03/28/2022'
+ LASTMODTIME               = "10:30 ET"
+ PROGRAMUPDATENOTE1        = "date change before midnight fix "
+ PROGRAMUPDATENOTE2        = "updated CREATETRANSFER procedure"
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
  NTACCESSTYPE              = NTACCESSTYPEIQ
@@ -1130,7 +1135,7 @@ PROCEDURE CREATETRANSFER
   DO
 
    IF NEWTRANFREQ=0 AND
-      NEWTRANSTARTDATE=SYSTEMDATE AND
+      NEWTRANSTARTDATE<=SYSTEMDATE AND
       NEWTRANDAY1=0 AND
       NEWTRANDAY2=0 THEN
     TRANTYPE=TRANTYPEIMMEDIATE
@@ -3158,4 +3163,3 @@ END [PROCEDURE]
 
 #INCLUDE "BNO.INTERACTIVE.PRO"
 #INCLUDE "RB.LISTEXPAND"
-
