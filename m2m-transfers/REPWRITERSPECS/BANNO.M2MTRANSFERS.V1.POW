@@ -32,11 +32,14 @@
 **               deleted (expired) or edited, adjust transfer count and
 **               transfer amount total accordingly. Added immed. transfer
 **               comment parameter.
-**   Ver. 1.1.2  3/28/2022 J. Carson - Corrected issue with CREATETRANSFER 
-**               procedure where a stale transfer record is created if the 
+**   Ver. 1.1.2  3/28/2022 J. Carson - Corrected issue with CREATETRANSFER
+**               procedure where a stale transfer record is created if the
 **               start date is before the system date (GOODNIGHT has changed
 **               the date before midnight). Fix will perform an immediate
-**               transfer in that case.  
+**               transfer in that case.
+**   Ver. 1.1.3  03/29/2022 T. Kainz - Corrected issue where a saved
+**               recipient with a loan as a target was being recalled
+**               as a share
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -327,11 +330,11 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "1.1.2"
- LASTMODDATE               = '03/28/2022'
- LASTMODTIME               = "10:30 ET"
- PROGRAMUPDATENOTE1        = "date change before midnight fix "
- PROGRAMUPDATENOTE2        = "updated CREATETRANSFER procedure"
+ PROGRAMVERSION            = "1.1.3"
+ LASTMODDATE               = '03/29/2022'
+ LASTMODTIME               = "06:30 MT"
+ PROGRAMUPDATENOTE1        = "Saved loan recipient recalled as a share fix"
+ PROGRAMUPDATENOTE2        = ""
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
  NTACCESSTYPE              = NTACCESSTYPEIQ
@@ -1562,17 +1565,23 @@ PROCEDURE PRINTCURRENTSTATE
        NEWLINE
 
        TMPCHR=""
-       FOR ACCOUNT SEGMENT(RECIPACCOUNT(TMPLOOP),1,10)
+[tek 03/29/22]
+       IF UPPERCASE(SEGMENT(RECIPACCOUNT(TMPLOOP),11,11))="L" THEN
+        TMPCHR="loan"
+       ELSE
         DO
-         FOR EACH SHARE WITH (SHARE:ID=SEGMENT(RECIPACCOUNT(TMPLOOP),12,LENGTH(RECIPACCOUNT(TMPLOOP))))
+         TMPCHR="share"
+         FOR ACCOUNT SEGMENT(RECIPACCOUNT(TMPLOOP),1,10)
           DO
-           TMPNUM=SHARE:SHARECODE
-           IF TMPNUM>1 THEN
-            TMPNUM=0
-           TMPCHR=TRANRECIPTYPECHR(TMPNUM)
+           FOR EACH SHARE WITH (SHARE:ID=SEGMENT(RECIPACCOUNT(TMPLOOP),12,LENGTH(RECIPACCOUNT(TMPLOOP))))
+            DO
+             TMPNUM=SHARE:SHARECODE
+             IF TMPNUM>1 THEN
+              TMPNUM=0
+             TMPCHR=TRANRECIPTYPECHR(TMPNUM)
+            END
           END
         END
-
 
        PRINT INDENT(BASEINDENT+4)+Q+"recipientAccountType"+Q+": "+Q+TMPCHR+Q+","
        NEWLINE
