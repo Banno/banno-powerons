@@ -553,9 +553,9 @@ PROCEDURE READCONFIGFILESETTINGS
 **  SW             PARAMWARNINGSSHARE      Share level warning which excludes the share (in LISTEXPAND format)
 **  TT             PARAMXFERTOSHARES       Valid share types to transfer funds from cert to share (in LISTEXPAND format)
 **  TF             PARAMXFERFROMSHARES     Valid share types to transfer funds from into cert (in LISTEXPAND format)
-**  PT             PARAMPAYEETERMS         Payee Terms & Conditions (array of up to 9 lines of text)
-**  SM             PARAMSUSPENDMSG         Suspend custom msg. (array of up to 9 lines of text)
-**  RM             PARAMREVIEWMSG          Review custom msg. (array of up to 9 lines of text)
+**  PT             PARAMPAYEETERMS         Payee Terms & Conditions (array of up to 999 lines of text)
+**  SM             PARAMSUSPENDMSG         Suspend custom msg. (array of up to 999 lines of text)
+**  RM             PARAMREVIEWMSG          Review custom msg. (array of up to 999 lines of text)
 **  DB             BNODEBUGMODE            Debug mode override
 *]
  INVALIDCONFIGPARAMS=FALSE
@@ -1584,7 +1584,7 @@ PROCEDURE BUILDSHARETRANSFERTOLIST
 END [PROCEDURE]
 
 PROCEDURE BUILDSHARETRANSFERFROMLIST
-[* Compiles a list the member's share s which they can use to transfer
+[* Compiles a list the member's shares which they can use to transfer
 ** funds from when adding funds to their certificate upon maturity
 **
 **  PASS    TARGETSHAREID                  Certificate Share ID
@@ -1708,7 +1708,7 @@ PROCEDURE CREATETRANSFERIN
 **  PASS    TARGETSHAREID       Member's share ID
 **  PASS    TRANSFERACCOUNT     Transfer "from" account number
 **  PASS    TRANSFERSLID        Transfer "from" share or loan ID
-**  PASS    TRANSFERSLTYPE      Trahsfer "from" share/loan flag
+**  PASS    TRANSFERSLTYPE      Transfer "from" share/loan flag
 **  PASS    TARGETMATURITYDATE  Transfer effective date
 **  PASS    TRANSFERAMOUNT      Transfer amount
 **
