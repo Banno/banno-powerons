@@ -24,6 +24,7 @@
 **     PASS:  @RGUSERCHR1 Target account and share ID
 **            @RGUSERCHR2 Transfer to/from account and share ID
 **            @RGUSERCHR3 Transfer Amount
+**            @RGUSERNUM1 Member option selected
 **  PROCESS:  Validate the user option selection, perform requested
 **            action.
 **   RETURN:  Receive user input, update share record as necessary.
@@ -49,9 +50,9 @@
 **  Modification History:
 **    Ver. 1.0.0  12/11/20 TKainz - Banno
 **                Original Programming
-**    Ver. 1.1.0  01/31/22 TKainz - Banno
+**    Ver. 1.1.0  04/25/22 TKainz - Banno
 **                Modified parameter settings to allow setting
-**                 maturity options.
+**                 maturity options based upon share type.
 **                Added program info, debug info to JSON output.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -116,6 +117,7 @@ DEFINE
  ACCTWARNINGFOUND          = NUMBER
  INVALIDACCTTYPEFOUND      = NUMBER
  TMPLOOP                   = NUMBER
+ TMPLOOP1                  = NUMBER
  TMPCHR                    = CHARACTER
  POS                       = NUMBER
  POS1                      = NUMBER
@@ -290,12 +292,12 @@ DEFINE
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='01/31/22'
- BNOLASTMODTIME="11:00 MT"
+ BNOLASTMODDATE='04/25/22'
+ BNOLASTMODTIME="10:00 MT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
  BNOPROGRAMVERSION="1.1.0"
- BNOPRINTDEBUGINFODAYS=60
+ BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
 
@@ -965,6 +967,14 @@ PROCEDURE INITIALIZATIONS
  PARAMWARNINGSSHARE="NONE"
  PARAMDELETEXFERS=FALSE
 
+ FOR TMPLOOP=0 TO USEROPTIONSMAX
+  DO
+   FOR TMPLOOP1=0 TO BNOSLTYPESMAX
+    DO
+     PARAMSHARETYPESBYOPTION(TMPLOOP,TMPLOOP1)=TRUE
+    END
+  END
+
  FOR TMPLOOP=0 TO 999
   DO
    PARAMPAYEETERMS(TMPLOOP)=""
@@ -1121,9 +1131,9 @@ PROCEDURE VALIDATEACCOUNT
     DO
      FOR EACH SHARE WITH (SHARE:ID=TARGETSHAREID)
       DO
-[* TEK-01/31/22. Get share type and then determine options available for
-** the share type and the hightest option possible (to facilitate
-** JSON output
+[* TEK-04/25/22. Get share type and then determine options available for
+** the share type and the highest option possible (to facilitate
+** JSON output)
 *]
        TARGETSHARETYPE=SHARE:TYPE
        BNODEBUGMSG=FORMAT("TARGET SHARE TYPE = 9999",TARGETSHARETYPE)
@@ -1990,22 +2000,13 @@ PROCEDURE BNOPRINTDEBUG
    NEWLINE
    PRINT BNOINDENT(2)+Q+"debugData"+Q+": ["
    NEWLINE
-   PRINT BNOINDENT(2)+Q+"Debug note: Debug lines truncated to 126 characters"+Q
+   PRINT BNOINDENT(2)+Q+"Debug note: Debug lines truncated to 120 characters"+Q
 
    FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
     DO
-     IF BNODEBUGLOOP=1 THEN
-      DO
-       IF BNODEBUGLOOP<BNODEBUGCOUNT THEN
-        DO
-         PRINT ","
-         NEWLINE
-        END
-      END
-     PRINT BNOINDENT(3)+Q+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,126)+Q
-     IF BNODEBUGLOOP<BNODEBUGCOUNT THEN
-      PRINT ","
+     PRINT ","
      NEWLINE
+     PRINT BNOINDENT(3)+Q+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,120)+Q
     END
 
    PRINT BNOINDENT(2)+"]"
