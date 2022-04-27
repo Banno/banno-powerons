@@ -40,6 +40,7 @@
 **  503: Maturity selection previously made - contact CU
 **  504: Processing Error
 **  505: Cross account access attempt
+**  506: Renew options not set for Share type
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -50,7 +51,7 @@
 **  Modification History:
 **    Ver. 1.0.0  12/11/20 TKainz - Banno
 **                Original Programming
-**    Ver. 1.1.0  04/25/22 TKainz - Banno
+**    Ver. 1.1.0  04/27/22 TKainz - Banno
 **                Modified parameter settings to allow setting
 **                 maturity options based upon share type.
 **                Added program info, debug info to JSON output.
@@ -292,8 +293,8 @@ DEFINE
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='04/25/22'
- BNOLASTMODTIME="10:00 MT"
+ BNOLASTMODDATE='04/27/22'
+ BNOLASTMODTIME="12:00 MT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
  BNOPROGRAMVERSION="1.1.0"
@@ -321,11 +322,12 @@ SETUP
  SYMXINSTANCE              = @SYMXINSTANCEID
  SYMXCLIENTNUM             = @CLIENTNUMBER
 
-
  FOR BNOLOCALLOOP=1 TO BNOINDENTMAX
   DO
    BNOINDENT(BNOLOCALLOOP)=REPEATCHR(" ",BNOLOCALLOOP)
+   INDENT(BNOLOCALLOOP)=REPEATCHR(" ",BNOLOCALLOOP)
   END
+
  BNOIDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
  BNOSLTYPELENGTH=GETDATANUMBER(GETPARAMTYPELENGTH)
  BNOSLTYPESMAX=VALUE(SEGMENT("9999",1,BNOSLTYPELENGTH))
@@ -429,13 +431,12 @@ PRINT TITLE="BANNO.CDRENEW.V1.POW"
           CALL RETURNJSON2
         END
       END [ELSE IF @RGSTATE=STATEPROCESSDATA]
-    END
+    END [IF ERRORCODE=0 THEN...]
   END
  IF ERRORCODE>0 THEN
   DO
    CALL JSONOPEN
    CALL ERRORHANDLER
-   CALL JSONCLOSE
    @RGSTATE=STATEEND
   END
 
@@ -1046,6 +1047,7 @@ PROCEDURE ERRORHANDLER
 **  503 Maturity selection previously made
 **  504 Processing Error
 **  505 Cross account access attempt
+**  506 Renew Options not defined for share type
 **
 *]
  ERRORMSG="loggingErrorMessage"
@@ -1054,6 +1056,8 @@ PROCEDURE ERRORHANDLER
  ERRORDETAIL(2)="Invalid account or share"
  ERRORDETAIL(3)="Maturity selection previously made"
  ERRORDETAIL(4)="Error processing request"
+ ERRORDETAIL(5)="Cross account access attempt"
+ ERRORDETAIL(6)="Renew options not set for Share type"
 
  ERRORDETAILOFFSET=ERRORCODE-500
 
@@ -1072,10 +1076,13 @@ PROCEDURE ERRORHANDLER
  IF ERRORDETAILOFFSET=4 THEN
   ERRORDETAIL(4)=ERRORDETAIL(4)+": "+FMERROR
 
+ IF ERRORDETAILOFFSET=6 THEN
+  ERRORDETAIL(6)=ERRORDETAIL(6)+FORMAT(": 9999",TARGETSHARETYPE)
+
  PRINT INDENT(1)+Q+"errorCode"+Q+": "+FORMAT(Q+"999"+Q,ERRORCODE)+","
  NEWLINE
  PRINT INDENT(1)+Q+ERRORMSG+Q+": "+Q+ERRORDETAIL(ERRORDETAILOFFSET)+Q
- NEWLINE
+
 END [PROCEDURE]
 
 PROCEDURE JSONOPEN
@@ -1114,6 +1121,8 @@ PROCEDURE VALIDATEACCOUNT
  IF INVALIDACCTYPES(ACCOUNT:TYPE)=TRUE THEN
   INVALIDACCTTYPEFOUND=TRUE
 
+ USEROPTIONSMAXUSED=0
+
  FOR ACCOUNT TARGETACCOUNT
   DO
    WARNINGFOUND=FALSE
@@ -1147,16 +1156,22 @@ PROCEDURE VALIDATEACCOUNT
            USEROPTIONSMAXUSED=TMPLOOP
           END
         END
-       SHARENOTEFOUND=FALSE
-       TMPCHR="Banno Maturity Option Selected"
-       IF PARAMLIMITCHANGES=TRUE THEN
+       IF USEROPTIONSMAXUSED=0 THEN
+        ERRORCODE=506
+
+       IF ERRORCODE=0 THEN
         DO
-         FOR EACH SHARE NOTE WITH ((SHARE NOTE:EXPIRATIONDATE='--/--/--' OR
-                                    SHARE NOTE:EXPIRATIONDATE>SYSTEMDATE) AND
-                                    SHARE NOTE:TEXT:1=TMPCHR)
+         SHARENOTEFOUND=FALSE
+         TMPCHR="Banno Maturity Option Selected"
+         IF PARAMLIMITCHANGES=TRUE THEN
           DO
-           SHARENOTEFOUND=TRUE
-           ERRORCODE=503
+           FOR EACH SHARE NOTE WITH ((SHARE NOTE:EXPIRATIONDATE='--/--/--' OR
+                                      SHARE NOTE:EXPIRATIONDATE>SYSTEMDATE) AND
+                                      SHARE NOTE:TEXT:1=TMPCHR)
+            DO
+             SHARENOTEFOUND=TRUE
+             ERRORCODE=503
+            END
           END
         END
        IF ERRORCODE=0 THEN
@@ -2015,4 +2030,3 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
