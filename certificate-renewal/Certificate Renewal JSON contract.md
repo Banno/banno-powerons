@@ -141,17 +141,17 @@
   	 - 6-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
   	 - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
-  - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.			 
+  - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
 	 - 1-**Increase certificate balance**:  Add additional funds to the certificate and renew.
 	 - 2-**Change certificate term**: Roll funds over into a new certificate type (requires CU contact).
-	 - 3-**Transfer certificate balance**: 
+	 - 3-**Transfer certificate balance**:
 		 - Full amount - all funds will be transferred out and certificate closed
 		 - Partial amount - limited to min balance requirement. Certificate will be renewed
 	 - 4-**Renew**:  Renew certificate to current terms.
 	 - 5-**Disburse funds by check**: Withdraw balance by check, close certificate.
 	 - 6-**Suspend**: Suspend certificate activity - funds retained in share.
 
- - ***transferFrom***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.) 
+ - ***transferFrom***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.)
 	 - 1-**shareLoanId**: 4-character share or loan ID
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
@@ -161,12 +161,13 @@
      - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
 
- - ***payeeAddress***:  Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a  system calculated value containing from 1 to 6 Payee lines. "null" indicates an invalid address.
+ - ***payeeAddress***:  Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a  system 
+ calculated value containing from 1 to 6 Payee lines. "null" indicates an invalid address.
 
  - ***payeeTerms***:  CU customizable terms to be displayed should the member elect the 'Disburse funds by check' option. Optional. May contain from 0 to 9 lines.
 
  - ***suspendMessage***:  CU customizable message to be displayed should the member select the 'Suspend' option. May contain from 0 to 9 lines.
- 
+
  - ***reviewMessage***:  CU customizable message to be displayed on the review screen. Required. Must contain from 1 to 9 lines.
 
 ## Request (PROCESSDATA):
@@ -237,3 +238,5 @@ If any request is not successful for any number of reasons, or the desired actio
 | 503         | Maturity selection previously made - contact CU                 |
 | 504         | Processing Error                                                |
 | 505         | Cross account access attempt                                    |
+| 506         | Renew options not set for Share type                            |
+
