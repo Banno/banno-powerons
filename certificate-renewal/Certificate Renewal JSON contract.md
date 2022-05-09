@@ -128,6 +128,14 @@
       "reviewLine4",
       "reviewLine5",
       "reviewLine6"
+    ],
+    "ineligibleIrsCodeMessage": [
+      "inbligilbeLine1",
+      "inbligilbeLine2",
+      "inbligilbeLine3",
+      "inbligilbeLine4",
+      "inbligilbeLine5",
+      "inbligilbeLine6"
     ]
   }
 }
@@ -169,6 +177,8 @@
  - ***suspendMessage***:  CU customizable message to be displayed should the member select the 'Suspend' option. May contain from 0 to 9 lines.
 
  - ***reviewMessage***:  CU customizable message to be displayed on the review screen. Required. Must contain from 1 to 9 lines.
+
+ - ***ineligibleIrsCodeMessage***:  CU customizable message to be displayed for a cd renew request on a share that has an ineligible IRS code. Optional. May contain from 0 to 9 lines.
 
 ## Request (PROCESSDATA):
 ```json
@@ -239,4 +249,5 @@ If any request is not successful for any number of reasons, or the desired actio
 | 504         | Processing Error                                                |
 | 505         | Cross account access attempt                                    |
 | 506         | Renew options not set for Share type                            |
+| 507         | Renew option not available based on share IRS code              |
 

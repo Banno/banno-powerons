@@ -992,7 +992,7 @@ PROCEDURE CLEANUPTEXT
 [* Check for back-slash or double-quote. If found, precede with a back-slash
 *]
        IF (CHRVAL=92 OR CHRVAL=34) THEN
-       [* TMPTEXT=TMPTEXT+"\" +SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)*]
+        TMPTEXT=TMPTEXT+"\" +SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
        ELSE
         TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
       END
@@ -1123,7 +1123,7 @@ PROCEDURE ERRORHANDLER
  ERRORDETAIL(4)="Error processing request"
  ERRORDETAIL(5)="Cross account access attempt"
  ERRORDETAIL(6)="Renew options not set for Share type"
- ERRORDETAIL(7)="Invalid Share IRS Code"
+ ERRORDETAIL(7)="Ineligible share IRS code"
 
  ERRORDETAILOFFSET=ERRORCODE-500
 
