@@ -130,12 +130,12 @@
       "reviewLine6"
     ],
     "ineligibleIrsCodeMessage": [
-      "inbligilbeLine1",
-      "inbligilbeLine2",
-      "inbligilbeLine3",
-      "inbligilbeLine4",
-      "inbligilbeLine5",
-      "inbligilbeLine6"
+      "ineligibleLine1",
+      "ineligibleLine2",
+      "ineligibleLine3",
+      "ineligibleLine4",
+      "ineligibleLine5",
+      "ineligibleLine6"
     ]
   }
 }
