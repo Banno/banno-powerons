@@ -55,7 +55,7 @@
 **                Modified parameter settings to allow setting
 **                 maturity options based upon share type.
 **                Added program info, debug info to JSON output.
-**    Ver. 1.2.0  05/09/22 RRobison - Banno
+**    Ver. 1.2.0  05/11/22 RRobison - Banno
 **                Added support to allow CD renew based on share IRS codes.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -305,7 +305,7 @@ DEFINE
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='05/09/22'
+ BNOLASTMODDATE='05/11/22'
  BNOLASTMODTIME="12:00 MT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
@@ -1361,12 +1361,12 @@ PROCEDURE RETURNJSON1
  NEWLINE
  PRINT INDENT(3)+Q+"currentTerm"+Q+": "+Q+SCURRENTTERM+Q+","
  NEWLINE
- PRINT INDENT(3)+Q+"ineligibleIrsCode"+Q+": "+Q
+ PRINT INDENT(3)+Q+"ineligibleIrsCode"+Q+": "
  IF INELIGIBLEIRSCODE=TRUE THEN
   PRINT "true"
  ELSE 
   PRINT "false"  
- PRINT Q+","
+ PRINT ","
  NEWLINE
  
 
