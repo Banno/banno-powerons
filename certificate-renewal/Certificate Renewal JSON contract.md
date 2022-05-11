@@ -145,10 +145,10 @@
   	 - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
   	 - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   	 - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
-  	 - 4-**currentStatus**: The current maturity option INELIGIRSCODEMSGset for the targeted certificate/club.
+  	 - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
   	 - 5-**currentTerm**: The current term of the targeted certificate/club.
      - 6-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  	 - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+     - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
      - 8-**ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
 
   - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
