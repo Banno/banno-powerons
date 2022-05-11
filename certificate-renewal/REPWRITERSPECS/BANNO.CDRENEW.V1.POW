@@ -41,7 +41,6 @@
 **  504: Processing Error
 **  505: Cross account access attempt
 **  506: Renew options not set for Share type
-**  507: Renew option not available based on share IRS code
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -127,12 +126,14 @@ DEFINE
  ACCTFOUND                 = NUMBER
  ACCTWARNINGFOUND          = NUMBER
  INVALIDACCTTYPEFOUND      = NUMBER
+ INELIGIBLEIRSCODE         = NUMBER
  TMPLOOP                   = NUMBER
  TMPLOOP1                  = NUMBER
  TMPCHR                    = CHARACTER
  POS                       = NUMBER
  POS1                      = NUMBER
  Q                         = CHARACTER
+ BACKSLASH                 = CHARACTER
  MEMBERNUM                 = CHARACTER
  SLTYPE                    = CHARACTER
  SLID                      = CHARACTER
@@ -316,6 +317,7 @@ SETUP
  PROGRAMVERSION            = ""
  THISACCOUNT               = ACCOUNT:NUMBER
  Q                         = CTRLCHR(34)
+ BACKSLASH                 = CTRLCHR(92)
  IDLENGTH                  = GETDATANUMBER(GETPARAMIDLENGTH)
  MAXWARNINGTYPES           = 999
  MAXACCTYPES               = 9999
@@ -992,7 +994,7 @@ PROCEDURE CLEANUPTEXT
 [* Check for back-slash or double-quote. If found, precede with a back-slash
 *]
        IF (CHRVAL=92 OR CHRVAL=34) THEN
-        TMPTEXT=TMPTEXT+"\" +SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+        TMPTEXT=TMPTEXT+BACKSLASH+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
        ELSE
         TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
       END
@@ -1015,6 +1017,7 @@ PROCEDURE INITIALIZATIONS
  LFNUMBER=0
  ERRORCODE=0
  USEROPTIONSMAXUSED=0
+ INELIGIBLEIRSCODE=FALSE
  PARAMLIMITCHANGES=TRUE
  PARAMINELIGIBLEACCTS="NONE"
  PARAMWARNINGSACCT="NONE"
@@ -1112,7 +1115,6 @@ PROCEDURE ERRORHANDLER
 **  504 Processing Error
 **  505 Cross account access attempt
 **  506 Renew Options not defined for share type
-**  507 Renew option not available based on share IRS code
 **
 *]
  ERRORMSG="loggingErrorMessage"
@@ -1123,7 +1125,6 @@ PROCEDURE ERRORHANDLER
  ERRORDETAIL(4)="Error processing request"
  ERRORDETAIL(5)="Cross account access attempt"
  ERRORDETAIL(6)="Renew options not set for Share type"
- ERRORDETAIL(7)="Ineligible share IRS code"
 
  ERRORDETAILOFFSET=ERRORCODE-500
 
@@ -1144,9 +1145,6 @@ PROCEDURE ERRORHANDLER
 
  IF ERRORDETAILOFFSET=6 THEN
   ERRORDETAIL(6)=ERRORDETAIL(6)+FORMAT(": 9999",TARGETSHARETYPE)
-
- IF ERRORDETAILOFFSET=7 THEN
-  ERRORDETAIL(7)=ERRORDETAIL(7)+FORMAT(": 99",TARGETIRSCODE)
 
  PRINT INDENT(1)+Q+"errorCode"+Q+": "+FORMAT(Q+"999"+Q,ERRORCODE)+","
  NEWLINE
@@ -1251,7 +1249,7 @@ PROCEDURE VALIDATEACCOUNT
        IF ERRORCODE=0 THEN 
         DO
          IF ELIGIBLEIRSCODES(TARGETIRSCODE)=FALSE THEN
-          ERRORCODE=507
+          INELIGIBLEIRSCODE=TRUE
         END
        
        IF ERRORCODE=0 THEN
@@ -1363,6 +1361,14 @@ PROCEDURE RETURNJSON1
  NEWLINE
  PRINT INDENT(3)+Q+"currentTerm"+Q+": "+Q+SCURRENTTERM+Q+","
  NEWLINE
+ PRINT INDENT(3)+Q+"ineligibleIrsCode"+Q+": "+Q
+ IF INELIGIBLEIRSCODE=TRUE THEN
+  PRINT "true"
+ ELSE 
+  PRINT "false"  
+ PRINT Q+","
+ NEWLINE
+ 
 
  PRINT  INDENT(3)+Q+"transfers"+Q+":["
  IF TRANSFERLISTCOUNT>0 THEN
