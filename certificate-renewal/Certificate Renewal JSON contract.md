@@ -25,6 +25,7 @@
       "minimumBalance": "12345.67",
       "currentStatus": "Renew",
       "currentTerm": "24 months",
+      "ineligibleIrsCode": false,
       "transfers": [{
           "transferSLId": "0000800005S0002",
           "transferName":"REGULAR CHECKING",
@@ -128,20 +129,29 @@
       "reviewLine4",
       "reviewLine5",
       "reviewLine6"
+    ],
+    "ineligibleIrsCodeMessage": [
+      "ineligibleLine1",
+      "ineligibleLine2",
+      "ineligibleLine3",
+      "ineligibleLine4",
+      "ineligibleLine5",
+      "ineligibleLine6"
     ]
   }
 }
 ```
  - ***currentState:***
-  	 - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
-  	 - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
-  	 - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
-  	 - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
-  	 - 5-**currentTerm**: The current term of the targeted certificate/club.
-  	 - 6-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  	 - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+   - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
+   - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
+   - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
+   - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
+   - 5-**currentTerm**: The current term of the targeted certificate/club.
+   - 6-**transferSLID**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+   - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+   - 8-**ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
 
-  - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
+ - ***options***: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
 	 - 1-**Increase certificate balance**:  Add additional funds to the certificate and renew.
 	 - 2-**Change certificate term**: Roll funds over into a new certificate type (requires CU contact).
 	 - 3-**Transfer certificate balance**:
@@ -153,22 +163,24 @@
 
  - ***transferFrom***: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.)
 	 - 1-**shareLoanId**: 4-character share or loan ID
-     - 2-**shareLoanName**: share nickname if available otherwise the share description
+   - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
 
  - ***transferTo***: A list of shares eligible for transferring certificate balance into upon maturity.
 	 - 1-**shareLoanId**: 4-character share or loan ID
-     - 2-**shareLoanName**: share nickname if available otherwise the share description
+   - 2-**shareLoanName**: share nickname if available otherwise the share description
 	 - 3-**shareLoanBal**: the current share available balance
 
  - ***payeeAddress***:  Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a  system 
  calculated value containing from 1 to 6 Payee lines. "null" indicates an invalid address.
 
- - ***payeeTerms***:  CU customizable terms to be displayed should the member elect the 'Disburse funds by check' option. Optional. May contain from 0 to 9 lines.
+ - ***payeeTerms***:  CU customizable terms to be displayed should the member elect the 'Disburse funds by check' option. Optional. May contain from 0 to 999 lines.
 
- - ***suspendMessage***:  CU customizable message to be displayed should the member select the 'Suspend' option. May contain from 0 to 9 lines.
+ - ***suspendMessage***:  CU customizable message to be displayed should the member select the 'Suspend' option. May contain from 0 to 999 lines.
 
- - ***reviewMessage***:  CU customizable message to be displayed on the review screen. Required. Must contain from 1 to 9 lines.
+ - ***reviewMessage***:  CU customizable message to be displayed on the review screen. Required. Must contain from 1 to 999 lines.
+
+ - ***ineligibleIrsCodeMessage***:  CU customizable message to be displayed for a cd renew request on a share that has an ineligible IRS code. Optional. May contain from 0 to 999 lines.
 
 ## Request (PROCESSDATA):
 ```json
