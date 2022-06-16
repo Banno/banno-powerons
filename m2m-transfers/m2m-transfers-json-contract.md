@@ -1,3 +1,4 @@
+
 #JSON contract for BANNO.M2MTRANSFERS.V1.POW
 
 ## GET PRELOADDATA STATE
@@ -32,6 +33,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "availableShares": [
       {
         "transferSLId": "0000800005S0002",
+        "crossAccount": false,
         "type": "savings",
         "name": "SUMMER SAVER",
         "available": "50.00",
@@ -39,13 +41,15 @@ list of institution and member limits, eligible shares, list of scheduled transf
       },
       {
         "transferSLId": "0000800005S0010",
+        "crossAccount": false,
         "type": "checking",
         "name": "REGULAR CHECKING",
         "available": "500.00",
         "accountOwnerName": "Ruth Nordstrom"
       },
       {
-        "transferSLId": "0000800005S0015",
+        "transferSLId": "0000801111S0015",
+        "crossAccount": true,
         "type": "checking",
         "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
@@ -195,7 +199,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	* Existing Recipient:  recipientLoc will be present
 	* New Recipient: if nickname is present, create new
 	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
-	* One-time immediate transfers have an optional internal memo field.
+	* One-time immediate transfers
+		* The transfer frequency will be "immediate" and the startDate, Day1 and Day2 fields blank.
+		* Immediate transfers have an optional internal memo field.
 
 ### PowerOn Successful Response (CREATETRAN)
 ```jsonc
