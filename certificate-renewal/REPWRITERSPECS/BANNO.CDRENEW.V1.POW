@@ -1454,13 +1454,13 @@ PROCEDURE RETURNJSON1
     END
    ELSE
     DO
-     PRINT INDENT(3)+"]"
+     PRINT INDENT(3)+"],"
     END
    NEWLINE
   END
  ELSE
   DO
-   PRINT "]"
+   PRINT "],"
    NEWLINE
   END
  
