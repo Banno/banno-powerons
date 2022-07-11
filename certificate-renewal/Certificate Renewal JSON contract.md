@@ -149,6 +149,9 @@
       "ineligibleLine4",
       "ineligibleLine5",
       "ineligibleLine6"
+    ],
+    "ineligibleCrossAccountMessage": [
+      "You must be an account owner in order to change maturity options."
     ]
   }
 }
@@ -205,6 +208,8 @@
 - **_reviewMessage_**: CU customizable message to be displayed on the review screen. Required. Must contain from 1 to 999 lines.
 
 - **_ineligibleIrsCodeMessage_**: CU customizable message to be displayed for a cd renew request on a share that has an ineligible IRS code. Optional. May contain from 0 to 999 lines.
+
+- **_ineligibleCrossAccountMessage_**: CU customizable message to be displayed to the member when attempting to make CD maturity changes to a cross account.. Optional. May contain from 0 to 999 lines.
 
 ## Request (PROCESSDATA):
 
