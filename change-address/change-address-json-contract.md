@@ -1,4 +1,4 @@
-# Change Address JSON contract
+﻿# Change Address JSON contract
 ## PROCESSADDRDATA state
 ### PowerOn Input
 ```json
@@ -9,7 +9,8 @@
     {"id": 1, "value": "Street Address|Extra Address"},
     {"id": 2, "value": "City|State|Zip Code"},
     {"id": 3, "value": "Member Note"},
-    {"id": 4, "value": "Member's Banno ID"}],
+    {"id": 4, "value": "Member's Banno ID"},
+    {"id": 5, "value": "Old Street Address"}],
   "userNumList": [],
   "rgSession": 1
 }
