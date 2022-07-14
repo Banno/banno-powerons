@@ -183,6 +183,7 @@ DEFINE
  FMUPDATEERRORTRACKING     = NUMBER
  VALIDPARAMS               = NUMBER
  VALIDACCOUNT              = NUMBER
+ CROSSACCOUNTFLAG          = NUMBER
 
  INDENTMAX                 = 9
  INDENT                    = CHARACTER ARRAY(9)
@@ -485,6 +486,11 @@ PROCEDURE GETSHAREDETAILS
              "TARGETACCOUNT="+TARGETACCOUNT+
              "  TARGETSHAREID="+TARGETSHAREID
  CALL BNODEBUGMSGADD
+
+ IF TARGETACCOUNT<>ACCOUNT:NUMBER THEN
+  CROSSACCOUNTFLAG=TRUE
+ ELSE 
+  CROSSACCOUNTFLAG=FALSE
 
  TRANSFERLISTCOUNT=0 
  FOR ACCOUNT TARGETACCOUNT
@@ -1444,6 +1450,18 @@ PROCEDURE RETURNJSON1
    PRINT INDENT(1)+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
    NEWLINE
   END
+
+[* This is a special case were we return an error code but still want to return the results
+** So the UX can display maturity date details.
+*]
+ IF CROSSACCOUNTFLAG=TRUE THEN
+  DO
+   PRINT INDENT(1)+Q+"errorCode"+Q+": "+FORMAT(Q+"999"+Q,505)+","
+   NEWLINE
+   PRINT INDENT(1)+Q+"loggingErrorMessage"+Q+": "+Q+"Cross account access attempt"+Q
+   NEWLINE
+  END
+
  PRINT INDENT(1)+Q+"results"+Q+": {"
  NEWLINE
  PRINT INDENT(2)+Q+"currentState"+Q+": {"
