@@ -20,7 +20,7 @@
 **                         blank line. Added program info to JSON output.
 **    Ver. 1.0.3  09/03/21 T. Kainz - Increased the TOC and Disclosure lines max to
 **                         999 and the revoke instructions to 99.
-**    Ver. 1.0.4  07/27/22 R. Robison - Added Service Instructions soft text
+**    Ver. 1.0.4  07/28/22 R. Robison - Added Service Instructions soft text
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
 
@@ -44,6 +44,11 @@ DEFINE
  STATEEND                  = "STATEEND"
  DATENULL                  = '--/--/--'
  VALIDSOURCECODELIST       = "ABCDEFGHIJKLNOPRSTVW"
+
+ PROGRAMNAME               = CHARACTER
+ PROGRAMVERSION            = CHARACTER
+ LASTMODDATE               = DATE
+ LASTMODTIME               = CHARACTER
 
  DEBUGMODE                 = NUMBER
  LFNUMBER                  = NUMBER
@@ -174,6 +179,11 @@ DEFINE
 END [DEFINE]
 
 SETUP
+ PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
+ PROGRAMVERSION="1.0.4"
+ LASTMODDATE='07/28/22'
+ LASTMODTIME="17:30 MT"
+
  Q=CTRLCHR(34)
  BACKSLASH=CTRLCHR(92)
  DEBUGMODE=FALSE
@@ -1379,11 +1389,11 @@ PROCEDURE PRINTPROGRAMINFO
 
  PRINT "  "+Q+"programInfo"+Q+": {"
  NEWLINE
- PRINT "    "+Q+"programName"+Q+": "+Q+"BANNO.ODTOPTIN.V1.POW"+Q+","
+ PRINT "    "+Q+"programName"+Q+": "+Q+PROGRAMNAME+Q+","
  NEWLINE
- PRINT "    "+Q+"programVersion"+Q+": "+Q+"1.0.3"+Q+","
+ PRINT "    "+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
  NEWLINE
- PRINT "    "+Q+"programLastModDate"+Q+": "+Q+"09/3/2021"+Q
+ PRINT "    "+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q
  NEWLINE
  PRINT "  "+"},"
  NEWLINE
