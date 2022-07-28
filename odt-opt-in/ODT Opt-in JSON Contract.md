@@ -79,6 +79,12 @@
       "Check the box for an account to opt-in to overdraft services.  Un-check the box for an",
       "",
       "account to opt-out of overdraft services."
+    ],
+    "optInInformationText": [
+      "This account will be opted-in to overdraft services. The fee disclosure below applies."
+    ],
+    "optOutInformationText": [
+      "This account will be opted-out from overdraft services."
     ]
   }
 }
@@ -98,6 +104,8 @@
 - fee Disclosure: Custom fee disclosure
 - revocationInstructions: Custom revocation instructions
 - servicesInstuctions: Custom services instructions
+- optInInformationText: Custom opt-in information text
+- optOutInformationText: Custom opt-out information text
 
 ## PROCESSDATA state
 
@@ -169,12 +177,12 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 | ---------- | --------------------------------------------------------- |
 | 501        | Config file read error: _[read error]_                    |
 | 502        | Config file validation error: _[validation error detail]_ |
-| 503        | No eligible shares   
-                                     |
+| 503        | No eligible shares                                        |
 | 504        | Ineligible account type                                   |
 | 505        | Account warning found                                     |
 | 506        | Error attempting to update share tracking record          |
 | 507        | Error updating source code and auth & fee fields          |
+| 508        | Error updating share overdraft tolerance amount           |
 
 - Individual error codes are for ease of researching issues.
 - All error codes except for '503' will be returned to the UX as '500'
