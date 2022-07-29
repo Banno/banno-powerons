@@ -20,7 +20,9 @@
 **                         blank line. Added program info to JSON output.
 **    Ver. 1.0.3  09/03/21 T. Kainz - Increased the TOC and Disclosure lines max to
 **                         999 and the revoke instructions to 99.
-**    Ver. 1.0.4  07/28/22 R. Robison - Added Service Instructions soft text
+**    Ver. 1.0.4  07/29/22 R. Robison - []Added Service Instructions, Opt-in information
+**                         and Opt-out information soft text.  Added feature for setting
+**                         Overdraw Tolerance field on share record.
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
 
@@ -181,8 +183,8 @@ END [DEFINE]
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
  PROGRAMVERSION="1.0.4"
- LASTMODDATE='07/28/22'
- LASTMODTIME="17:30 MT"
+ LASTMODDATE='07/29/22'
+ LASTMODTIME="08:30 MT"
 
  Q=CTRLCHR(34)
  BACKSLASH=CTRLCHR(92)
