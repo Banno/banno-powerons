@@ -20,7 +20,7 @@
 **                         blank line. Added program info to JSON output.
 **    Ver. 1.0.3  09/03/21 T. Kainz - Increased the TOC and Disclosure lines max to
 **                         999 and the revoke instructions to 99.
-**    Ver. 1.0.4  07/29/22 R. Robison - []Added Service Instructions, Opt-in information
+**    Ver. 1.0.4  07/29/22 R. Robison - Added Service Instructions, Opt-in information
 **                         and Opt-out information soft text.  Added feature for setting
 **                         Overdraw Tolerance field on share record.
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
