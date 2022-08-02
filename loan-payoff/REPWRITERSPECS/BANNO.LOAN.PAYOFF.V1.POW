@@ -31,6 +31,7 @@
 **                         Added fixes for invalid punctuation in disclosure 
 **                         Corrected processing of disclosure blank lines
 **                         Added forced space between consecutive lines of text 
+**    Ver. 1.0.4  08/02/22 R. Robison - Added support for payoff fee display in the UX.
 *]
 
 SYMCONNECT
@@ -172,9 +173,9 @@ SETUP
 
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
- PROGRAMVERSION="1.0.3"
- LASTMODDATE='11/02/21'
- LASTMODTIME="16:00 PT"
+ PROGRAMVERSION="1.0.4"
+ LASTMODDATE='08/03/22'
+ LASTMODTIME="17:00 MT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=60
  PROGRAMUPDATENOTE1="Updated CFG LF code so defaults properly handle blank input settings,"
