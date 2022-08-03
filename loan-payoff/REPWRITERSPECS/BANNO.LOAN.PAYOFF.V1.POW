@@ -1,8 +1,9 @@
 [*
-**  PowerOn Name:       BANNO.LOAN.PAYOFF.V1.POW
-**  Letterfile Name:    BANNO.LOAN.PAYOFF.V1.CFG
+**  PowerOn Name:             BANNO.LOAN.PAYOFF.V1.POW
+**  Letterfile Name:          BANNO.LOAN.PAYOFF.V1.CFG
+**  Fee Display PowerOn Name: BANNO.LAON.PAYOFF.FEES.POW
 **
-**  Copyright 2019 Jack Henry and Associates
+**  Copyright 2022 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to request a loan
 **  payoff for an entered date.
@@ -31,7 +32,7 @@
 **                         Added fixes for invalid punctuation in disclosure 
 **                         Corrected processing of disclosure blank lines
 **                         Added forced space between consecutive lines of text 
-**    Ver. 1.0.4  08/02/22 R. Robison - Added support for payoff fee display in the UX.
+**    Ver. 1.0.4  08/03/22 R. Robison - Added support for payoff fee display in the UX.
 *]
 
 SYMCONNECT
@@ -52,7 +53,7 @@ DEFINE
  READCONFIGERRORMSG        = CHARACTER
 
  [SUBROUTINE FEE SPECFILE]
- PAYOFFFEESPECFILENAME="BANNO.LOAN.PAYOFF.FEE.POW"
+ PAYOFFFEESPECFILENAME="BANNO.LOAN.PAYOFF.FEES.POW"
  PAYOFFFEESPECFILEERROR=CHARACTER
  PAYOFFFEEAMT=MONEY ARRAY(10)
  PAYOFFFEEDESC=CHARACTER ARRAY(10)
@@ -917,7 +918,9 @@ END
 
 PROCEDURE PAYOFFFEEADD
 
- IF ADDFEEAMT<>$0.00 AND ADDFEEDESC<>"" THEN
+ IF PAYOFFFEECOUNT<PAYOFFFEEMAX AND
+    ADDFEEAMT<>$0.00 AND 
+    ADDFEEDESC<>"" THEN
   DO
    PAYOFFFEECOUNT=PAYOFFFEECOUNT+1
    PAYOFFFEEAMT(PAYOFFFEECOUNT)=ADDFEEAMT

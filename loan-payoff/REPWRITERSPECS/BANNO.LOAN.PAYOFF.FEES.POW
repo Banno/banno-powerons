@@ -1,11 +1,11 @@
 [*
-**  PowerOn Name:       BANNO.LOAN.PAYOFF.FEE.POW
+**  PowerOn Name:       BANNO.LOAN.PAYOFF.FEES.POW
 **
 **  Copyright 2022 Jack Henry and Associates
 **
 **  This Banno service subroutine PowerOn that is called by the main BANNO.LOAN.PAYOFF.V1.POW PowerOn.
 **  It can be modified to return custom fee amounts and descriptions to the UX for display.
-**  No actual fees are posted by this PowerOn -- the returned data is for display purposes only.
+**  --No actual fees are posted by this PowerOn.  The returned data is for display purposes only.--
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -20,9 +20,9 @@
 **
 **  Data will be passed to the subroutine specfile as follows:
 **
-**   Account Number --> @ENVPARAMCHAR1   
-**   Loan ID        --> @ENVPARAMCHAR2
-**   Payoff Date    --> @ENVPARAMDATE1
+**   Account Number --> @ENVPARAMCHAR1 --> PAYOFFACCTNUM
+**   Loan ID        --> @ENVPARAMCHAR2 --> PAYOFFSLID
+**   Payoff Date    --> @ENVPARAMDATE1 --> PAYOFFDATE
 **
 **  The subroutine specfile will be expected to return any applicable 
 **  fees in @ENVPARAMMONEY1-@ENVPARAMMONEY10 with the associated fee 
@@ -68,6 +68,31 @@ SETUP
  PAYOFFSLID=@ENVPARAMCHAR2
  PAYOFFDATE=@ENVPARAMDATE1
 
+ CALL ENVPARAMSINIT
+ CALL PAYOFFFEEINIT
+END
+
+PRINT TITLE="BANNO.LOAN.PAYOFF.FEES.POW"
+
+ FOR ACCOUNT PAYOFFACCOUNTNUM
+  DO
+[*
+**  Custom fee logic should be added here.  To add a custom fee for display in the UX
+**  set the ADDFEEAMT and ADDFEEDESC variables and then call the PAYOFFFEEADD procedure.
+**  Set the PAYOFFFEEERROR variable to a non-blank value to return an error condtion to
+**  the calling PowerOn.
+*]
+
+   ADDFEEAMT=$35.00
+   ADDFEEDESC="Processing Fee"
+   CALL PAYOFFFEEADD 
+  END 
+
+ CALL PAYOFFFEERETURN
+END
+
+PROCEDURE ENVPARAMSINIT
+
  @ENVPARAMCHAR1="" 
  @ENVPARAMCHAR2="" 
  @ENVPARAMCHAR3="" 
@@ -88,20 +113,6 @@ SETUP
  @ENVPARAMMONEY8=$0.00
  @ENVPARAMMONEY9=$0.00
  @ENVPARAMMONEY10=$0.00
-
- CALL PAYOFFFEEINIT
-END
-
-PRINT TITLE="BANNO.LOAN.PAYOFF.FEES.POW"
-
- FOR ACCOUNT PAYOFFACCOUNTNUM
-  DO
-   ADDFEEAMT=$35.00
-   ADDFEEDESC="Test fee"
-   CALL PAYOFFFEEADD 
-  END 
-
- CALL PAYOFFFEERETURN
 END
 
 PROCEDURE PAYOFFFEEINIT
@@ -112,9 +123,12 @@ END
 
 PROCEDURE PAYOFFFEEADD
 
- PAYOFFFEECOUNT=PAYOFFFEECOUNT+1
- PAYOFFFEEAMT(PAYOFFFEECOUNT)=ADDFEEAMT
- PAYOFFFEEDESC(PAYOFFFEECOUNT)=ADDFEEDESC
+ IF PAYOFFFEECOUNT<PAYOFFFEEMAX THEN
+  DO
+   PAYOFFFEECOUNT=PAYOFFFEECOUNT+1
+   PAYOFFFEEAMT(PAYOFFFEECOUNT)=ADDFEEAMT
+   PAYOFFFEEDESC(PAYOFFFEECOUNT)=ADDFEEDESC
+  END
 END
 
 PROCEDURE PAYOFFFEERETURN
