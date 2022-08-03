@@ -10,7 +10,7 @@
     {"id": 2, "value": "City|State|Zip Code"},
     {"id": 3, "value": "Member Note"},
     {"id": 4, "value": "Member's Banno ID"},
-    {"id": 5, "value": "Old Street Address"}],
+    {"id": 5, "value": "Old Street Address|Old Extra Address"}],
   "userNumList": [],
   "rgSession": 1
 }
