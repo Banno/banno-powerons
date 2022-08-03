@@ -416,7 +416,7 @@ PROCEDURE PRINTSHAREDETAIL
    PRINT "],"
    NEWLINE
 
-   PRINT Q+"serviceInstructions"+Q+": ["
+   PRINT Q+"servicesInstructions"+Q+": ["
    NEWLINE
    FOR TMPLOOP=1 TO PARAMSERVICEINSTLINES
     DO
