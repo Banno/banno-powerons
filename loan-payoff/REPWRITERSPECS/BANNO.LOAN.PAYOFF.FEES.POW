@@ -3,8 +3,8 @@
 **
 **  Copyright 2022 Jack Henry and Associates
 **
-**  This Banno service subroutine PowerOn that is called by the main BANNO.LOAN.PAYOFF.V1.POW PowerOn.
-**  It can be modified to return custom fee amounts and descriptions to the UX for display.
+**  This Banno subroutine PowerOn is called by the main BANNO.LOAN.PAYOFF.V1.POW PowerOn -- if configured
+**  in the CFG letterfile. It can be modified to return custom fee amounts and descriptions to the UX for display.
 **  --No actual fees are posted by this PowerOn.  The returned data is for display purposes only.--
 **
 **  For more information check
@@ -16,7 +16,7 @@
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 **
 **  Modification History:
-**    Ver. 1.0.0  08/02/22 R. Robison - Original Programming
+**    Ver. 1.0.0  08/03/22 R. Robison - Original Programming
 **
 **  Data will be passed to the subroutine specfile as follows:
 **
@@ -77,7 +77,7 @@ PRINT TITLE="BANNO.LOAN.PAYOFF.FEES.POW"
  FOR ACCOUNT PAYOFFACCOUNTNUM
   DO
 [*
-**  Custom fee logic should be added here.  To add a custom fee for display in the UX
+**  Custom fee logic should be added here.  To add a custom fee for display in the UX,
 **  set the ADDFEEAMT and ADDFEEDESC variables and then call the PAYOFFFEEADD procedure.
 **  Set the PAYOFFFEEERROR variable to a non-blank value to return an error condtion to
 **  the calling PowerOn.
