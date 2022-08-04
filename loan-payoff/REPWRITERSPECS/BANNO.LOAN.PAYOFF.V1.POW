@@ -3,7 +3,7 @@
 **  Letterfile Name:          BANNO.LOAN.PAYOFF.V1.CFG
 **  Fee Display PowerOn Name: BANNO.LOAN.PAYOFF.FEES.POW (template)
 **
-**  Copyright 2022 Jack Henry and Associates
+**  Copyright 2019-2022 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to request a loan
 **  payoff for an entered date.
@@ -32,7 +32,8 @@
 **                         Added fixes for invalid punctuation in disclosure 
 **                         Corrected processing of disclosure blank lines
 **                         Added forced space between consecutive lines of text 
-**    Ver. 1.0.4  08/03/22 R. Robison - Added support for payoff fee display in the UX.
+**    Ver. 1.1.0  08/04/22 R. Robison - New features
+**                         Added support for payoff fee display in the UX.                        
 *]
 
 SYMCONNECT
@@ -190,9 +191,9 @@ SETUP
 
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
- PROGRAMVERSION="1.0.4"
- LASTMODDATE='08/03/22'
- LASTMODTIME="20:00 MT"
+ PROGRAMVERSION="1.1.0"
+ LASTMODDATE='08/04/22'
+ LASTMODTIME="14:00 MT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=60
  PROGRAMUPDATENOTE1="Updated CFG LF code so defaults properly handle blank input settings,"
@@ -877,7 +878,9 @@ PROCEDURE DISPLAYRESULTS
      TMPCHR=FORMAT("#######9.99",PAYOFFFEEAMT(TMPLOOP))
      CALL REMOVELEADINGSPACES
      PRINT "    {"+Q+"feeAmount"+Q+":"+Q+TMPCHR+Q+","
-     PRINT Q+"feeDescription"+Q+":"+Q+PAYOFFFEEDESC(TMPLOOP)+Q+"},"
+     PRINT Q+"feeDescription"+Q+":"+Q+PAYOFFFEEDESC(TMPLOOP)+Q+"}"
+     IF TMPLOOP<PAYOFFCOUNT THEN
+      PRINT ","
      NEWLINE
     END
 

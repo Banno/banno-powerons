@@ -4,8 +4,9 @@
 **  Copyright 2022 Jack Henry and Associates
 **
 **  This Banno subroutine PowerOn is called by the main BANNO.LOAN.PAYOFF.V1.POW PowerOn -- if configured
-**  in the CFG letterfile. It can be modified to return custom fee amounts and descriptions to the UX for display.
-**  --No actual fees are posted by this PowerOn.  The returned data is for display purposes only.--
+**  in the BANNO.LOAN.PAYOFF.V1.CFG letterfile. It can be modified to return custom fee amounts and 
+**  descriptions to the UX for display. --No actual fees are posted by this PowerOn.  The returned 
+**  data is for display purposes only.--
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -52,6 +53,7 @@ DEFINE
  PAYOFFDATE=DATE
  
  TMPLOOP=NUMBER
+ LOANFOUND=NUMBER
 
  PAYOFFFEEAMT=MONEY ARRAY(10)
  PAYOFFFEEDESC=CHARACTER ARRAY(10)
@@ -83,9 +85,16 @@ PRINT TITLE="BANNO.LOAN.PAYOFF.FEES.POW"
 **  the calling PowerOn.
 *]
 
-   ADDFEEAMT=$35.00
-   ADDFEEDESC="Processing Fee"
-   CALL PAYOFFFEEADD 
+   LOANFOUND=FALSE
+   FOR EACH LOAN WITH (LOAN:ID=PAYOFFSLID)
+    DO
+     LOANFOUND=TRUE
+     
+     ADDFEEAMT=$35.00
+     ADDFEEDESC="Processing Fee"
+     CALL PAYOFFFEEADD 
+    END
+   UNTIL LOANFOUND=TRUE      
   END 
 
  CALL PAYOFFFEERETURN

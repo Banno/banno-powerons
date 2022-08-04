@@ -5,7 +5,7 @@ To get things started, the client will send an initial request structured like s
 ```json
 {
   "rgState": "GETPRELOADDATA",
-  "powerOnFilename": "BANNO.LOANPAYOFF.POWERON.V0.POW",
+  "powerOnFilename": "BANNO.LOAN.PAYOFF.V1.POW",
   "userCharList": [
     { "id": 1, "value": "member-account-number" },
     { "id": 2, "value": "" },
@@ -37,7 +37,7 @@ When the client wishes to submit the loan payoff calculation request, it will se
 ```json
 {
   "rgState": "PERFORMLOANPAYOFFCALC",
-  "powerOnFileName": "BANNO.LOANPAYOFF.POWERON.V0.POW",
+  "powerOnFileName": "BANNO.LOAN.PAYOFF.V1.POW",
   "userCharList": [
     { "id": 1, "value": "memberAccountNumber" },
     { "id": 2, "value": "yyyy-mm-dd" },
