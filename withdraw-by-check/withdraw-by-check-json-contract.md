@@ -1,25 +1,33 @@
 # Withdraw by check JSON contract
 
-To get things started, the client will send an initial request structured like so:
+## STATESTART state
 
+### UX PowerOn Input
 ```json
 {
   "rgState": "STATESTART",
   "powerOnFileName": "BANNO.CHECK.WITHDRAW.V1.POW",
   "userChrList":[
-    {"id": 1, "value": "0123456789S0123"},
-    {"id": 2, "value": ""},
-    {"id": 3, "value": ""},
-    {"id": 4, "value": ""},
-    {"id": 5, "value": ""}
+    { "id": 1, "value": "0123456789S0123" },
+    { "id": 2, "value": "" },
+    { "id": 3, "value": "" },
+    { "id": 4, "value": "" },
+    { "id": 5, "value": "" }
   ],
   "userNumList": [],
   "rgSession": 1
 }
 ```
+**UX Input Detail**
+ - userChrList[1]: Account and share or loan ID (13 or 15 character string)
+	 - 10-digit member number
+	 - 'S' for Share or 'L' for Loan
+	 - 2 or 4 digit Share or Loan ID
+ - userChrList[2-5]: unused
+ - userNumList[1-5]: unused
 
-If successful, the poweron should respond with:
-
+### PowerOn Response
+ **Successful response:**
 ```json
 {
   "results": {
@@ -27,6 +35,8 @@ If successful, the poweron should respond with:
     "memberAccountNumber": "0123456789S0123",
     "shareLoanDescription": "ADVANCED CHECKING",
     "available": "123456.00",
+    "minWdAmount": "123456.00",
+    "maxWdAmount": "123456.00",
     "owner": "Julie Jones",
     "address": [
       "Julie Jones",
@@ -36,24 +46,51 @@ If successful, the poweron should respond with:
       "50613",
       "ADDRESS 6"
     ],
-    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
+    "disclaimerText": [ "disclaimer ", "lines ", "with ", "spaces." ]
   }
 }
 ```
+**Results detail:**
+Unless otherwise noted, all values will be passed as double-quote encapsulated character values
+ - eligible: Is the member eligible for this service (boolean).
+ - memberAccountNumber: The 10-digit account number, 'S' or 'L' for Share or Loan, Share or Loan ID
+ - shareLoanDescription: Share or Loan nickname if available else Share or Loan description
+ - available:
+	 - For shares, the available balance
+	 - For loans, if loan code=3 and loan interest type=10-1899 then loan available cash advance else loan available credit
+ - minWdAmount: the minimum WD amount (from parameter settings)
+ - maxWdAmount: the maximum WD amount (from parameter settings)
+ - owner: The primary member's long name (NAME:LONGNAME)
+ - address: The system calculated mailing address (ACCOUNT:PAYEELINE[1-6])
+ - disclaimerText: Custom terms and conditions as set up in the parameter settings Letter file.
 
-### Errors
-
-Missing or invalid Letterfile (or any generic, non-actionable error):
-
+**When error condition is encountered:**
 ```json
 {
-  "errorCode": 500,
-  "loggingErrorMessage": "Error Opening Letterfile BANNO.WITHDRAW.CHECK.V1.CFG: No such file or directory"
+  "errorCode": 999,
+  "loggingErrorMessage": "error message detail"
 }
 ```
+**Error detail:**
+Unless otherwise noted, all values will be passed as double-quote encapsulated character values
+ - errorCode: error code generated (numeric)
+ - loggingErrorMessage: Error message specific to the error code
 
-When the client wishes to submit the check withdrawal request, it will send:
+**Error Code detail:**
+|Error Code| Logging Error Message Detail|
+|-|-|
+|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
+|501|Target Share/Loan available balance<=$0.00
+|502|Invalid address|
+|503|Account not found|
+|503|Account warning found|
+|503|Target Share/Loan not found|
+|503|Share/Loan invalid type|
+|503|Share/Loan warning found|
 
+## PERFORMWITHDRAW state
+
+### UX PowerOn Input
 ```json
 {
   "rgState": "PERFORMWITHDRAW",
@@ -68,9 +105,17 @@ When the client wishes to submit the check withdrawal request, it will send:
   "rgSession": 1
 }
 ```
+**UX Input Detail**
+ - userChrList[1]: Account and share or loan ID (13 or 15 character string)
+	 - 10-digit member number
+	 - 'S' for Share or 'L' for Loan
+	 - 2 or 4 digit Share or Loan ID
+ - userChrList[2]: Dollar amount of withdrawal
+ - userChrList[3-5]: unused
+ - userNumList[1-5]: unused
 
-If the request is successful, the poweron should respond with:
-
+### PowerOn Response
+ **Successful response:**
 ```json
 {
   "results": {
@@ -79,71 +124,47 @@ If the request is successful, the poweron should respond with:
   }
 }
 ```
+**Results detail:**
+Unless otherwise noted, all values will be passed as double-quote encapsulated character values
+ - success: Was the attempt successful? (boolean)
+ - memoMode: Is the system in MemoMode? (boolean)
 
-### Errors
-If the request is not successful, the poweron should respond with one of the following errors:
-
-If there was an issue opening or reading the configuration Letter file
+**When error condition is encountered:**
 ```json
 {
-  "errorCode": 500,
-  "loggingErrorMessage": "Error [opening/reading] Letter file: +[error returned]"
+  "errorCode": 999,
+  "loggingErrorMessage": "error message detail",
+  "requested": "123456.00",
+  "minWdAmount": "123456.00",
+  "minWdAmount": "123456.00"
 }
 ```
+**Error detail:**
+Unless otherwise noted, all values will be passed as double-quote encapsulated character values
+ - errorCode: error code generated (numeric)
+ - loggingErrorMessage: Error message specific to the error code
+ - requested: The amount of the WD that was requested
+ - minWdAmount: the minimum WD amount (from parameter settings)
+ - maxWdAmount: the maximum WD amount (from parameter settings)
 
-If the request is not successful due to insufficient funds, the poweron should respond with the
-following and the client may try request again with a lesser amount:
+**Error Code detail:**
+|Error Code| Logging Error Message Detail|
+|-|-|
+|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
+|501|Target Share/Loan available balance<=$0.00
+|501|Amount requested exceeds available
+|502|Invalid address|
+|503|Account not found|
+|503|Account warning found|
+|503|Target Share/Loan not found|
+|503|Share/Loan invalid type|
+|503|Share/Loan warning found|
+|506|Amount requested out of bounds|
 
-```json
-{
-  "errorCode": 501,
-  "loggingErrorMessage": "Amount req. ###,##9.99 exceeds avail. ###,##9.99"
-}
-```
-In the case of insufficient funds, the client may try request again with a lesser amount.
 
-Should the program determine that the member's address is insufficient to mail a check, the
-response would be as follows:
+## Additional Information
 
-```json
-{
-  "errorCode": 502,
-  "loggingErrorMessage": "Invalid address"
-}
-```
-
-If the request is not successful due to an invalid account, loan or share, the poweron would respond with:
-
-```json
-{
-  "errorCode": 503,
-  "loggingErrorMessage": "[Account Not Found/Account Warning Found/Share Not Found/Loan Not Found/Share Warning Found/Loan Warning Found]"
-}
-```
-
-If the request is not successful due to Reg D Limits, the response will be:
-```json
-{
-  "errorCode": 504,
-  "loggingErrorMessage": "TRANPERFORM Error: Reg D Limit"
-}
-```
-
-If the member attempts to make a WD from a cross account, the poweron will respond with:.
-
-```json
-{
-  "errorCode": 505,
-  "loggingErrorMessage": "Cross Account WD Attempted"
-}
-```
-
-### Error codes
-| Code   | Description              |
-|--------|--------------------------|
-| 500    | CFG file error           |
-| 501    | Insufficient Funds       |
-| 502    | Invalid address          |
-| 503    | Invalid Acct/loan/share  |
-| 504    | Reg D Limit              |
-| 505    | X-Acct Error             |
+ - The UX input values "userChrList[1-5]" and 'userNumList[1-5] are
+   referenced by the PowerOn as "@RGUSERCHAR[1-5]" and @RGUSERNUM[1-5].   Eg: TARGETACCOUNT=@RGUSERCHR1.
+ - Additional JSON is included in the PowerOn output as debug and
+   program / system information. The additional debug information will only be included for the first 90 days after the latest program version date.
