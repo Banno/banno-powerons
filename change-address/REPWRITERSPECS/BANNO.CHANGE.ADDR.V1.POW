@@ -214,7 +214,7 @@ SETUP
  PROGRAMUPDATENOTE1="Added old address matching functionality to override "
  PROGRAMUPDATENOTE2="tracking 8 linking."
  PRINTRGINFODAYS=60
- DEBUGMODEDAYS=45
+ DEBUGMODEDAYS=90
 END [SETUP]
 
 PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
@@ -564,8 +564,7 @@ END [PROCEDURE]
 
 
 PROCEDURE POSTFMPROCESS
-[* Clears and sets warning codes and sends email (if
-** activated) upon successful FM.
+[* Clears and sets warning codes upon successful FM.
 *]
  PARSEDTEXT(1)="Banno Successful Address Change"
  CALL CREATENOTERECORD
@@ -1755,6 +1754,9 @@ PROCEDURE PARSEDATALINE
 ** PASS    DELIMITER Field delimiter used in DATALINE
 ** RETURN  DATALINEFIELD() Array of text elements
 *]
+ IF DELIMITER="" THEN
+  DELIMITER="|"
+
  FOR TMPLOOP=0 TO DATALINEFIELDMAX
   DO
    DATALINEFIELD(TMPLOOP)=""
@@ -1951,4 +1953,3 @@ PROCEDURE PRINTRGDATA
 END
 
 #INCLUDE "RB.LISTEXPAND"
-
