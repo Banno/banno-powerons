@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHECK.WITHDRAW.V1.POW
 **  Letterfile Name:    BANNO.CHECK.WITHDRAW.V1.CFG
 **
-**  Copyright 2020-2022 Jack Henry and Associates
+**  Copyright 2020-2022 Jack Henry
 **
 **  Modification History:
 **   Ver. 1.0.0  03/13/2020: T. Kainz - Original Programming
@@ -547,7 +547,7 @@ PROCEDURE FINDACCOUNT
         DO
          IF LOAN:LOANCODE=3 AND
          (LOAN:INTERESTTYPE>=10 AND
-          LOAN:INTERESTTYPE<=18999) THEN
+          LOAN:INTERESTTYPE<=8999) THEN
            SLAVAILABLEBAL=LOAN:AVAILABLECASHADVANCE
           ELSE
            SLAVAILABLEBAL=LOAN:AVAILABLECREDIT
