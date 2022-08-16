@@ -1,4 +1,6 @@
+
 # Withdraw by check JSON contract
+*program version 1.1.0 - 08/16/22*
 
 ## STATESTART state
 
@@ -150,21 +152,21 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
 |-|-|
-|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
+|500|Error processing BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
 |501|Target Share/Loan available balance<=$0.00
-|501|Amount requested exceeds available
 |502|Invalid address|
 |503|Account not found|
 |503|Account warning found|
 |503|Target Share/Loan not found|
 |503|Share/Loan invalid type|
 |503|Share/Loan warning found|
+|504|Reg D error|
+|505|Cross Account access attempt|
 |506|Amount requested out of bounds|
-
+|509|Unhandled Error (catch-all)|
 
 ## Additional Information
 
- - The UX input values "userChrList[1-5]" and 'userNumList[1-5] are
-   referenced by the PowerOn as "@RGUSERCHAR[1-5]" and @RGUSERNUM[1-5].   Eg: TARGETACCOUNT=@RGUSERCHR1.
- - Additional JSON is included in the PowerOn output as debug and
-   program / system information. The additional debug information will only be included for the first 90 days after the latest program version date.
+ - The UX input values "userChrList[1-5]" and 'userNumList[1-5] are referenced by the PowerOn as  @RGUSERCHAR[1-5]" and @RGUSERNUM[1-5].   Eg: TARGETACCOUNT=@RGUSERCHR1.
+ - Additional JSON is included in the PowerOn output as debug and program/system information.
+	 - The additional debug information will only be included for the first 90 days after the latest program version date.

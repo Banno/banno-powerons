@@ -12,14 +12,14 @@
 **   Ver. 1.0.3  08/12/2020: corrected TOC end of line spacing issue
 **   Ver. 1.0.4  09/18/2020: Added check for attempted cross account access and return
 **                           error code 505 if true. Updated TOC line spacing logic.
-**   Ver. 1.1.0  08/08/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
+**   Ver. 1.1.0  08/16/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
 **                           Corrected max share/loan type calculation, added program
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was
 **                           keeping blank lines from being recognized by the UX.
 **
-**  This Banno service PowerOn allows the user to request
-**  withdraw by check from an eligible share or loan
+**  This Banno service PowerOn allows the user to request a
+**  withdrawal by check from an eligible share or loan
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -140,7 +140,7 @@ SETUP
  Q=CTRLCHR(34)
 
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='08/08/22'
+ BNOLASTMODDATE='08/16/22'
  BNOLASTMODTIME="11:30 MT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
@@ -158,7 +158,7 @@ SETUP
 
 END [SETUP]
 
-PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
+PRINT TITLE="BANNO.CHECK.WITHDRAW.V1.POW"
 [* STATE: STATESTART
 **   Find and validate account
 **      Invalid account - return error code and logging message
@@ -313,7 +313,7 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
            ELSE IF TRANERROR="NSF" THEN
             ERRORCODE="501"
            ELSE
-            ERRORCODE="500"
+            ERRORCODE="509"
            ERRORMSG="loggingErrorMessage"
            ERRORDETAIL="TRANPERFORM Error: "+TRANERROR
            CALL ERRORHANDLER
@@ -325,9 +325,9 @@ PRINT TITLE="BANNO.WITHDRAW.CHECK.V1.POW"
  CALL BNOPRINTPROGRAMINFO
  CALL BNOPRINTRGDATA
  CALL BNOPRINTDEBUG
- IF BNODEBUGMODE=BNODEBUGMODEOFF THEN
-  NEWLINE
+
  PRINT "  }"
+ NEWLINE
 END [PRINT]
 
 PROCEDURE RETURNVALIDACCT
@@ -438,6 +438,8 @@ PROCEDURE RETURNINVALIDACCT
    TMPCHR="Loan Warning Found"
  ELSE IF SLAVAILABLEBAL<=$0.00 THEN
   TMPCHR="Avail. Balance <= $0.00"
+ ELSE
+  TMPCHR="Unhandled error"
 
  IF VALIDADDRESS=FALSE THEN
   ERRORCODE="502"
@@ -450,7 +452,8 @@ PROCEDURE RETURNINVALIDACCT
  ELSE IF SLAVAILABLEBAL<=$0.00 THEN
   ERRORCODE="501"
  ELSE
-  ERRORCODE="500"
+  ERRORCODE="509"
+
  ERRORMSG="loggingErrorMessage"
  ERRORDETAIL=TMPCHR
  CALL ERRORHANDLER
@@ -547,7 +550,7 @@ PROCEDURE FINDACCOUNT
         DO
          IF LOAN:LOANCODE=3 AND
          (LOAN:INTERESTTYPE>=10 AND
-          LOAN:INTERESTTYPE<=8999) THEN
+          LOAN:INTERESTTYPE<=18999) THEN
            SLAVAILABLEBAL=LOAN:AVAILABLECASHADVANCE
           ELSE
            SLAVAILABLEBAL=LOAN:AVAILABLECREDIT
@@ -638,12 +641,19 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Minimum WD amount
 *]
        ELSE IF PARAMNAME="MIN" THEN
-        PARAMMINWDLIMIT=MONEY(VALUE(PARAMVALUE))
-
+        DO
+         PARAMMINWDLIMIT=MONEY(VALUE(PARAMVALUE))
+         IF PARAMMINWDLIMIT>$999,999.99 THEN
+          PARAMMINWDLIMIT=$999,999.99
+        END
 [* Maximum WD amount
 *]
        ELSE IF PARAMNAME="MAX" THEN
-        PARAMMAXWDLIMIT=MONEY(VALUE(PARAMVALUE))
+        DO
+         PARAMMAXWDLIMIT=MONEY(VALUE(PARAMVALUE))
+         IF PARAMMAXWDLIMIT>$999,999.99 THEN
+          PARAMMAXWDLIMIT=$999,999.99
+        END
 
 [* Valid Share Types
 *]
@@ -707,9 +717,6 @@ PROCEDURE READCONFIGFILESETTINGS
     END
    FILECLOSE(LFNUMBER,LFERROR)
   END
-
- IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
-  BNODEBUGMODE=BNODEBUGMODEON
 
  IF BNODEBUGMODE=TRUE THEN
   DO
@@ -924,6 +931,9 @@ PROCEDURE INITIALIZEDATA
    WARNINGSSHARE(TMPLOOP)=FALSE
    WARNINGSLOAN(TMPLOOP)=FALSE
   END
+
+ IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
+  BNODEBUGMODE=BNODEBUGMODEON
 END [PROCEDURE]
 
 PROCEDURE ERRORHANDLER
