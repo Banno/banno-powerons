@@ -1,7 +1,7 @@
 [*
 **  PowerOn Name:       BANNO.LOAN.PAYOFF.FEES.POW
 **
-**  Copyright 2022 Jack Henry and Associates
+**  Copyright 2022 Jack Henry & Associates, Inc.
 **
 **  This Banno subroutine PowerOn is called by the main BANNO.LOAN.PAYOFF.V1.POW PowerOn -- if configured
 **  in the BANNO.LOAN.PAYOFF.V1.CFG letterfile. It can be modified to return custom fee amounts and 
