@@ -153,7 +153,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |Error Code| Logging Error Message Detail|
 |-|-|
 |500|Error processing BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
-|501|Amount requested exceeds available / NSF
+|501|Target Share/Loan available balance<=$0.00
 |502|Invalid address|
 |503|Account not found|
 |503|Account warning found|
@@ -163,6 +163,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |504|Reg D error|
 |505|Cross Account access attempt|
 |506|Amount requested out of bounds|
+|507|Amount requested exceeds available/NSF
 |509|Unhandled Error (catch-all)|
 
 ## Additional Information

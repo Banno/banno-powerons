@@ -12,7 +12,7 @@
 **   Ver. 1.0.3  08/12/2020: corrected TOC end of line spacing issue
 **   Ver. 1.0.4  09/18/2020: Added check for attempted cross account access and return
 **                           error code 505 if true. Updated TOC line spacing logic.
-**   Ver. 1.1.0  08/16/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
+**   Ver. 1.1.0  08/18/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
 **                           Corrected max share/loan type calculation, added program
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was
@@ -140,8 +140,8 @@ SETUP
  Q=CTRLCHR(34)
 
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='08/16/22'
- BNOLASTMODTIME="11:30 MT"
+ BNOLASTMODDATE='08/18/22'
+ BNOLASTMODTIME="12:30 MT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
  BNOPROGRAMVERSION="1.1.0"
@@ -220,7 +220,7 @@ PRINT TITLE="BANNO.CHECK.WITHDRAW.V1.POW"
        ELSE IF WDAMOUNT<=$0.00 OR
                WDAMOUNT>SLAVAILABLEBAL THEN
         DO
-         ERRORCODE="501"
+         ERRORCODE="507"
          ERRORMSG="loggingErrorMessage"
          TMPCHR=FORMAT(" ###,##9.99",WDAMOUNT)
          CALL NLS
@@ -311,7 +311,7 @@ PRINT TITLE="BANNO.CHECK.WITHDRAW.V1.POW"
            IF CHARACTERSEARCH(UPPERCASE(TRANERROR),"REG D")>0 THEN
             ERRORCODE="504"
            ELSE IF TRANERROR="NSF" THEN
-            ERRORCODE="501"
+            ERRORCODE="507"
            ELSE
             ERRORCODE="509"
            ERRORMSG="loggingErrorMessage"
