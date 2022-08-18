@@ -153,7 +153,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |Error Code| Logging Error Message Detail|
 |-|-|
 |500|Error processing BANNO.CHECK.WITHDRAW.V1.CFG: *[system generated error message]*
-|501|Target Share/Loan available balance<=$0.00
+|501|Amount requested exceeds available / NSF
 |502|Invalid address|
 |503|Account not found|
 |503|Account warning found|
