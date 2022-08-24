@@ -95,11 +95,13 @@ Poweron response:
 * if "electronic" is an option, the `electronicFundingAccunts` contains a list of available shares to fund the new account from.
 * the 'electronic' type should not be present if the member does not have any valid shares to fund with.
 * categoryTerms may be empty
-```json
+```jsonc
 {
   "memoMode": false,
   "results": {
-    "categoryTerms": ["array ", "of ", "strings."],
+    "categoryTerms": ["array ", "of ", "strings.", "This can include an optional ", "{{TERMS_LINK}}."],
+    "termsUrl": "https://www.your-fi.com/eula",// optional
+    "termsLabel": "Terms", // optional
     "fundingOptions": ["electronic", "check", "later"],
     "minimumFundingAmount": "100.00",
     "electronicFundingAccounts": [
