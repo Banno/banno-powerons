@@ -180,14 +180,14 @@ Returns name record information: existing account level names, name types which 
 	    "type": "Joint",
 	    "street": "1234 Main Street",
 	    "local": "Denver CO 80201",
-	    "nameLoc": 000133
+	    "nameLoc": "000133"
     },
     {
 	    "name": "Julie Sadler",
 	    "type": "Beneficiary",
 	    "street": "1234 Main Street",
 	    "local": "Denver CO 80201",
-		"nameLoc": 000255
+		"nameLoc": "000255"
     }
     ]
   }
@@ -209,7 +209,7 @@ Returns name record information: existing account level names, name types which 
 		 - type: The name type description based on the NAME:TYPE
 		 - street: The street and, if applicable, extra address of the name record
 		 - local: The combined city, state and zip code
-		 - nameLoc: The unique locator code attached to the name record
+		 - nameLoc: The unique locator code attached to the name record (as a string)
 
 ## CREATESHARE
 All necessary information is passed back from the UX to create and fund the new share, and create or copy name records under the new share.
