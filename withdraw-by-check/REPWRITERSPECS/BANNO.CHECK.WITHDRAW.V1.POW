@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHECK.WITHDRAW.V1.POW
 **  Letterfile Name:    BANNO.CHECK.WITHDRAW.V1.CFG
 **
-**  Copyright 2020-2022 Jack Henry
+**  Copyright 2020-2022 Jack Henry & Associates, Inc.
 **
 **  Modification History:
 **   Ver. 1.0.0  03/13/2020: T. Kainz - Original Programming
@@ -12,7 +12,7 @@
 **   Ver. 1.0.3  08/12/2020: corrected TOC end of line spacing issue
 **   Ver. 1.0.4  09/18/2020: Added check for attempted cross account access and return
 **                           error code 505 if true. Updated TOC line spacing logic.
-**   Ver. 1.1.0  08/18/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
+**   Ver. 1.1.0  08/26/2022: T. Kainz - Added parameter settings for min/max WD Amounts.
 **                           Corrected max share/loan type calculation, added program
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was

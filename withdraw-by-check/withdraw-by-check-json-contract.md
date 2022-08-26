@@ -1,6 +1,6 @@
 
 # Withdraw by check JSON contract
-*program version 1.1.0 - 08/16/22*
+*program version 1.1.0 - 08/26/22*
 
 ## STATESTART state
 
@@ -127,7 +127,6 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 }
 ```
 **Results detail:**
-Unless otherwise noted, all values will be passed as double-quote encapsulated character values
  - success: Was the attempt successful? (boolean)
  - memoMode: Is the system in MemoMode? (boolean)
 
@@ -138,11 +137,10 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
   "loggingErrorMessage": "error message detail",
   "requested": "123456.00",
   "minWdAmount": "123456.00",
-  "minWdAmount": "123456.00"
+  "maxWdAmount": "123456.00"
 }
 ```
 **Error detail:**
-Unless otherwise noted, all values will be passed as double-quote encapsulated character values
  - errorCode: error code generated (numeric)
  - loggingErrorMessage: Error message specific to the error code
  - requested: The amount of the WD that was requested
