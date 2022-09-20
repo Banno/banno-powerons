@@ -26,8 +26,8 @@
       "minimumBalance": "12345.67",
       "currentStatus": "Renew",
       "renewName": "24 MONTH CERTIFICATE",
-      "renewTermPeriod": "24",
-      "renewTermFrequency": "months",
+      "renewTermPeriod": 24,
+      "renewTermFrequency": "Months",
       "ineligibleIrsCode": false,
       "transfers": [
         {
@@ -250,7 +250,9 @@
     "maturityDate": "01/01/21",
     "minimumBalance": "12345.67",
     "currentStatus": "Transfer",
-    "currentTerm": "24 months",
+    "renewName": "24 MONTH CERTIFICATE",
+    "renewTermPeriod": 24,
+    "renewTermFrequency": "Months",
     "transferSLId": "1234567890S0010",
     "transferAmount": "12345.67"
   }
@@ -262,9 +264,11 @@
   - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
   - 4-**currentStatus**: The new maturity option set for the targeted certificate/club.
-  - 5-**currentTerm**: The new term of the targeted certificate/club.
-  - 6-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+  - 5-**renewName**: New share name/description for a certificate/club renewal.
+  - 6-**renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
+  - 7-**renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
+  - 8-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+  - 9-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
 ## Unsuccessful Response:
 
