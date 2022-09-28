@@ -88,6 +88,9 @@ DEFINE
  NEWZIPCODE                = CHARACTER
  OLDSTREET                 = CHARACTER
  OLDEXTRA                  = CHARACTER
+ OLDCITY                   = CHARACTER
+ OLDSTATE                  = CHARACTER
+ OLDZIP                    = CHARACTER
  MATCHALLNAMES             = NUMBER
  MATCHACCTNAMES            = NUMBER
  MATCHSHARENAMES           = NUMBER
@@ -223,7 +226,7 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.1.0"
- LASTMODDATE='09/08/22'
+ LASTMODDATE='09/22/22'
  LASTMODTIME="10:00 ET"
  PROGRAMUPDATENOTE1="Added old address matching functionality to override "
  PROGRAMUPDATENOTE2="tracking 8 linking. Added member email confirmation."
@@ -709,6 +712,14 @@ PROCEDURE GETNAMELOCS
 ** information for allowed name types and levels. Only
 ** called if old address matching is enabled.
 *]
+ FOR EACH NAME WITH (NAME:TYPE=0)
+  DO
+   OLDSTREET=NAME:STREET
+   OLDEXTRA=NAME:EXTRAADDRESS
+   OLDCITY=NAME:CITY
+   OLDSTATE=NAME:STATE
+   OLDZIP=NAME:ZIPCODE
+  END
  IF MATCHACCTNAMES=TRUE THEN
   DO
    FOR EACH NAME WITH ((NAME:EXPIRATIONDATE=DATENULL OR
@@ -716,7 +727,10 @@ PROCEDURE GETNAMELOCS
                         NAME:DEATHDATE=DATENULL AND
                         VALIDNAMETYPES(NAME:TYPE)=TRUE AND
                         NAME:STREET=OLDSTREET AND
-                        NAME:EXTRAADDRESS=OLDEXTRA)
+                        NAME:EXTRAADDRESS=OLDEXTRA AND
+                        NAME:CITY=OLDCITY AND
+                        NAME:STATE=OLDSTATE AND
+                        SEGMENT(NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
     DO
      IF ACCTNAMECOUNT<NAMECOUNTMAX THEN
       DO
@@ -735,7 +749,10 @@ PROCEDURE GETNAMELOCS
                                 SHARE NAME:DEATHDATE=DATENULL AND
                                 VALIDNAMETYPES(SHARE NAME:TYPE)=TRUE AND
                                 SHARE NAME:STREET=OLDSTREET AND
-                                SHARE NAME:EXTRAADDRESS=OLDEXTRA)
+                                SHARE NAME:EXTRAADDRESS=OLDEXTRA AND
+                                SHARE NAME:CITY=OLDCITY AND
+                                SHARE NAME:STATE=OLDSTATE AND
+                                SEGMENT(SHARE NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
       DO
        IF SHARENAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -756,7 +773,10 @@ PROCEDURE GETNAMELOCS
                               IRS NAME:DEATHDATE=DATENULL AND
                               VALIDNAMETYPES(IRS NAME:TYPE)=TRUE AND
                               IRS NAME:STREET=OLDSTREET AND
-                              IRS NAME:EXTRAADDRESS=OLDEXTRA)
+                              IRS NAME:EXTRAADDRESS=OLDEXTRA AND
+                              IRS NAME:CITY=OLDCITY AND
+                              IRS NAME:STATE=OLDSTATE AND
+                              SEGMENT(IRS NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
       DO
        IF IRSNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -780,7 +800,10 @@ PROCEDURE GETNAMELOCS
                                  LOAN NAME:DEATHDATE=DATENULL AND
                                  VALIDNAMETYPES(LOAN NAME:TYPE)=TRUE AND
                                  LOAN NAME:STREET=OLDSTREET AND
-                                 LOAN NAME:EXTRAADDRESS=OLDEXTRA)
+                                 LOAN NAME:EXTRAADDRESS=OLDEXTRA AND
+                                 LOAN NAME:CITY=OLDCITY AND
+                                 LOAN NAME:STATE=OLDSTATE AND
+                                 SEGMENT(LOAN NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
         DO
          IF LOANNAMECOUNT<NAMECOUNTMAX THEN
           DO
@@ -800,7 +823,10 @@ PROCEDURE GETNAMELOCS
                                           LOAN PLEDGE NAME:DEATHDATE=DATENULL AND
                                           VALIDNAMETYPES(LOAN PLEDGE NAME:TYPE)=TRUE AND
                                           LOAN PLEDGE NAME:STREET=OLDSTREET AND
-                                          LOAN PLEDGE NAME:EXTRAADDRESS=OLDEXTRA)
+                                          LOAN PLEDGE NAME:EXTRAADDRESS=OLDEXTRA AND
+                                          LOAN PLEDGE NAME:CITY=OLDCITY AND
+                                          LOAN PLEDGE NAME:STATE=OLDSTATE AND
+                                          SEGMENT(LOAN PLEDGE NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
           DO
            IF PLEDGENAMECOUNT<NAMECOUNTMAX THEN
             DO
@@ -825,7 +851,10 @@ PROCEDURE GETNAMELOCS
                               EFT NAME:DEATHDATE=DATENULL AND
                               VALIDNAMETYPES(EFT NAME:TYPE)=TRUE AND
                               EFT NAME:STREET=OLDSTREET AND
-                              EFT NAME:EXTRAADDRESS=OLDEXTRA)
+                              EFT NAME:EXTRAADDRESS=OLDEXTRA AND
+                              EFT NAME:CITY=OLDCITY AND
+                              EFT NAME:STATE=OLDSTATE AND
+                              SEGMENT(EFT NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
       DO
        IF EFTNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -848,7 +877,10 @@ PROCEDURE GETNAMELOCS
                                CARD NAME:DEATHDATE=DATENULL AND
                                VALIDNAMETYPES(CARD NAME:TYPE)=TRUE AND
                                CARD NAME:STREET=OLDSTREET AND
-                               CARD NAME:EXTRAADDRESS=OLDEXTRA)
+                               CARD NAME:EXTRAADDRESS=OLDEXTRA AND
+                               CARD NAME:CITY=OLDCITY AND
+                               CARD NAME:STATE=OLDSTATE AND
+                               SEGMENT(CARD NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
       DO
        IF CARDNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -869,7 +901,10 @@ PROCEDURE GETNAMELOCS
                                        EXTERNALLOAN NAME:DEATHDATE=DATENULL AND
                                        VALIDNAMETYPES(EXTERNALLOAN NAME:TYPE)=TRUE AND
                                        EXTERNALLOAN NAME:STREET=OLDSTREET AND
-                                       EXTERNALLOAN NAME:EXTRAADDRESS=OLDEXTRA)
+                                       EXTERNALLOAN NAME:EXTRAADDRESS=OLDEXTRA AND
+                                       EXTERNALLOAN NAME:CITY=OLDCITY AND
+                                       EXTERNALLOAN NAME:STATE=OLDSTATE AND
+                                       SEGMENT(EXTERNALLOAN NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
       DO
        IF EXTERNALNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -984,7 +1019,7 @@ PROCEDURE PULLRGDATA
 ** PASS    @RGUSERCHR2  City | State | Zipcode
 ** PASS    @RGUSERCHR3  Member Note
 ** PASS    @RGUSERCHR4  Member's Banno ID
-** PASS    #RGUSERCHR5  Old Street | Old Extra Address
+** PASS    #RGUSERCHR5  Old Street | Old Extra Address (Unused)
 ** RETURN  NEWSTREET  Updated street address
 ** RETURN  NEWEXTRAADDRESS  Updated extra address
 ** RETURN  NEWCITY  Updated city
@@ -1060,20 +1095,6 @@ PROCEDURE PULLRGDATA
    BNODEBUGMSG="RG4:"+CURRBANNOID
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="BANNO ID:"+CURRBANNOID
-   CALL BNODEBUGMSGADD
-
-[* old street, old extra address
-*]
-   DATALINE=@RGUSERCHR5
-   DELIMITER="|"
-   CALL PARSEDATALINE
-   OLDSTREET=UPPERCASE(DATALINEFIELD(1))
-   OLDEXTRA=UPPERCASE(DATALINEFIELD(2))
-   BNODEBUGMSG="RG5:"+@RGUSERCHR5
-   CALL BNODEBUGMSGADD
-   BNODEBUGMSG="OLD STREET:"+OLDSTREET
-   CALL BNODEBUGMSGADD
-   BNODEBUGMSG="OLD EXTRA ADDRESS:"+OLDEXTRA
    CALL BNODEBUGMSGADD
 
    IF LENGTH(NEWSTREET)>40 OR
@@ -1204,6 +1225,9 @@ PROCEDURE INITIALIZEDATA
  NEWZIPCODE=""
  OLDSTREET=""
  OLDEXTRA=""
+ OLDCITY=""
+ OLDSTATE=""
+ OLDZIP=""
  FMERROR=""
  CLEARWARNERROR=""
  SETWARNERROR=""
@@ -1720,12 +1744,10 @@ PROCEDURE READCONFIGFILESETTINGS
 [ Upon next update deactivate the testing for this change
   by replacing code below with: 
 
- IF (@RGUSERCHR5<>"" AND 
-     PARAMMATCHNAMELVL<>"NONE") THEN
+ IF PARAMMATCHNAMELVL<>"NONE" THEN
   PERFORMMATCHING=TRUE
 ]
- IF (@RGUSERCHR5<>"" AND 
-     PARAMMATCHNAMELVL<>"NONE" AND
+ IF (PARAMMATCHNAMELVL<>"NONE" AND
     (PARAMTESTACCTS="" OR
     (PARAMTESTACCTS<>"" AND
      TESTUSER=TRUE))) THEN
@@ -2175,9 +2197,7 @@ PROCEDURE PRINTRGDATA
    NEWLINE
    PRINT INDENT(2)+Q+"@RGUSERCHR3"+Q+": "+Q+@RGUSERCHR3+Q+","
    NEWLINE
-   PRINT INDENT(2)+Q+"@RGUSERCHR4"+Q+": "+Q+@RGUSERCHR4+Q+","
-   NEWLINE
-   PRINT INDENT(2)+Q+"@RGUSERCHR5"+Q+": "+Q+@RGUSERCHR5+Q
+   PRINT INDENT(2)+Q+"@RGUSERCHR4"+Q+": "+Q+@RGUSERCHR4+Q
    NEWLINE
    PRINT INDENT(1)+"},"
    NEWLINE
