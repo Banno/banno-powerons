@@ -226,7 +226,7 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.1.0"
- LASTMODDATE='09/22/22'
+ LASTMODDATE='10/04/22'
  LASTMODTIME="10:00 ET"
  PROGRAMUPDATENOTE1="Added old address matching functionality to override "
  PROGRAMUPDATENOTE2="tracking 8 linking. Added member email confirmation."
@@ -718,7 +718,7 @@ PROCEDURE GETNAMELOCS
    OLDEXTRA=NAME:EXTRAADDRESS
    OLDCITY=NAME:CITY
    OLDSTATE=NAME:STATE
-   OLDZIP=NAME:ZIPCODE
+   OLDZIP=SEGMENT(NAME:ZIPCODE,1,5)
   END
  IF MATCHACCTNAMES=TRUE THEN
   DO
@@ -730,7 +730,7 @@ PROCEDURE GETNAMELOCS
                         NAME:EXTRAADDRESS=OLDEXTRA AND
                         NAME:CITY=OLDCITY AND
                         NAME:STATE=OLDSTATE AND
-                        SEGMENT(NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                        SEGMENT(NAME:ZIPCODE,1,5)=OLDZIP)
     DO
      IF ACCTNAMECOUNT<NAMECOUNTMAX THEN
       DO
@@ -752,7 +752,7 @@ PROCEDURE GETNAMELOCS
                                 SHARE NAME:EXTRAADDRESS=OLDEXTRA AND
                                 SHARE NAME:CITY=OLDCITY AND
                                 SHARE NAME:STATE=OLDSTATE AND
-                                SEGMENT(SHARE NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                                SEGMENT(SHARE NAME:ZIPCODE,1,5)=OLDZIP)
       DO
        IF SHARENAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -776,7 +776,7 @@ PROCEDURE GETNAMELOCS
                               IRS NAME:EXTRAADDRESS=OLDEXTRA AND
                               IRS NAME:CITY=OLDCITY AND
                               IRS NAME:STATE=OLDSTATE AND
-                              SEGMENT(IRS NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                              SEGMENT(IRS NAME:ZIPCODE,1,5)=OLDZIP)
       DO
        IF IRSNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -803,7 +803,7 @@ PROCEDURE GETNAMELOCS
                                  LOAN NAME:EXTRAADDRESS=OLDEXTRA AND
                                  LOAN NAME:CITY=OLDCITY AND
                                  LOAN NAME:STATE=OLDSTATE AND
-                                 SEGMENT(LOAN NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                                 SEGMENT(LOAN NAME:ZIPCODE,1,5)=OLDZIP)
         DO
          IF LOANNAMECOUNT<NAMECOUNTMAX THEN
           DO
@@ -826,7 +826,7 @@ PROCEDURE GETNAMELOCS
                                           LOAN PLEDGE NAME:EXTRAADDRESS=OLDEXTRA AND
                                           LOAN PLEDGE NAME:CITY=OLDCITY AND
                                           LOAN PLEDGE NAME:STATE=OLDSTATE AND
-                                          SEGMENT(LOAN PLEDGE NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                                          SEGMENT(LOAN PLEDGE NAME:ZIPCODE,1,5)=OLDZIP)
           DO
            IF PLEDGENAMECOUNT<NAMECOUNTMAX THEN
             DO
@@ -854,7 +854,7 @@ PROCEDURE GETNAMELOCS
                               EFT NAME:EXTRAADDRESS=OLDEXTRA AND
                               EFT NAME:CITY=OLDCITY AND
                               EFT NAME:STATE=OLDSTATE AND
-                              SEGMENT(EFT NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                              SEGMENT(EFT NAME:ZIPCODE,1,5)=OLDZIP)
       DO
        IF EFTNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -880,7 +880,7 @@ PROCEDURE GETNAMELOCS
                                CARD NAME:EXTRAADDRESS=OLDEXTRA AND
                                CARD NAME:CITY=OLDCITY AND
                                CARD NAME:STATE=OLDSTATE AND
-                               SEGMENT(CARD NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                               SEGMENT(CARD NAME:ZIPCODE,1,5)=OLDZIP)
       DO
        IF CARDNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -904,7 +904,7 @@ PROCEDURE GETNAMELOCS
                                        EXTERNALLOAN NAME:EXTRAADDRESS=OLDEXTRA AND
                                        EXTERNALLOAN NAME:CITY=OLDCITY AND
                                        EXTERNALLOAN NAME:STATE=OLDSTATE AND
-                                       SEGMENT(EXTERNALLOAN NAME:ZIPCODE,1,5)=SEGMENT(OLDZIP,1,5))
+                                       SEGMENT(EXTERNALLOAN NAME:ZIPCODE,1,5)=OLDZIP)
       DO
        IF EXTERNALNAMECOUNT<NAMECOUNTMAX THEN
         DO
@@ -1019,7 +1019,7 @@ PROCEDURE PULLRGDATA
 ** PASS    @RGUSERCHR2  City | State | Zipcode
 ** PASS    @RGUSERCHR3  Member Note
 ** PASS    @RGUSERCHR4  Member's Banno ID
-** PASS    #RGUSERCHR5  Old Street | Old Extra Address (Unused)
+**
 ** RETURN  NEWSTREET  Updated street address
 ** RETURN  NEWEXTRAADDRESS  Updated extra address
 ** RETURN  NEWCITY  Updated city
