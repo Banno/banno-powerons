@@ -1,8 +1,8 @@
 [ File Name: BANNO.TRACKING8.FM
   
   Description: Batch PowerOn creates an FM report to update, 
-               expire or delete tracking type 8 records depending
-               on user selection.
+               expire or delete account level tracking type 8 
+               records depending on user selection.
                 
   
   Original Author: JuCarson 10/4/2022   R 2022.00
@@ -10,25 +10,27 @@
   Details:  
    Prompts:
     Select Run Mode:
-      Expire All Tracking 8s       - PowerOn will expire all unexpired tracking
-                                     type 8 records found on any open account.
+      Expire All Tracking 8s       - PowerOn will expire all unexpired account
+                                     level tracking type 8 records found on any
+                                     open account.
 
-      Delete All Tracking 8s       - PowerOn will delete all tracking type 8
-                                     records found on any open account.
+      Delete All Tracking 8s       - PowerOn will delete all account level tracking
+                                     type 8 records found on any open account.
 
       Delete Banno-specific Fields - PowerOn will delete any data found in
                                      USERCHAR12-USERCHAR15 of any unexpired
-                                     tracking type 8 records found on any 
-                                     open account.
+                                     account level tracking type 8 records found 
+                                     on any open account.
 
    Selection:
-    Any tracking type 8 record found on an open account.
+    Any account level tracking type 8 record found on an open account.
         
    Sorting:
     N/A
     
    Program Flow:
-    Program selects all open accounts with a tracking type 8 record. 
+    Program selects all open accounts with an account level tracking
+    type 8 record. 
 
         - PowerOn prints FM according to user input described above. 
 
@@ -88,7 +90,7 @@ PRINT TITLE="TRACKING 8 FM"
    NEWLINE
   END
 
- IF OPTIONSEL=OPTEDIT AND
+ ELSE IF OPTIONSEL=OPTEDIT AND
     TRACKING:EXPIREDATE=DATENULL AND
    (TRACKING:USERCHAR12<>"" OR
     TRACKING:USERCHAR13<>"" OR
@@ -132,3 +134,4 @@ PRINT TITLE="TRACKING 8 FM"
     END
   END
 END
+
