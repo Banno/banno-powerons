@@ -187,7 +187,7 @@ Returns name record information: existing account level names, name types which 
 	    "type": "Beneficiary",
 	    "street": "1234 Main Street",
 	    "local": "Denver CO 80201",
-		"nameLoc": "000255"
+	    "nameLoc": "000255"
     }
     ]
   }
