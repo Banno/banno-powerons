@@ -42,7 +42,7 @@
 **              4. Corrected JSON for targeted account warning type
 **  Ver. 1.0.10 06/23/2021 JuCarson
 **              1. Added Branch to file maintenance section.
-**  Ver. 1.1.0  10/07/2022 TKainz
+**  Ver. 1.1.0  10/10/2022 TKainz
 **              1. Add ability for existing name records at the share and/or loan
 **                 level to be added (copied) to the new Share. In test mode, only test
 **                 accounts will have access to this function.
@@ -514,7 +514,7 @@ DEFINE
  NAMETYPESHARE             = 0
  NAMETYPELOAN              = 1
 
- MAXERRORCODE              = 11
+ MAXERRORCODE              = 511
 END
 
 SETUP
@@ -539,8 +539,8 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
  PROGRAMVERSION="1.1.0"
- LASTMODDATE='10/06/22'
- LASTMODTIME="12:30 MT"
+ LASTMODDATE='10/10/22'
+ LASTMODTIME="11:20 MT"
  PROGRAMUPDATENOTE1="Copy name functionality added"
  PROGRAMUPDATENOTE2="Error code ouput update, JSON code fix"
 
@@ -1173,6 +1173,8 @@ PROCEDURE QUALIFYMEMBER
        INELIGIBLEREASON="ACCOUNT WARNING"
        PRINT "{"
        NEWLINE
+       PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
+       NEWLINE
        CALL PRINTPROGRAMINFO
        ERRORCODE="502"
        CALL ERRORHANDLER
@@ -1194,7 +1196,7 @@ PROCEDURE QUALIFYMEMBER
      PRINT "{"
      NEWLINE
      CALL PRINTPROGRAMINFO
-     PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
+     PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
      NEWLINE
      INELIGIBLEREASON="EXCLUDED ACCT TYPE"
      ERRORCODE="503"
