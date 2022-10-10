@@ -3,7 +3,7 @@
 **  Datafile Name:      BANNO.NEWSUBCREATE.V1.CFG
 **  Letterfile Name:    BANNO.NEWSUBCREATE.TERMS.00-09
 **
-**  Copyright 2020-2021 Jack Henry and Associates
+**  Copyright 2020-2022 Jack Henry and Associates
 **
 **  Ver. 1.0.0  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
@@ -40,9 +40,17 @@
 **              2. Enhanced share type selection to account for available balance for funding
 **              3. Enhanced Program info to JSON Output
 **              4. Corrected JSON for targeted account warning type
-**
 **  Ver. 1.0.10 06/23/2021 JuCarson
 **              1. Added Branch to file maintenance section.
+**  Ver. 1.1.0  10/07/2022 TKainz
+**              1. Add ability for existing name records at the share and/or loan
+**                 level to be added (copied) to the new Share. In test mode, only test
+**                 accounts will have access to this function.
+**              2. Add error-code descriptions to be passed to the UX for display to
+**                 the member.
+**              3. Add ability to include comment lines in the Group terms and conditions
+**                 Letter files.
+**              4. Corrected JSON keeping new names added from being displayed by the UX.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -153,12 +161,12 @@ DEFINE
 
 
  SACSHAREGROUP             = NUMBER
- SACSHAREGROUPNAMES        = CHARACTER ARRAY(10)
- SACSHAREGROUPEXISTS       = NUMBER ARRAY(10)
- SACSHAREGROUPSMAX         = 9
+ SACSHAREGROUPNAMES        = CHARACTER ARRAY(19)
+ SACSHAREGROUPEXISTS       = NUMBER ARRAY(19)
+ SACSHAREGROUPSMAX         = NUMBER
 
  [SHARE TYPES PER GROUP IS LIMITED TO 100]
- SACSHARETYPES             = CHARACTER ARRAY(10,100)
+ SACSHARETYPES             = CHARACTER ARRAY(19,100)
  SACSHARETYPEEXISTS        = NUMBER ARRAY(100)
  SACSHARETYPEEXISTSMAX     = 100
  SACSHARETYPESMAX          = 100
@@ -262,7 +270,6 @@ DEFINE
  [JSON CHARACTERS]
  Q                         = CHARACTER
  ERRORCODE                 = CHARACTER
- ERRORMSG                  = CHARACTER
  ERRORDETAIL               = CHARACTER
  CFGFILEREADERROR          = CHARACTER
  VALIDCHRINPUT1            = CHARACTER
@@ -323,22 +330,219 @@ DEFINE
  INDENT                 = CHARACTER ARRAY(9)
  INDENTMAX              = 9
 
+[* Added for v. 1.1.0
+*]
+ BNODEBUGLOOP              = NUMBER
+ BNODEBUGCOUNT             = NUMBER
+ BNODEBUGMSGLIST           = CHARACTER ARRAY(999)
+ BNODEBUGMSGMAX            = 999
+ BNODEBUGMSG               = CHARACTER
+ BNODEBUGMODE              = NUMBER
+ BNODEBUGMODEOFF           = 0
+ BNODEBUGMODEON            = 1
+ BNOINDENTMAX              = 9
+ BNOINDENT                 = CHARACTER ARRAY(9)
+ BNOLOCALLOOP              = NUMBER
+ QQ                        = CHARACTER
+
+ ADDNAMEADDRESSTYPE        = NUMBER
+ ADDNAMEBDAY               = DATE
+ ADDNAMEBIRTHDATE          = DATE
+ ADDNAMECARRIERROUTE       = CHARACTER
+ ADDNAMECITY               = CHARACTER(40)
+ ADDNAMECOUNTRY            = CHARACTER
+ ADDNAMECOUNTRYCODE        = CHARACTER
+ ADDNAMEEXADDR             = CHARACTER(40)
+ ADDNAMEFIRST              = CHARACTER(40)
+ ADDNAMEFOREIGNTIN         = CHARACTER
+ ADDNAMEHOMEPHONE          = CHARACTER(12)
+ ADDNAMELAST               = CHARACTER(40)
+ ADDNAMELASTADDRVERIFDATE  = DATE
+ ADDNAMELOCATOR            = NUMBER
+ ADDNAMELONGNAME           = CHARACTER(40)
+ ADDNAMEMBRADDRLINK        = CHARACTER(40)
+ ADDNAMEMBRNUMLINK         = CHARACTER(40)
+ ADDNAMEMIDDLE             = CHARACTER
+ ADDNAMENAMEFORMAT         = NUMBER
+ ADDNAMEPHONETYPE          = NUMBER
+ ADDNAMERESTRICT           = NUMBER
+ ADDNAMESEX                = CHARACTER
+ ADDNAMESHORTNAME          = CHARACTER(16)
+ ADDNAMESOURCE             = CHARACTER
+ ADDNAMESSN                = CHARACTER(11)
+ ADDNAMESSNCERTIFICATION   = NUMBER
+ ADDNAMESSNOVERRIDE        = NUMBER
+ ADDNAMESSNTYPE            = NUMBER
+ ADDNAMESTATE              = CHARACTER(10)
+ ADDNAMESTREET             = CHARACTER(40)
+ ADDNAMESUBTYPE            = NUMBER
+ ADDNAMESUFFIX             = CHARACTER
+ ADDNAMETITLE              = CHARACTER
+ ADDNAMETYPE               = NUMBER
+ ADDNAMEUSPERSONFLAG       = NUMBER
+ ADDNAMEZIPCODE            = CHARACTER(10)
+ BNODATAFIELDCOUNT         = NUMBER
+ BNODATALINE               = CHARACTER
+ BNODATALINEFIELD          = CHARACTER ARRAY(19)
+ BNODATALINEFIELDMAX       = NUMBER
+ BNODATALINEINPUT          = CHARACTER
+ BNOPOS                    = NUMBER
+ COPYERRORTEXT             = CHARACTER
+ COPYINDEX                 = NUMBER
+ COPYNAMELISTLOOP          = NUMBER
+ COPYNAMESCHR              = CHARACTER
+ DUPLICATENAMEFOUND        = NUMBER
+ DUPNAMECOUNT              = NUMBER
+ EMAILHEADERPRINTED        = NUMBER
+ EMAILNAMECOUNT            = NUMBER
+ EMAILSENDERROR            = CHARACTER
+ LINKERRORTEXT             = CHARACTER
+ NAMECOPYLOOP              = NUMBER
+ NAMEFOUND                 = NUMBER
+ NAMEMERGEACTIVE           = NUMBER
+ NAMESTOCOPYLOC            = NUMBER ARRAY(19)
+ NAMESTOCOPYNAME           = CHARACTER ARRAY(19)
+ NAMESTOCOPYERROR          = CHARACTER ARRAY(19)
+ NAMESTOCOPYNAMETYPE       = NUMBER ARRAY(19)
+ NAMESTOCOPYCOUNT          = NUMBER
+ NAMESTOCOPYLOOP           = NUMBER
+ NAMETOCOPYLOC             = NUMBER
+ NAMESCOPIEDCOUNT          = NUMBER
+ NAMESCOPIEDNAMETYPE       = NUMBER ARRAY(99)
+ NAMESCOPIEDNAME           = CHARACTER ARRAY(99)
+ NAMESCOPIEDMAX            = 99
+ NEWNAMELOC                = NUMBER
+ PARSEARRAY                = CHARACTER ARRAY(999)
+ PARSEARRAYMAX             = NUMBER
+ PRIMARYSHORTNAME          = CHARACTER
+ SACCUSTAFFEMAILADDRESS    = CHARACTER
+ SACCUSTAFFEMAILSUBJECT    = CHARACTER
+ SACNAMECOPYLOANFLAG       = CHARACTER
+ SACNAMECOPYLOANTYPES      = CHARACTER
+ SACNAMECOPYSHAREFLAG      = CHARACTER
+ SACNAMECOPYSHARETYPES     = CHARACTER
+ SACTESTMODEACCOUNTLIST    = CHARACTER
+ SACTESTMODEFLAG           = CHARACTER
+ SLTYPELENGTH              = NUMBER
+ SLTYPESMAX                = NUMBER
+ TESTACCOUNT               = NUMBER
+ TESTACCTLIST              = CHARACTER ARRAY(10)
+ TESTACCTLISTCOUNT         = NUMBER
+ TESTACCTLISTMAX           = 10
+ TESTERRORCODE             = NUMBER
+ TESTMODE                  = NUMBER
+ TESTNAMECITY              = CHARACTER
+ TESTNAMEEXTRAADDRESS      = CHARACTER
+ TESTNAMEID                = CHARACTER
+ TESTNAMEIDTYPE            = NUMBER
+ TESTNAMELOCATOR           = NUMBER
+ TESTNAMESHORTNAME         = CHARACTER
+ TESTNAMESSN               = CHARACTER
+ TESTNAMESTATE             = CHARACTER
+ TESTNAMESTREET            = CHARACTER
+ TESTNAMEZIPCODE           = CHARACTER
+ TMPLOC                    = NUMBER
+ TMPNUM                    = NUMBER
+ TRUEFALSECHR              = CHARACTER ARRAY(1)
+ VALIDLOANNAMETYPES        = NUMBER ARRAY(99)
+ VALIDSHARENAMETYPES       = NUMBER ARRAY(99)
+ VALIDNAMETYPESCHR         = CHARACTER
+ VALIDNAMETYPES            = NUMBER ARRAY(99)
+
+ BNODELIMITER              = NUMBER
+ BNODELIMNONE              = 0
+ BNODELIMQUOTE             = 34
+ BNODELIMCR                = 13
+ BNODELIMLF                = 10
+ BNODELIMCOMMA             = 44
+ BNODELIMTAB               = 09
+ BNODELIMVB                = 124
+ BNODELIMCARET             = 94
+ BNODELIMPIPE              = 124
+ BNODELLIMSEMICOLON        = 59
+
+ ERRORCODEDESCR            = CHARACTER ARRAY(1,19)
+ ECDEFAULT                 = 0
+ ECCUSTOM                  = 1
+
+ NAMETYPESMAX              = 53
+
+ COPYNAMELIST              = CHARACTER ARRAY(36,20)
+ COPYNAMELISTERROR         = CHARACTER ARRAY(20)
+ CNLERRORCHR               = CHARACTER
+ COPYNAMELISTCOUNT         = NUMBER
+ COPYNAMECOUNTMAX          = NUMBER
+ CNLSSN                    = 0
+ CNLLAST                   = 1
+ CNLFIRST                  = 2
+ CNLSTREET                 = 3
+ CNLEXTRAADDRESS           = 4
+ CNLCITY                   = 5
+ CNLSTATE                  = 6
+ CNLZIPCODE                = 7
+ CNLLOC                    = 8
+ CNLMBRADDRNUMLINK         = 9
+ CNLMEMBERNUMLINK          = 10
+ CNLTYPE                   = 11
+ CNLSOURCE                 = 12
+ CNLBIRTHDATE              = 13
+ CNLLOCATOR                = 14
+ CNLSHORTNAME              = 15
+ CNLLONGNAME               = 16
+ CNLADDRESSTYPE            = 17
+ CNLSUBTYPE                = 18
+ CNLNAMEFORMAT             = 19
+ CNLSSNTYPE                = 20
+ CNLSSNOVERRIDE            = 21
+ CNLSSNCERTIFICATION       = 22
+ CNLFOREIGNTIN             = 23
+ CNLUSPERSONFLAG           = 24
+ CNLTITLE                  = 25
+ CNLMIDDLE                 = 26
+ CNLSUFFIX                 = 27
+ CNLPHONETYPE              = 28
+ CNLHOMEPHONE              = 29
+ CNLCARRIERROUTE           = 30
+ CNLCOUNTRYCODE            = 31
+ CNLCOUNTRY                = 32
+ CNLRESTRICT               = 33
+ CNLLASTADDRVERIFDATE      = 34
+ CNLSEX                    = 35
+ CNLDUPLICATED             = 36
+
+ CNTYPE                    = NUMBER
+ NAMETYPESHARE             = 0
+ NAMETYPELOAN              = 1
+
+ MAXERRORCODE              = 11
 END
 
 SETUP
- DEBUGMODE=DEBUGMODEOFF
+ BNODEBUGMODE=BNODEBUGMODEOFF
+ TRUEFALSECHR(FALSE)="false"
+ TRUEFALSECHR(TRUE)="true"
+ SACSHAREGROUPSMAX=19
 
- IF DEBUGMODE=DEBUGMODEON THEN
+ NAMEMERGEACTIVE=GETDATANUMBER(GETPARAMNAMEMERGEENABLE)
+
+ FOR BNOLOCALLOOP=1 TO BNOINDENTMAX
+  DO
+   BNOINDENT(BNOLOCALLOOP)=REPEATCHR(" ",BNOLOCALLOOP)
+  END
+
+
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
   DATAFILETYPE="LETTER"
  ELSE
   DATAFILETYPE="DATA"
 
  Q=CTRLCHR(34)
- PROGRAMVERSION="1.0.9"
- LASTMODDATE='05/12/21'
- LASTMODTIME="16:30 PT"
- PROGRAMUPDATENOTE1="Corrected JSon output when no shares have and available balance"
- PROGRAMUPDATENOTE2="Enhanced Program info to JSON Output"   
+ QQ=CTRLCHR(34)
+ PROGRAMVERSION="1.1.0"
+ LASTMODDATE='10/06/22'
+ LASTMODTIME="12:30 MT"
+ PROGRAMUPDATENOTE1="Copy name functionality added"
+ PROGRAMUPDATENOTE2="Error code ouput update, JSON code fix"
 
  PRIMARYSSN = NAME:SSN
 
@@ -347,6 +551,12 @@ SETUP
   IDVALUEMAX=99
  ELSE
   IDVALUEMAX=9999
+
+ SLTYPELENGTH=GETDATANUMBER(GETPARAMTYPELENGTH)
+ IF SLTYPELENGTH=2 THEN
+  SLTYPESMAX=99
+ ELSE
+  SLTYPESMAX=9999
 
  NAMETYPEDESC(0)  = "Primary"
  NAMETYPEDESC(1)  = "Joint"
@@ -393,27 +603,24 @@ SETUP
   DO
    INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
   END
-END
+
+ CALL SETUPERRORCODES
+END [SETUP]
 
 PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
  SYSTEMMEMOMODE=SYSMEMOMODE
-
+ CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREATE]
 
  [Check if system is in memomode]
  IF SYSTEMMEMOMODE=TRUE THEN
   DO
    PRINT "{"
    NEWLINE
-   PRINT "  "+Q+"memoMode"+Q+": true"
+   PRINT "  "+Q+"memoMode"+Q+": true,"
    NEWLINE
-   PRINT "}"
-   NEWLINE
-
-   ERROR1="Program run attempt while in memo mode"
-   ERROR2=FORMAT("99/99/99",SYSACTUALDATE)+
-          FORMAT("  99:99",SYSACTUALTIME)
-   CALL CREATENOTERECORD
+   ERRORCODE="500"
+   CALL ERRORHANDLER
   END
 
  ELSE [SYSTEM IS NOT IN MEMO MODE]
@@ -421,19 +628,26 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 
    GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
    CALL GETSHARETRANSFERS [CREATE A LIST OF ELIGIBLE FUNDING SHARES]
-   CALL READCONFIGFILESETTINGS [GET PARAMETERS INCL GROUPS AND SHARE TYPES MEMBER CAN CREATE]
-   IF CFGFILEREADERROR<>"" THEN
+   CALL SETTESTACCTSTATUS
+   IF CFGFILEREADERROR<>"" OR
+      TESTERRORCODE=501 OR
+      TESTERRORCODE=500 THEN
     DO
+     IF TESTERRORCODE=501 THEN
+      CFGFILEREADERROR="forced errorcode 501"
      PRINT "  {"
      NEWLINE
      CALL PRINTPROGRAMINFO
-     ERRORCODE="501"
+     IF TESTERRORCODE=500 THEN
+      ERRORCODE="500"
+     ELSE
+      ERRORCODE="501"
      CALL ERRORHANDLER
-     CALL JSONCLOSE
     END
-
    ELSE
     DO
+     VALIDNAMETYPESCHR="ALL"
+
      IF @RGSTATE="PRELOADDATA" THEN
       DO
        [QUALIFY MEMBER]
@@ -441,6 +655,9 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
        IF INELIGIBLEREASON="" THEN       [MEMBER IS QUALIFIED, GIVE BACK SHARE OPTIONS]
         DO
          CALL CHECKSHAREIDS
+
+         IF TESTERRORCODE=504 THEN
+          SHARETYPEFOUND=FALSE
 
          IF SHARETYPEFOUND=TRUE THEN
           DO
@@ -461,10 +678,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
            NEWLINE
 
            CALL JSONCLOSE
-
-           CALL JSONCLOSE
           END
-
          ELSE IF SHARETYPEFOUND=FALSE THEN   [there are no share types to give]
           DO
            PRINT "{"
@@ -472,7 +686,6 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
            CALL PRINTPROGRAMINFO
            ERRORCODE="504"
            CALL ERRORHANDLER
-           CALL JSONCLOSE
           END
          NEWLINE
         END  [IF INELIGIBLEREASON="" THEN ...]
@@ -486,6 +699,12 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
        GETSHARETRANSFERRUN=TRANSFERRUNINITIAL
        CALL GETSHARETRANSFERS
 
+       IF TESTERRORCODE=506 THEN
+        DO
+         SACFUNDREQUIREFLAG="1"
+         XFERSHAREFOUND=0
+        END
+
        IF VALUE(SACFUNDREQUIREFLAG)>0 AND
           XFERSHAREFOUND=0 THEN
         DO [SEND JSON ERROR]
@@ -496,7 +715,6 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          ERRORCODE="506"
          CALL ERRORHANDLER
          NEWLINE
-         CALL JSONCLOSE
         END
        ELSE
         DO
@@ -517,7 +735,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
               SACFUNDCALCAMT=$0.00 THEN
             DO
              IF XFERSHAREFOUND>0 THEN
-              PRINT ","     
+              PRINT ","
              PRINT Q+"later"+Q
             END
            PRINT "],"
@@ -546,15 +764,22 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
        NEWLINE
        PRINT "   "+Q+"canOpenSubShare"+Q+": true,"
        NEWLINE
+
+[* RESULTS START
+*]
        PRINT "  "+Q+"results"+Q+": {"
        NEWLINE
-
+[* if new names are not allowed or if they are allowed but the max new names
+** are nset to 0 or and there are no eligible copy names then set new names
+** allowed flag to 0
+*]
        PRINT "    "+Q+"canAddNames"+Q+": "
-       IF VALUE(SACNAMEALLOWFLAG)=0 THEN
+       IF VALUE(SACNAMEALLOWFLAG)=0 OR
+         (VALUE(SACNAMEALLOWFLAG)=1 AND
+          SACNAMEMAXNEW=0 AND
+          COPYNAMELISTCOUNT=0) THEN
         DO
          PRINT "false"
-         NEWLINE
-         PRINT "}"
          NEWLINE
         END
        ELSE
@@ -562,18 +787,54 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          NAMECOUNT=0
          PRINT "true,"
          NEWLINE
-         PRINT "    "+Q+"maxNames"+Q+": "+Q
+         PRINT "    "+Q+"maxNames"+Q+": "[+Q]
          PRINT SACNAMEMAXNEW
-         PRINT Q+","
+         PRINT [Q+]","
          NEWLINE
          [Provide existing names at the ACCOUNT LEVEL]
          CALL PROVIDENAMESINFO
+         PRINT ","
+         NEWLINE
+
+         IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE OR
+            VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
+          CALL BUILDCOPYNAMELIST
+
+         PRINT Q+"eligibleCopyNames"+Q+": ["
+         NEWLINE
+[* Send list of copy eligible names to the UX
+*]
+         IF COPYNAMELISTCOUNT>0 THEN
+          DO
+           FOR TMPLOOP=1 TO COPYNAMELISTCOUNT
+            DO
+             PRINT "{"
+             NEWLINE
+             PRINT "   "+Q+"name"+Q+": "+Q+COPYNAMELIST(CNLLONGNAME,TMPLOOP)+Q+","
+             NEWLINE
+             PRINT "   "+Q+"type"+Q+": "+Q+NAMETYPEDESC(VALUE(COPYNAMELIST(CNLTYPE,TMPLOOP)))+Q+","
+             NEWLINE
+             PRINT "   "+Q+"street"+Q+": "+Q+COPYNAMELIST(CNLSTREET,TMPLOOP)+Q+","
+             NEWLINE
+             PRINT "   "+Q+"local"+Q+": "+Q+COPYNAMELIST(CNLCITY,TMPLOOP)+" "+
+                                             COPYNAMELIST(CNLSTATE,TMPLOOP)+" "+
+                                             COPYNAMELIST(CNLZIPCODE,TMPLOOP)+Q+","
+             NEWLINE
+             PRINT "   "+Q+"nameLoc"+Q+": "+Q+COPYNAMELIST(CNLLOCATOR,TMPLOOP)+Q
+             NEWLINE
+             PRINT "}"
+             IF TMPLOOP<COPYNAMELISTCOUNT THEN
+              PRINT ","
+             NEWLINE
+            END
+          END
+         PRINT "]"
+         NEWLINE
+
         END [SACNAMEALLOWFLAG="1"]
-       PRINT "}"
+       PRINT "  }"
        NEWLINE
-
       END  [NAMEPRELOAD STATE]
-
      IF @RGSTATE="CREATESHARE" THEN
       DO
        CALL GETPASSEDINFO                      [getting the information from Banno call]
@@ -595,12 +856,24 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                  CALL CREATESHARE
                  IF SHAREERRORMESSAGE="" THEN
                   DO
-                   CALL ADDNAME              [if any names, create them]
+                   CALL ADDNAME              [if any new names, create them]
+
+[* If UX returns a list of names to be copied over, build a list of eligible names for referencing,
+** create new name records then check new name records against other names on the account to
+** see if other names have same ssn but different addresses to then be reported to the CU via email
+*]
+                   IF NAMESTOCOPYCOUNT>0 THEN
+                    DO
+                     EMAILNAMECOUNT=0
+                     CALL BUILDCOPYNAMELIST
+                     CALL PROCESSCOPYNAMES
+                     CALL DUPLICATENAMECHECK
+                    END
                    CALL PERFORMTRANSFER      [if transfer info, do transfer]
 
                    PRINT "{"
                    NEWLINE
-		   CALL PRINTPROGRAMINFO
+                   CALL PRINTPROGRAMINFO
                    PRINT "  "+Q+"memoMode"+Q+": false,"
                    NEWLINE
                    PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
@@ -634,7 +907,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                    NEWLINE
                    PRINT "      "+Q+"newShareId"+Q+": "+Q+NEWSHAREID+Q+","
                    NEWLINE
-                   PRINT "      "+Q+"namesCreated"+Q+": ["
+                   PRINT "      "+Q+"names"+Q+": ["
                    IF NEWNAMECOUNT>0 THEN
                     DO
                      FOR J=1 TO NEWNAMECOUNT
@@ -647,10 +920,31 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                        IF NEWNAMECREATEERROR(J)="" then
                         PRINT "true"
                        ELSE
-                        PRINT "false"+": "+NEWNAMECREATEERROR(J)
+                        PRINT "false"
                        NEWLINE
-                      PRINT "}"
-                       IF J<NEWNAMECOUNT THEN
+                       PRINT "}"
+                       IF J<NEWNAMECOUNT OR
+                         (J=NEWNAMECOUNT AND NAMESTOCOPYCOUNT>0) THEN
+                        PRINT ","
+                       NEWLINE
+                      END [FOR J=1 TO NEWNAMECOUNT]
+                    END [IF NEWNAMECOUNT>0]
+                   IF NAMESTOCOPYCOUNT>0 THEN
+                    DO
+                     FOR J=1 TO NAMESTOCOPYCOUNT
+                      DO
+                       PRINT "        {"+Q+"nameType"+Q+": "+Q+NAMETYPEDESC(NAMESTOCOPYNAMETYPE(J))+Q+", "
+                       NEWLINE
+                       PRINT "        "+Q+"name"+Q+": "+Q+NAMESTOCOPYNAME(J)+Q+", "
+                       NEWLINE
+                       PRINT "        "+Q+"created"+Q+": "
+                       IF NAMESTOCOPYERROR(J)="" then
+                        PRINT "true"
+                       ELSE
+                        PRINT "false"
+                       NEWLINE
+                       PRINT "}"
+                       IF J<NAMESTOCOPYCOUNT THEN
                         PRINT ","
                        NEWLINE
                       END
@@ -659,27 +953,29 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
                    NEWLINE
                    PRINT "    }"
                    NEWLINE
-                   PRINT "  }"
-                   NEWLINE
                   END                          [end create share]
                 END                            [end maturity date]
               END                              [end interest rate]
             END                                [end get ID]
           END                                  [end check funds]
-        END                                  [end of passed info]
-      END                                    [end CREATESHARE STATE]
+        END                                    [end of passed info]
+      END                                      [end CREATESHARE STATE]
     END [READCONFIGGOOD]
   END  [NOT IN MEMOMODE]
-END   [PRINT SECTION]
 
+ CALL BNOPRINTDEBUG
+ PRINT BNOINDENT(0)+"}"
+ NEWLINE
+
+END [PRINT]
 
 PROCEDURE READCONFIGFILESETTINGS
-
+[* Read the configuration settings from the CFG data file. If the program
+** is being run in debug mode, then the settings will come from the Letter file
+** otherwise the Datafile
+*]
  FILEOPEN(DATAFILETYPE,CONFIGFILENAME,"READ",SACFILENUM,READCONFIGERROR)
  CFGFILEREADERROR=READCONFIGERROR
-
-[  Parse additional lines for this NT specfile
-]
  WHILELIMIT=100000
  SACDONE=FALSE
  WHILE READCONFIGERROR="" AND SACDONE=FALSE
@@ -710,9 +1006,7 @@ PROCEDURE READCONFIGFILESETTINGS
            ELSE IF CHARACTERSEARCH(SACLINEPREV,"REQUIREFUNDINGFLAG")>0 THEN
             SACFUNDREQUIREFLAG=SACLINE
            ELSE IF CHARACTERSEARCH(SACLINEPREV,"MINFUNDINGAMT")>0 THEN
-            DO
-             SACFUNDMINAMT=MONEY(VALUE(SACLINE))
-            END
+            SACFUNDMINAMT=MONEY(VALUE(SACLINE))
            ELSE IF CHARACTERSEARCH(SACLINEPREV,"ALLOWNAMESFLAG")>0 THEN
             SACNAMEALLOWFLAG=SACLINE
            ELSE IF CHARACTERSEARCH(SACLINEPREV,"NAMELEVEL")>0 THEN
@@ -750,6 +1044,68 @@ PROCEDURE READCONFIGFILESETTINGS
                 END
               END
             END
+[*TEK - v 1.1.0: Add param settings for CU staff email address, subject line,
+** test mode on/off flag, test mode account list, test mode forced error code,
+** name copy share and loan flags, name copy share/loan eligible name types.
+*]
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"CUSTAFFEMAILADDRESS")>0 THEN
+            SACCUSTAFFEMAILADDRESS=SACLINE
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"CUSTAFFEMAILSUBJECT")>0 THEN
+            SACCUSTAFFEMAILSUBJECT=SACLINE
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"TESTMODEFLAG")>0 THEN
+            SACTESTMODEFLAG=SACLINE
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"TESTMODEACCOUNTLIST")>0 THEN
+            SACTESTMODEACCOUNTLIST=SACLINE
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"TESTERRORCODE")>0 THEN
+            DO
+             TESTERRORCODE=VALUE(SACLINE)
+             BNODEBUGMSG=FORMAT("Testing Error Code: 999",TESTERRORCODE)
+             CALL BNODEBUGMSGADD
+            END
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"ERRORCODECHR")>0 THEN
+            DO
+             TMPNUM=VALUE(SACLINEPREV)
+             IF TMPNUM>=500 AND
+                TMPNUM<=511 THEN
+              DO
+               TMPNUM=TMPNUM-500
+               ERRORCODEDESCR(ECCUSTOM,TMPNUM)=SACLINE
+              END
+            END
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"NAMECOPYSHAREFLAG")>0 THEN
+            DO
+             SACNAMECOPYSHAREFLAG=SACLINE
+            END
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"NAMECOPYSHARETYPES")>0 THEN
+            DO
+             SACNAMECOPYSHARETYPES=SACLINE
+             IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE THEN
+              DO
+               LELISTINPUT=SACNAMECOPYSHARETYPES
+               CALL LISTEXPAND
+               FOR TMPLOOP=0 TO NAMETYPESMAX
+                DO
+                 VALIDSHARENAMETYPES(TMPLOOP)=LELIST(TMPLOOP)
+                END
+              END
+            END
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"NAMECOPYLOANFLAG")>0 THEN
+            DO
+             SACNAMECOPYLOANFLAG=SACLINE
+            END
+           ELSE IF CHARACTERSEARCH(SACLINEPREV,"NAMECOPYLOANTYPES")>0 THEN
+            DO
+             SACNAMECOPYLOANTYPES=SACLINE
+             IF VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
+              DO
+               LELISTINPUT=SACNAMECOPYLOANTYPES
+               CALL LISTEXPAND
+               FOR TMPLOOP=0 TO NAMETYPESMAX
+                DO
+                 VALIDLOANNAMETYPES(TMPLOOP)=LELIST(TMPLOOP)
+                END
+              END
+            END
 
            ELSE IF CHARACTERSEARCH(SACLINEPREV,"SHARE TYPES")>0 THEN
             DO
@@ -783,8 +1139,7 @@ PROCEDURE READCONFIGFILESETTINGS
     END
   END
  FILECLOSE(SACFILENUM,READCONFIGERROR)
-
-END  [PROCEDURE READ CONFIG FILE]
+END [PROCEDURE READ CONFIG FILE]
 
 PROCEDURE QUALIFYMEMBER
 [* Check for exclusionary account level warnings or
@@ -802,8 +1157,16 @@ PROCEDURE QUALIFYMEMBER
  WARNINGEXISTS=FALSE
  FOR I=1 TO EXCLUDEWARNINGSMAX
   DO
-   IF ANYWARNING(ACCOUNT,I) AND
-      LELIST(I)=TRUE THEN
+
+   IF TESTERRORCODE=502 THEN
+    DO
+     I=EXCLUDEWARNINGSMAX
+     LELIST(I)=TRUE
+    END
+
+   IF (ANYWARNING(ACCOUNT,I) AND
+       LELIST(I)=TRUE) OR
+       TESTERRORCODE=502 THEN
     DO
      IF INELIGIBLEREASON="" THEN
       DO
@@ -813,7 +1176,6 @@ PROCEDURE QUALIFYMEMBER
        CALL PRINTPROGRAMINFO
        ERRORCODE="502"
        CALL ERRORHANDLER
-       CALL JSONCLOSE
        I=EXCLUDEWARNINGSMAX
       END
     END
@@ -826,23 +1188,19 @@ PROCEDURE QUALIFYMEMBER
    IF LELISTINPUT="" THEN
     LELISTINPUT="none"
    CALL LISTEXPAND
-   IF LELIST(ACCOUNT:TYPE)=TRUE THEN
+   IF LELIST(ACCOUNT:TYPE)=TRUE OR
+      TESTERRORCODE=503 THEN
     DO
      PRINT "{"
      NEWLINE
      CALL PRINTPROGRAMINFO
-     PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
-     NEWLINE
-     PRINT "  "+Q+"results"+Q+":{"
+     PRINT "  "+Q+"canOpenSubShare"+Q+": true,"
      NEWLINE
      INELIGIBLEREASON="EXCLUDED ACCT TYPE"
      ERRORCODE="503"
      CALL ERRORHANDLER
-     CALL JSONCLOSE
-     CALL JSONCLOSE
     END
   END
-
 END [QUALIFY MEMBER PROC]
 
 PROCEDURE LOADSUBACCTTERMS
@@ -854,6 +1212,9 @@ PROCEDURE LOADSUBACCTTERMS
  TMPCHR="BANNO.NEWSUBACCT.TERMS."+FORMAT("99",VALUE(OPENCATEGORY))
  FILEOPEN("LETTER",TMPCHR,"READ",LFNUM,LFERROR)
 
+ IF TESTERRORCODE=505 THEN
+  LFERROR="Forced error 505 for testing"
+
  IF LFERROR<>"" THEN
   DO
    PRINT "{"
@@ -861,7 +1222,6 @@ PROCEDURE LOADSUBACCTTERMS
    CALL PRINTPROGRAMINFO
    ERRORCODE="505"
    CALL ERRORHANDLER
-   CALL JSONCLOSE
   END
  ELSE
   DO
@@ -879,27 +1239,31 @@ PROCEDURE LOADSUBACCTTERMS
      FILEREADLINE(LFNUM,LFLINE,LFERROR)
      TMPCHR=LFLINE
      CALL CLEANUPTEXT
-     IF LFLINECOUNT=0 THEN
+[*TEK - v 1.1.0: Added to allow use of comment lines in the TOC Letter files
+*]
+     IF SEGMENT(LFLINE,1,1)<>"*" THEN
       DO
-       PRINT "  "+Q+"results"+Q+": {"
-       NEWLINE
-       PRINT "    "+Q+"categoryTerms"+Q+":["
-       NEWLINE
+       IF LFLINECOUNT=0 THEN
+        DO
+         PRINT "  "+Q+"results"+Q+": {"
+         NEWLINE
+         PRINT "    "+Q+"categoryTerms"+Q+":["
+         NEWLINE
+        END
+       ELSE
+        DO
+         PRINT ","
+         NEWLINE
+        END
+       PRINT Q+TMPCHR+Q
+       LFLINECOUNT=LFLINECOUNT+1
       END
-     ELSE
-      DO
-       PRINT ","
-       NEWLINE
-      END
-     PRINT Q+TMPCHR+Q
-     LFLINECOUNT=LFLINECOUNT+1
     END
    PRINT "],"
    NEWLINE
    FILECLOSE(LFNUM,LFERROR)
   END
 END [PROCEDURE TERMS]
-
 
 PROCEDURE GETMINIMUMDEPOSIT
 [* Using the share type, get the minimum balance, minimum deposit and,
@@ -929,6 +1293,7 @@ PROCEDURE PRINTMINFUNDAMT
  PRINT TMPCHR
  PRINT Q
 END [PROCEDURE PRINT MIN FUND AMT]
+
 
 PROCEDURE PROVIDENAMESINFO
 [* Provide name configurations
@@ -980,15 +1345,10 @@ PROCEDURE PROVIDENAMESINFO
    NEWLINE
    PRINT "      }"
   END
-
  NEWLINE
  PRINT "    ]"
  NEWLINE
- PRINT "  }"
- NEWLINE
-END [PROVIDE NAME INFO PROC]
-
-
+END [PROCEDURE]
 
 PROCEDURE CHECKSHAREIDS
 [* Loop through the share groups and then through the share types. For
@@ -1110,7 +1470,6 @@ PROCEDURE CHECKSHAREIDS
 
 END [PROCEDURE CHECK SHARE IDS]
 
-
 PROCEDURE SHAREOUTPUT
  [THIS SENDS SHARE INFORMATION IN JSON TO BANNO]
 
@@ -1216,13 +1575,6 @@ PROCEDURE SHAREOUTPUT
            PRINT Q+","
            NEWLINE
           END
-[
-           ELSE
-            DO
-             PRINT "            "+Q+"term"+Q+": "+Q+"null"+Q+","
-             NEWLINE
-            END
-]
 
          [MINIMUM BALANCE]
          SHAREMINIMUMBALANCE=GETDATAMONEY(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),31)
@@ -1256,8 +1608,7 @@ PROCEDURE SHAREOUTPUT
     END
   END [FOR I - GROUPS]
  NEWLINE
-END
-
+END [PROCEDURE]
 
 PROCEDURE GETSHARERATE
  DIVDEFBALCUTOFF=$0.00
@@ -1492,10 +1843,7 @@ PROCEDURE GETSHARETRANSFERS
    NEWLINE
    PRINT "  }"
    NEWLINE
-   PRINT "  }"
-   NEWLINE
   END
-
 END [PROCEDURE GET SHARE XFRS]
 
 PROCEDURE BUILDSERVICEARRAY
@@ -1582,18 +1930,20 @@ PROCEDURE CHECKSHARETRANSFEROUT
       END
     END
   END
-END   [CALL CHECKSHARETRANSFERINOUT]
-
+END   [PROCEDURE CALL CHECKSHARETRANSFERINOUT]
 
 PROCEDURE GETPASSEDINFO
- IMPORT(1)=@RGUSERCHR1           [TRANSFER INFO]
- IMPORT(2)=@RGUSERCHR2           [NAME INFO 1]
- IMPORT(3)=@RGUSERCHR3           [NAME INFO 1 CONT]
- IMPORT(4)=@RGUSERCHR4           [NAME INFO 2]
- IMPORT(5)=@RGUSERCHR5           [NAME INFO 2 CONT]
+ IMPORT(1)=@RGUSERCHR1           [TRANSFER INFO & NAME COPY LIST]
+ IMPORT(2)=@RGUSERCHR2           [NEW NAME INFO 1]
+ IMPORT(3)=@RGUSERCHR3           [NEW NAME INFO 1 CONT]
+ IMPORT(4)=@RGUSERCHR4           [NEW NAME INFO 2]
+ IMPORT(5)=@RGUSERCHR5           [NEW NAME INFO 2 CONT]
+
+ COPYNAMESCHR=""
 
  [must have a share type]
- IF IMPORT(1)="" THEN
+ IF IMPORT(1)="" OR
+    TESTERRORCODE=507 THEN
   DO
    PASSEDINFOREADERROR="MISSING INFORMATION"
    PRINT "{"
@@ -1601,7 +1951,6 @@ PROCEDURE GETPASSEDINFO
    CALL PRINTPROGRAMINFO
    ERRORCODE="507"
    CALL ERRORHANDLER
-   CALL JSONCLOSE
   END
 
  [determine number of names]
@@ -1611,9 +1960,36 @@ PROCEDURE GETPASSEDINFO
  ELSE IF IMPORT(2)<>"" THEN
   NEWNAMECOUNT=1
 
-
  FOR J=1 TO 5
   DO
+[*TEK - v 1.1.0: added check for caret delimiter. If present, character string
+** after caret represents semi-colon delimited list of name locators of name records
+** to be copied under the new share
+*]
+   IF J=1 THEN [get data from the @RGUSERCHR1 field]
+    DO
+     POS=CHARACTERSEARCH(IMPORT(J),"^") [The data after the caret are the names to copy]
+     IF POS>0 THEN
+      DO
+       IF LENGTH(IMPORT(J))>POS THEN
+        DO
+         COPYNAMESCHR=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
+         BNODATALINEINPUT=COPYNAMESCHR
+         BNODELIMITER=BNODELLIMSEMICOLON
+         CALL PARSEDATALINE
+         IF BNODATAFIELDCOUNT>0 THEN
+          DO
+           NAMESTOCOPYCOUNT=BNODATAFIELDCOUNT
+           FOR TMPLOOP=1 TO NAMESTOCOPYCOUNT
+            DO
+             NAMESTOCOPYLOC(TMPLOOP)=VALUE(BNODATALINEFIELD(TMPLOOP))
+            END
+          END
+        END
+       IMPORT(J)=SEGMENT(IMPORT(J),1,POS-1)
+      END
+    END [IF J=1]
+
    IF J=1 AND
       CHARACTERSEARCH(IMPORT(J),";")=0 THEN
     DO
@@ -1628,7 +2004,6 @@ PROCEDURE GETPASSEDINFO
       DO
        NEWSHARETYPE=SEGMENT(IMPORT(J),1,POS-1)
        IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
-
        POS=CHARACTERSEARCH(IMPORT(J),";")
        TRANSFERFROMID=SEGMENT(IMPORT(J),1,POS-1)
        TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID))
@@ -1726,7 +2101,7 @@ PROCEDURE GETPASSEDINFO
       END
     END
   END [END OF J]
-END [PROC GET PASSED INFO]
+END [PROCEDURE GET PASSED INFO]
 
 
 PROCEDURE GETNEXTID
@@ -1794,17 +2169,17 @@ PROCEDURE GETNEXTID
   END
 
  NEWSHAREID=NEXTID
- IF NEWSHAREID="" THEN
+ IF NEWSHAREID="" OR
+    TESTERRORCODE=508 THEN
   DO
+   NEWSHAREID=""
    PRINT "{"
    NEWLINE
-   CALL PRINTPROGRAMINFO
    ERRORCODE="508"
    CALL ERRORHANDLER
    NEWLINE
-   CALL JSONCLOSE
   END
-END   [PROCEDURE GET NEXT ID]
+END [PROCEDURE GET NEXT ID]
 
 PROCEDURE LOADEXISTINGSHAREIDS
 [* Create an array of existing share IDs]
@@ -1855,14 +2230,12 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
      GETRATEERROR="INVALID DIV TYPE"     [ DIVTYPE IS NOT DEFINED ]
      NEWLINE
     END
-
    IF NEWSHAREDIVDEFDEFINED=1 THEN
     DO
      IF NEWSHAREDIVDEFRATESELECT<>1 THEN   [NOT A FILL IN RATE]
       DO
        RATEDONE=TRUE
       END
-
      ELSE IF NEWSHAREDIVDEFRATESELECT=1 AND   [FILL IN FROM SHARE DEFAULTS]
              NEWSHAREDIVDEFFILLINMETHOD=0 THEN
       DO
@@ -1893,14 +2266,14 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
           END
 
          IF DR=1 AND                                    [1st time, establish low range]
-                 TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN
+            TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN
           DO
            NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
           END
 
          IF DR>1 AND
-                 NEWSHAREDIVDEFRATE<>0.000% AND
-                 NEWSHAREDIVDEFBALCUTOFF>$0.00 THEN
+            NEWSHAREDIVDEFRATE<>0.000% AND
+            NEWSHAREDIVDEFBALCUTOFF>$0.00 THEN
           DO
            IF TRANSFERAMOUNT>=NEWSHAREDIVDEFPREVBALCUTOFF AND  [is xfr amount between last and now]
               TRANSFERAMOUNT<NEWSHAREDIVDEFBALCUTOFF THEN
@@ -1913,39 +2286,38 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
           END
 
          IF DR>1 AND                                      [is xfr amt above last rate]
-                 NEWSHAREDIVDEFRATE<>0.000% AND
-                 NEWSHAREDIVDEFBALCUTOFF=$0.00 THEN
+            NEWSHAREDIVDEFRATE<>0.000% AND
+            NEWSHAREDIVDEFBALCUTOFF=$0.00 THEN
           DO
-             NEWSHARERATE=NEWSHAREDIVDEFRATE
-             RATEDONE=TRUE
+           NEWSHARERATE=NEWSHAREDIVDEFRATE
+           RATEDONE=TRUE
           END
-
-          DR=DR+1
+         DR=DR+1
         END     [end of while]
-
       END  [FILL IN BASED ON BALANCE RANGE]
     END  [DEFINED RATE]
   END [SAC DISPLAY CHECK]
- IF RATEDONE=FALSE THEN
+ IF RATEDONE=FALSE OR
+    TESTERRORCODE=509 THEN
   DO
+   RATEDONE=FALSE
    PRINT "{"
    NEWLINE
    CALL PRINTPROGRAMINFO
    ERRORCODE="509"
    CALL ERRORHANDLER
    NEWLINE
-   CALL JSONCLOSE
   END
-END   [GET NEW SHARE RATE PROCEDURE]
+END [GET NEW SHARE RATE PROCEDURE]
 
 PROCEDURE GETNEWMATURITYDATE
-
+[*Determine the new maturity date
+*]
  IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)<>2 OR              [NOT CLUB OR CD]
     GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)<>3 THEN
   DO
    MATUREDATEDONE=TRUE
   END
-
 
  IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=2 THEN             [CERTIFICATE]
   DO
@@ -1955,13 +2327,13 @@ PROCEDURE GETNEWMATURITYDATE
      NEWSHAREMATURITYDATE=SYSTEMDATE+GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),53)
      MATUREDATEDONE=TRUE
     END
-
    ELSE IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),52)=0 THEN           [X MONTHS]
     DO
      NEWSHAREMATURITYDATE=DATEOFFSET(SYSTEMDATE,+GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),53),0)
      MATUREDATEDONE=TRUE
     END
   END
+
  IF GETDATANUMBER(GETDEFAULTSHARE,VALUE(NEWSHARETYPE),11)=3 THEN               [CLUB]
   DO
    NEWSHAREMATURITYDATE='--/--/--'
@@ -1985,26 +2357,33 @@ PROCEDURE GETNEWMATURITYDATE
       END
     END
   END
- IF MATUREDATEDONE=FALSE THEN
+ IF MATUREDATEDONE=FALSE OR
+    TESTERRORCODE=510 THEN
   DO
+   MATUREDATEDONE=FALSE
    PRINT "{"
    NEWLINE
    CALL PRINTPROGRAMINFO
    ERRORCODE="510"
    CALL ERRORHANDLER
    NEWLINE
-   CALL JSONCLOSE
   END
 END  [GET NEW MATURITY DATE]
 
 PROCEDURE CREATESHARE
-
- FMPERFORM CREATE SHARE NEWSHAREID (0,VALUE(NEWSHARETYPE),SHAREERRORMESSAGE)
+[* Create new share
+*]
+ IF TESTERRORCODE=511 THEN
+  SHAREERRORMESSAGE="Test Share Creation Error"
+ ELSE IF ERRORCODE="" THEN
   DO
-   SET ORIGINALBALANCE TO TRANSFERAMOUNT
-   SET MATURITYDATE TO NEWSHAREMATURITYDATE
-   SET DIVRATE TO NEWSHARERATE
-   SET BRANCH TO ACCOUNT:BRANCH
+   FMPERFORM CREATE SHARE NEWSHAREID (0,VALUE(NEWSHARETYPE),SHAREERRORMESSAGE)
+    DO
+     SET ORIGINALBALANCE TO TRANSFERAMOUNT
+     SET MATURITYDATE TO NEWSHAREMATURITYDATE
+     SET DIVRATE TO NEWSHARERATE
+     SET BRANCH TO ACCOUNT:BRANCH
+    END
   END
 
  IF SHAREERRORMESSAGE="" AND                    [CREATE IRS RECORD IF MISSING]
@@ -2034,20 +2413,18 @@ IF IRSERRORMESSAGE<>"" THEN
    ERRORCODE="511"
    CALL ERRORHANDLER
    NEWLINE
-   CALL JSONCLOSE
    FMERRORFLAG=TRUE
   END
-
-END [PROC CREATE SHARE]
+END [PROCEDURE CREATE SHARE]
 
 PROCEDURE ADDNAME
-
+[* Add a new name record to the new share
+*]
  TMPNAMEERROR=""
  IF NEWNAMECOUNT=0 THEN
   DO
    ADDNAMEDONE=TRUE
   END
-
  ELSE IF NEWNAMECOUNT>0 THEN
   DO
    FOR J=1 TO NEWNAMECOUNT
@@ -2157,6 +2534,25 @@ PROCEDURE ADDNAME
          SET USERCHAR16 TO NEWNAMEEMAIL(J)                             [EMAIL]
         END  [fm perform]
        NEWNAMECREATEERROR(J)=SHARETRACKINGERRORTEXT
+[*TEK - v 1.1.0: If there was an error in creating the new name record,
+** record the error in a note record under the new Share
+*]
+       IF NAMETYPESAFE(NEWNAMETYPE(J))=TRUE AND
+          NEWNAMECREATEERROR(J)<>"" THEN
+        DO
+         IF VALUE(SACNAMELEVEL)=0 THEN
+          TMPCHR="Account "
+         ELSE
+          TMPCHR="Share "
+         FMPERFORM CREATE SHARE NEWSHAREID NOTE LOC 0
+                          (0,0,NOTELOC,NOTEERROR)
+          DO
+           SET TEXT:1 TO "Opening Name Create Error:"
+           SET TEXT:2 TO TMPCHR+FORMAT(" Name Type 99",NEWNAMETYPE(J))
+           SET TEXT:3 TO NEWNAMEFIRST(J)+" "+NEWNAMELAST(J)
+           SET TEXT:3 TO NEWNAMECREATEERROR(J)
+          END
+        END
       END
     END   [end of J]
 
@@ -2186,9 +2582,268 @@ PROCEDURE ADDNAME
       END
     END
   END     [end of name count]
-END [PROC ADD NAME]
+END [PROCEDURE ADD NAME]
+
+PROCEDURE PROCESSCOPYNAMES
+[*take returned list of names to be copied from the UX and create them under
+** the new share
+*]
+ NAMESCOPIEDCOUNT=0
+ COPYINDEX=0
+[* Loop through the list of locator codes of names to copy under the new share
+*]
+ FOR NAMESTOCOPYLOOP=1 TO NAMESTOCOPYCOUNT
+  DO
+[* For each name to copy, find the matching locator in the list of available names
+** to copy from and record the location in the array (the index)
+*]
+   NAMETOCOPYLOC=NAMESTOCOPYLOC(NAMESTOCOPYLOOP)
+
+   FOR COPYNAMELISTLOOP=1 TO COPYNAMELISTCOUNT
+    DO
+     TMPLOC=VALUE(COPYNAMELIST(CNLLOCATOR,COPYNAMELISTLOOP))
+     IF NAMETOCOPYLOC=TMPLOC THEN
+      DO
+       COPYINDEX=COPYNAMELISTLOOP
+       COPYNAMELISTLOOP=COPYNAMELISTCOUNT [target name was found - force loop to end]
+      END
+    END [FOR COPYNAMELISTLOOP=1 TO COPYNAMELISTCOUNT]
+[* If the name to copy was found in the eligible names list, then copy it otherwise
+** flag it for later error reporting. Since the name was not found in the list, we
+** don't know the name or the name type.
+*]
+   IF COPYINDEX=0 THEN
+    DO
+     NAMESTOCOPYERROR(NAMESTOCOPYLOOP)="Error matching name Locator"
+     NAMESTOCOPYNAME(NAMESTOCOPYLOOP)="Unknown Name"
+     NAMESTOCOPYNAMETYPE(NAMESTOCOPYLOOP)=1 [unknown name type - force to 1]
+    END
+   ELSE
+    DO
+     NAMESTOCOPYNAME(NAMESTOCOPYLOOP)=COPYNAMELIST(CNLFIRST,COPYINDEX)+" "+
+                                     COPYNAMELIST(CNLLAST,COPYINDEX)
+     NAMESTOCOPYNAMETYPE(NAMESTOCOPYLOOP)=VALUE(COPYNAMELIST(CNLTYPE,COPYINDEX))
+     CALL COPYNAME
+     NAMESTOCOPYERROR(NAMESTOCOPYLOOP)=CNLERRORCHR
+    END
+  END [FOR NAMESTOCOPYLOOP=1 TO NAMESTOCOPYCOUNT]
+END [PROCEDURE]
+
+PROCEDURE COPYNAME
+[* If the targeted name to copy was found in the list of eligible names then
+** create the name record under the new share, if possible by referencing the
+** name and address links otherwise, manually.
+*]
+ IF COPYINDEX>0 THEN
+  DO
+   IF NAMEMERGEACTIVE=TRUE AND
+      COPYNAMELIST(CNLMBRADDRNUMLINK,COPYINDEX)<>"" AND
+      COPYNAMELIST(CNLMEMBERNUMLINK,COPYINDEX)<>"" THEN
+    DO [CREATE NAME BY REFERENCE]
+     FMPERFORM CREATE SHARE NEXTID NAME
+               LOC AFTERLAST (0,VALUE(COPYNAMELIST(CNLTYPE,COPYINDEX)),CNLERRORCHR)
+      DO
+       SET MBRADDRNUMLINK TO COPYNAMELIST(CNLMBRADDRNUMLINK,COPYINDEX)
+       SET MEMBERNUMLINK TO COPYNAMELIST(CNLMEMBERNUMLINK,COPYINDEX)
+      END
+    END [IF NAMEMERGEACTIVE=TRUE AND...]
+   ELSE [CREATE NAME MANUALLY]
+    DO
+     FMPERFORM CREATE SHARE NEXTID
+               NAME LOC AFTERLAST
+              (0,VALUE(COPYNAMELIST(CNLTYPE,COPYINDEX)),NEWNAMELOC,CNLERRORCHR)
+      DO
+       SET ADDRESSTYPE TO VALUE(COPYNAMELIST(CNLADDRESSTYPE,COPYINDEX))
+       SET SUBTYPE TO VALUE(COPYNAMELIST(CNLSUBTYPE,COPYINDEX))
+       SET NAMEFORMAT TO VALUE(COPYNAMELIST(CNLNAMEFORMAT,COPYINDEX))
+       SET SSNTYPE TO VALUE(COPYNAMELIST(CNLSSNTYPE,COPYINDEX))
+       SET SSN TO COPYNAMELIST(CNLSSN,COPYINDEX)
+       SET SSNOVERRIDE TO VALUE(COPYNAMELIST(CNLSSNOVERRIDE,COPYINDEX))
+       SET SSNCERTIFICATION TO VALUE(COPYNAMELIST(CNLSSNCERTIFICATION,COPYINDEX))
+       SET FOREIGNTIN TO COPYNAMELIST(CNLFOREIGNTIN,COPYINDEX)
+       SET USPERSONFLAG TO VALUE(COPYNAMELIST(CNLUSPERSONFLAG,COPYINDEX))
+       SET TITLE TO COPYNAMELIST(CNLTITLE,COPYINDEX)
+       SET LAST TO COPYNAMELIST(CNLLAST,COPYINDEX)
+       SET FIRST TO COPYNAMELIST(CNLFIRST,COPYINDEX)
+       SET MIDDLE TO COPYNAMELIST(CNLMIDDLE,COPYINDEX)
+       SET SUFFIX TO COPYNAMELIST(CNLSUFFIX,COPYINDEX)
+       SET BIRTHDATE TO DATEVALUE(COPYNAMELIST(CNLBIRTHDATE,COPYINDEX))
+       SET SEX TO COPYNAMELIST(CNLSEX,COPYINDEX)
+       SET PHONETYPE TO VALUE(COPYNAMELIST(CNLPHONETYPE,COPYINDEX))
+       SET HOMEPHONE TO COPYNAMELIST(CNLHOMEPHONE,COPYINDEX)
+       SET STREET TO COPYNAMELIST(CNLSTREET,COPYINDEX)
+       SET EXTRAADDRESS TO COPYNAMELIST(CNLEXTRAADDRESS,COPYINDEX)
+       SET CARRIERROUTE TO COPYNAMELIST(CNLCARRIERROUTE,COPYINDEX)
+       SET CITY TO COPYNAMELIST(CNLCITY,COPYINDEX)
+       SET STATE TO COPYNAMELIST(CNLSTATE,COPYINDEX)
+       SET ZIPCODE TO COPYNAMELIST(CNLZIPCODE,COPYINDEX)
+       SET COUNTRYCODE TO COPYNAMELIST(CNLCOUNTRYCODE,COPYINDEX)
+       SET COUNTRY TO COPYNAMELIST(CNLCOUNTRY,COPYINDEX)
+       SET RESTRICT TO VALUE(COPYNAMELIST(CNLRESTRICT,COPYINDEX))
+       SET LASTADDRVERIFDATE TO DATEVALUE(COPYNAMELIST(CNLLASTADDRVERIFDATE,COPYINDEX))
+      END [FMPERFORM]
+    END [CREATE NAME MANUALLY]
+  END [IF COPYINDEX>0]
+END [PROCEDURE]
+
+PROCEDURE DUPLICATENAMECHECK
+[* Check each name record added under the new share. If a name with a matching SSN is found
+** with a different address, then send an email to the CU to have the names reviewed. For
+** each matching name include first, the new name info followed by the duplicate name info.
+** i.e:
+** New Share 0007 name added - name loc 91
+*    conflicting address with Share 0100 name loc 26
+
+*]
+ EMAILHEADERPRINTED=FALSE
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   PRIMARYSHORTNAME=NAME:SHORTNAME
+   FOR EACH SHARE WITH (SHARE:ID=NEWSHAREID)
+    DO
+     FOR EACH SHARE NAME
+      DO
+       BNODEBUGMSG=FORMAT("TESTING SHARE "+SHARE:ID+" NAME LOC #####9",SHARE NAME:LOCATOR)+
+                   "  -  "+SHARE NAME:STREET+" - "+SHARE NAME:EXTRAADDRESS
+       CALL BNODEBUGMSGADD
+
+       DUPNAMECOUNT=0
+       TESTNAMEIDTYPE=0
+       TESTNAMEID=SHARE:ID
+       TESTNAMESSN=SHARE NAME:SSN
+       TESTNAMESHORTNAME=SHARE NAME:SHORTNAME
+       TESTNAMESTREET=SHARE NAME:STREET
+       TESTNAMEEXTRAADDRESS=SHARE NAME:EXTRAADDRESS
+       TESTNAMECITY=SHARE NAME:CITY
+       TESTNAMESTATE=SHARE NAME:STATE
+       TESTNAMEZIPCODE=SHARE NAME:ZIPCODE
+       TESTNAMELOCATOR=SHARE NAME:LOCATOR
+       CALL TESTNAMEFORDUPS
+      END
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE TESTNAMEFORDUPS
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL OR
+                        SHARE:CLOSEDATE>SYSTEMDATE)AND
+                        SHARE:ID<>NEWSHAREID
+    DO
+     BNODEBUGMSG="   TESTING SHARE ID "+SHARE:ID
+     CALL BNODEBUGMSGADD
+
+     FOR EACH SHARE NAME WITH (VALIDSHARENAMETYPES(SHARE NAME:TYPE)=TRUE AND
+                               SHARE NAME:DEATHDATE='--/--/--' AND
+                              (SHARE NAME:EXPIRATIONDATE>SYSTEMDATE OR
+                               SHARE NAME:EXPIRATIONDATE='--/--/--')AND
+                               SHARE NAME:SSN=TESTNAMESSN)
+      DO
+       BNODEBUGMSG=FORMAT("     SHARE NAME LOC #####9",SHARE NAME:LOCATOR)+
+                   "   "+SHARE NAME:STREET+" - "+SHARE NAME:EXTRAADDRESS
+       CALL BNODEBUGMSGADD
+       IF SHARE NAME:STREET<>TESTNAMESTREET OR
+          SHARE NAME:EXTRAADDRESS<>TESTNAMEEXTRAADDRESS OR
+          SHARE NAME:CITY<>TESTNAMECITY OR
+          SHARE NAME:STATE<>TESTNAMESTATE OR
+          SHARE NAME:ZIPCODE<>TESTNAMEZIPCODE THEN
+        DO
+         IF EMAILHEADERPRINTED=FALSE THEN
+          CALL OPENEMAIL
+         IF DUPNAMECOUNT=0 THEN
+          DO
+           TMPCHR="<br>New Share "+NEWSHAREID+
+                   FORMAT(" name added -  name loc #####9<br>",TESTNAMELOCATOR)
+           EMAILLINE(TMPCHR,EMAILSENDERROR)
+          END
+         TMPCHR="&nbsp;&nbsp;&nbsp;&nbsp;conflicting address with Share "+
+                 SHARE:ID+FORMAT(" name loc #####9<br>",SHARE NAME:LOCATOR)
+         EMAILLINE(TMPCHR,EMAILSENDERROR)
+         DUPNAMECOUNT=DUPNAMECOUNT+1
+         BNODEBUGMSG="       CONFLICTING NAME FOUND"
+         CALL BNODEBUGMSGADD
+        END
+       ELSE
+        DO
+         BNODEBUGMSG="       NON-CONFLICTING NAME"
+         CALL BNODEBUGMSGADD
+        END
+      END [FOR EACH SHARE NAME]
+    END [FOR EACH SHARE WITH]
+   FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL)
+    DO
+     BNODEBUGMSG="   TESTING LOAN ID "+LOAN:ID
+     CALL BNODEBUGMSGADD
+     FOR EACH LOAN NAME WITH (VALIDLOANNAMETYPES(LOAN NAME:TYPE)=TRUE AND
+                               LOAN NAME:DEATHDATE='--/--/--' AND
+                              (LOAN NAME:EXPIRATIONDATE>SYSTEMDATE OR
+                               LOAN NAME:EXPIRATIONDATE='--/--/--')AND
+                               LOAN NAME:SSN=TESTNAMESSN)
+      DO
+       BNODEBUGMSG=FORMAT("     LOAN NAME LOC #####9",LOAN NAME:LOCATOR)+
+                   "   "+LOAN NAME:STREET+" - "+LOAN NAME:EXTRAADDRESS
+       CALL BNODEBUGMSGADD
+       IF LOAN NAME:STREET<>TESTNAMESTREET OR
+          LOAN NAME:EXTRAADDRESS<>TESTNAMEEXTRAADDRESS OR
+          LOAN NAME:CITY<>TESTNAMECITY OR
+          LOAN NAME:STATE<>TESTNAMESTATE OR
+          LOAN NAME:ZIPCODE<>TESTNAMEZIPCODE THEN
+        DO
+         IF EMAILHEADERPRINTED=FALSE THEN
+          CALL OPENEMAIL
+         IF DUPNAMECOUNT=0 THEN
+          DO
+           TMPCHR="<br>New Share "+NEWSHAREID+
+                   FORMAT(" name added -  name loc #####9<br>",TESTNAMELOCATOR)
+           EMAILLINE(TMPCHR,EMAILSENDERROR)
+          END
+         TMPCHR="&nbsp;&nbsp;&nbsp;&nbsp;conflicting address with Loan "+
+                 LOAN:ID+FORMAT(" name loc #####9<br>",LOAN NAME:LOCATOR)
+         EMAILLINE(TMPCHR,EMAILSENDERROR)
+         DUPNAMECOUNT=DUPNAMECOUNT+1
+         BNODEBUGMSG="       CONFLICTING NAME FOUND"
+         CALL BNODEBUGMSGADD
+        END
+       ELSE
+        DO
+         BNODEBUGMSG="       NON-CONFLICTING NAME"
+         CALL BNODEBUGMSGADD
+        END
+      END [FOR EACH LOAN NAME]
+    END [FOR EACH LOAN WITH]
+  END [FOR ACCOUNT ]
+ IF EMAILHEADERPRINTED=TRUE THEN
+  EMAILSEND(EMAILSENDERROR)
+END [PROCEDURE]
+
+PROCEDURE OPENEMAIL
+[* Open email output to report name address conflict to the CU
+*]
+ EMAILSTART(SACCUSTAFFEMAILADDRESS,SACCUSTAFFEMAILADDRESS,SACCUSTAFFEMAILSUBJECT,EMAILSENDERROR)
+ IF EMAILSENDERROR="" THEN
+  DO
+   EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
+   EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
+   TMPCHR=PRIMARYSHORTNAME
+   CALL NLTS
+   EMAILLINE("Member ******"+
+             SEGMENT(ACCOUNT:NUMBER,LENGTH(ACCOUNT:NUMBER)-3,LENGTH(ACCOUNT:NUMBER))+
+            " ("+TMPCHR+") has just created a new share ID "+NEWSHAREID+".<br><br>"+
+            " The name records",EMAILSENDERROR)
+   EMAILLINE("added under the share include the following Name(s) which are located elsewhere",EMAILSENDERROR)
+   EMAILLINE("on the account but with different addresses. Please review the new share and name",EMAILSENDERROR)
+   EMAILLINE("record additions.",EMAILSENDERROR)
+   EMAILLINE("<p />",EMAILSENDERROR)
+   EMAILLINE("",EMAILSENDERROR)
+  END
+
+ EMAILHEADERPRINTED=TRUE
+END [PROCEDURE]
 
 PROCEDURE PHONENUMBERHANDLING
+[* Assign new pnone number the the correct phone number type
+*]
  NEWMOBILENUMBER=""
  NEWHOMENUMBER=""
  NEWWORKNUMBER=""
@@ -2197,14 +2852,11 @@ PROCEDURE PHONENUMBERHANDLING
   DO
    NEWMOBILENUMBER=NEWNAMEPHONE(J)
   END
-
  ELSE IF NEWNAMEPHONETYPE(J)=1 THEN
   NEWHOMENUMBER=NEWNAMEPHONE(J)
-
  ELSE IF NEWNAMEPHONETYPE(J)=2 THEN
   NEWWORKNUMBER=NEWNAMEPHONE(J)
-
-END  [PROC PHONE HANDLING]
+END  [PROCEDURE PHONE HANDLING]
 
 PROCEDURE FUNDSCHECK
  IF TRANSFERAMOUNT>$0.00 THEN
@@ -2254,7 +2906,7 @@ PROCEDURE PERFORMTRANSFER
       SET TEXT:2 TO TRANERRORTEXT
      END
   END
-END [PROC PERFORM TRANSFER]
+END [PROCEDURE PERFORM TRANSFER]
 
 PROCEDURE LOADFILETOARRAY
 [* Get the valid ID Range(s) for the specific share type snd
@@ -2398,9 +3050,13 @@ PROCEDURE CLEANUPTEXT
 END [PROCEDURE]
 
 PROCEDURE ERRORHANDLER
-[* Print error code information to output.
+[* Print error code information to output. If the custom error message
+** is different than the standard then use that. For some error codes, add
+** additional info to the logging error code detail to facilitate debugging.
+** the displayErrorMessage is what the member will see.
+**
 **  PASS       ERRORCODE      Error code to print
-**  PASS       ERRORMSG       Error type to print
+**  PASS       TESTERRORCODE  Test error code (when forced - for testing)
 **  PASS       ERRORDETAIL    Specific error detail
 **
 ** ERROR CODES
@@ -2416,46 +3072,44 @@ PROCEDURE ERRORHANDLER
 **  509 - Error getting new share rate
 **  510 - Could not calculate new maturity date
 **  511 - Error creating new share
-**  512 - Error creating new name record(s)
-**  513 - Transfer funding error
 *]
- ERRORMSG="loggingErrorMessage"
- IF ERRORCODE="500" THEN
-  ERRORDETAIL="Program running in memo mode"
- ELSE IF ERRORCODE="501" THEN
-  ERRORDETAIL="CFG data file ("+CONFIGFILENAME+") read error: "+CFGFILEREADERROR
- ELSE IF ERRORCODE="502" THEN
-  ERRORDETAIL=FORMAT("Account Warning 999 Exists",I)
- ELSE IF ERRORCODE="503" THEN
-  ERRORDETAIL=FORMAT("Ineligible Acct Type 9999 found",ACCOUNT:TYPE)
- ELSE IF ERRORCODE="504" THEN
-  ERRORDETAIL="No eligible shares available to be created"
- ELSE IF ERRORCODE="505" THEN
-  ERRORDETAIL=FORMAT("Error reading Share group 99 term file:"+TMPCHR,VALUE(OPENCATEGORY))
- ELSE IF ERRORCODE="506" THEN
-  ERRORDETAIL="No shares with sufficient funds for required transfer"
- ELSE IF ERRORCODE="507" THEN
-  ERRORDETAIL="Error reading passed name info:"+PASSEDINFOREADERROR
- ELSE IF ERRORCODE="508" THEN
-  ERRORDETAIL="Next ID calculation error"
- ELSE IF ERRORCODE="509" THEN
-  ERRORDETAIL="Error getting new share rate"
- ELSE IF ERRORCODE="510" THEN
-  ERRORDETAIL="Could not calculate new maturity date"
- ELSE IF ERRORCODE="511" THEN
-  ERRORDETAIL="Error creating new share:"+SHAREERRORMESSAGE
- ELSE IF ERRORCODE="512" THEN
-  ERRORDETAIL="Error creating new name record(s):"+TMPNAMEERROR
- ELSE IF ERRORCODE="513" THEN
-  ERRORDETAIL="Transfer funding error:"+TRANERRORTEXT
+
+ IF VALUE(ERRORCODE)>=500 AND
+    VALUE(ERRORCODE)<=MAXERRORCODE THEN
+  DO
+   TMPNUM=VALUE(ERRORCODE)-500
+   IF TESTERRORCODE>0 THEN
+    ERRORDETAIL="TESTING: "
+   ERRORDETAIL=ERRORDETAIL+ERRORCODEDESCR(ECDEFAULT,TMPNUM)
+
+   IF VALUE(ERRORCODE)=501 THEN
+    ERRORDETAIL=ERRORDETAIL+" - "+CONFIGFILENAME+": "+CFGFILEREADERROR
+   ELSE IF VALUE(ERRORCODE)=502 THEN
+    ERRORDETAIL=ERRORDETAIL+" - "+FORMAT("warning code 999",I)
+   ELSE IF VALUE(ERRORCODE)=503 THEN
+    ERRORDETAIL=ERRORDETAIL+" - "+FORMAT("Acct type 9999",ACCOUNT:TYPE)
+   ELSE IF VALUE(ERRORCODE)=505 THEN
+    ERRORDETAIL=ERRORDETAIL+" - "+FORMAT("Share Grp 99 ",VALUE(OPENCATEGORY))+LFERROR
+   ELSE IF VALUE(ERRORCODE)=511 THEN
+    ERRORDETAIL=ERRORDETAIL+" - "+SHAREERRORMESSAGE
+  END
+
  CALL CUERRORHANDLING
-
- ERRORCODE="500" [Per new JSON Specs, force all errors to "500"]
-
+ NEWLINE
  PRINT "    "+Q+"errorCode"+Q+": "+ERRORCODE+","
  NEWLINE
- PRINT "    "+Q+ERRORMSG+Q+": "+
+ PRINT "    "+Q+"loggingErrorMessage"+Q+": "+
             Q+ERRORDETAIL+Q
+ IF ERRORCODEDESCR(ECCUSTOM,TMPNUM)<>"" THEN
+  TMPCHR=ERRORCODEDESCR(ECCUSTOM,TMPNUM)
+ ELSE
+  TMPCHR=ERRORCODEDESCR(ECDEFAULT,TMPNUM)
+ PRINT ","
+ NEWLINE
+ PRINT "    "+Q+"displayErrorMessage"+Q+": "+Q
+ IF TESTERRORCODE>0 THEN
+  PRINT "TESTING: "
+ PRINT TMPCHR+Q
  NEWLINE
 END [PROCEDURE]
 
@@ -2470,7 +3124,9 @@ PROCEDURE JSONCLOSE
 END [PROCEDURE]
 
 PROCEDURE CUERRORHANDLING
-
+[* Separate error detail into 2 lines if it's over 40 characters and then
+** create the note record.
+*]
  [CHECK ERROR TEXT LENGTH]
  IF LENGTH(ERRORDETAIL)<=40 THEN
   ERROR1=ERRORDETAIL
@@ -2493,6 +3149,9 @@ PROCEDURE CUERRORHANDLING
 END
 
 PROCEDURE CREATENOTERECORD
+[* Create a note record on the member's account detailing the error
+** condition encountered
+*]
  FMPERFORM CREATE NOTE LOC BEFOREFIRST
                      (0,0,NOTELOC,NOTEERROR)
   DO
@@ -2503,8 +3162,7 @@ PROCEDURE CREATENOTERECORD
    SET TEXT:4 TO ERROR2
    SET EXPIRATIONDATE TO SYSTEMDATE+30
   END
-END
-
+END [PROCEDURE]
 
 PROCEDURE PRINTPROGRAMINFO
 [* Print program info to JSON output
@@ -2525,6 +3183,403 @@ PROCEDURE PRINTPROGRAMINFO
  NEWLINE
 END [PROCEDURE]
 
+PROCEDURE BUILDCOPYNAMELIST
+[* Build a list of eligible names for the member to copy from. each eligible
+** name is tested (by SSN) against those already added to the list and only
+** added if no match was found
+*]
+ COPYNAMECOUNTMAX=15
+ COPYNAMELISTCOUNT=0
+
+ BNODEBUGMSG="IN BUILDCOPYNAMELIST"
+ CALL BNODEBUGMSGADD
+
+ IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE THEN
+  DO
+   FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
+                        SHARE:CHARGEOFFDATE=DATENULL)
+    DO
+     IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX THEN
+      DO
+       FOR EACH SHARE NAME WITH (VALIDSHARENAMETYPES(SHARE NAME:TYPE)=TRUE AND
+                           SHARE NAME:DEATHDATE='--/--/--' AND
+                           SHARE NAME:EFFECTIVEDATE<=SYSTEMDATE AND
+                          (SHARE NAME:EXPIRATIONDATE>SYSTEMDATE OR
+                           SHARE NAME:EXPIRATIONDATE='--/--/--'))
+        DO
+         IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX THEN
+          DO
+           ADDNAMESSN=SHARE NAME:SSN
+           ADDNAMESHORTNAME=SHARE NAME:SHORTNAME
+           ADDNAMELONGNAME=SHARE NAME:LONGNAME
+           ADDNAMEMBRNUMLINK=SHARE NAME:MEMBERNUMLINK
+           ADDNAMEMBRADDRLINK=SHARE NAME:MBRADDRNUMLINK
+           ADDNAMEFIRST=SHARE NAME:FIRST
+           ADDNAMELAST=SHARE NAME:LAST
+           ADDNAMEBIRTHDATE=SHARE NAME:BIRTHDATE
+           ADDNAMESSN=SHARE NAME:SSN
+           ADDNAMESTREET=SHARE NAME:STREET
+           ADDNAMEEXADDR=SHARE NAME:EXTRAADDRESS
+           ADDNAMECITY=SHARE NAME:CITY
+           ADDNAMESTATE=SHARE NAME:STATE
+           ADDNAMEZIPCODE=SHARE NAME:ZIPCODE
+           ADDNAMEHOMEPHONE=SHARE NAME:HOMEPHONE
+           ADDNAMETYPE=SHARE NAME:TYPE
+           ADDNAMELOCATOR=SHARE NAME:LOCATOR
+           ADDNAMESOURCE="SHARE"
+           ADDNAMEADDRESSTYPE=SHARE NAME:ADDRESSTYPE
+           ADDNAMESUBTYPE=SHARE NAME:SUBTYPE
+           ADDNAMENAMEFORMAT=SHARE NAME:NAMEFORMAT
+           ADDNAMESSNTYPE=SHARE NAME:SSNTYPE
+           ADDNAMESSNOVERRIDE=SHARE NAME:SSNOVERRIDE
+           ADDNAMESSNCERTIFICATION=SHARE NAME:SSNCERTIFICATION
+           ADDNAMEFOREIGNTIN=SHARE NAME:FOREIGNTIN
+           ADDNAMEUSPERSONFLAG=SHARE NAME:USPERSONFLAG
+           ADDNAMETITLE=SHARE NAME:TITLE
+           ADDNAMEMIDDLE=SHARE NAME:MIDDLE
+           ADDNAMESUFFIX=SHARE NAME:SUFFIX
+           ADDNAMESEX=SHARE NAME:SEX
+           ADDNAMEPHONETYPE=SHARE NAME:PHONETYPE
+           ADDNAMECARRIERROUTE=SHARE NAME:CARRIERROUTE
+           ADDNAMECOUNTRYCODE=SHARE NAME:COUNTRYCODE
+           ADDNAMECOUNTRY=SHARE NAME:COUNTRY
+           ADDNAMERESTRICT=SHARE NAME:RESTRICT
+           ADDNAMELASTADDRVERIFDATE=SHARE NAME:LASTADDRVERIFDATE
+
+           CALL CHECKFORDUPLICATENAME
+           IF DUPLICATENAMEFOUND=FALSE THEN
+            CALL ADDNAMETOLIST
+
+          END [IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX]
+        END [FOR EACH SHARE NAME]
+      END [IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX]
+    END [FOR EACH SHARE]
+  END [IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE]
+
+ IF VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
+  DO
+
+   FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL AND
+                        LOAN:CHARGEOFFDATE=DATENULL)
+    DO
+     IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX THEN
+      DO
+       FOR EACH LOAN NAME WITH (VALIDLOANNAMETYPES(LOAN NAME:TYPE)=TRUE AND
+                           LOAN NAME:DEATHDATE='--/--/--' AND
+                           LOAN NAME:EFFECTIVEDATE<=SYSTEMDATE AND
+                          (LOAN NAME:EXPIRATIONDATE>SYSTEMDATE OR
+                           LOAN NAME:EXPIRATIONDATE='--/--/--'))
+        DO
+         IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX THEN
+          DO
+           ADDNAMESSN=LOAN NAME:SSN
+           ADDNAMESHORTNAME=LOAN NAME:SHORTNAME
+           ADDNAMELONGNAME=LOAN NAME:LONGNAME
+           ADDNAMEMBRNUMLINK=LOAN NAME:MEMBERNUMLINK
+           ADDNAMEMBRADDRLINK=LOAN NAME:MBRADDRNUMLINK
+           ADDNAMEFIRST=LOAN NAME:FIRST
+           ADDNAMELAST=LOAN NAME:LAST
+           ADDNAMEBIRTHDATE=LOAN NAME:BIRTHDATE
+           ADDNAMESSN=LOAN NAME:SSN
+           ADDNAMESTREET=LOAN NAME:STREET
+           ADDNAMEEXADDR=LOAN NAME:EXTRAADDRESS
+           ADDNAMECITY=LOAN NAME:CITY
+           ADDNAMESTATE=LOAN NAME:STATE
+           ADDNAMEZIPCODE=LOAN NAME:ZIPCODE
+           ADDNAMEHOMEPHONE=LOAN NAME:HOMEPHONE
+           ADDNAMETYPE=LOAN NAME:TYPE
+           ADDNAMELOCATOR=LOAN NAME:LOCATOR
+           ADDNAMESOURCE="LOAN"
+           ADDNAMEADDRESSTYPE=LOAN NAME:ADDRESSTYPE
+           ADDNAMESUBTYPE=LOAN NAME:SUBTYPE
+           ADDNAMENAMEFORMAT=LOAN NAME:NAMEFORMAT
+           ADDNAMESSNTYPE=LOAN NAME:SSNTYPE
+           ADDNAMESSNOVERRIDE=LOAN NAME:SSNOVERRIDE
+           ADDNAMESSNCERTIFICATION=LOAN NAME:SSNCERTIFICATION
+           ADDNAMEFOREIGNTIN=LOAN NAME:FOREIGNTIN
+           ADDNAMEUSPERSONFLAG=LOAN NAME:USPERSONFLAG
+           ADDNAMETITLE=LOAN NAME:TITLE
+           ADDNAMEMIDDLE=LOAN NAME:MIDDLE
+           ADDNAMESUFFIX=LOAN NAME:SUFFIX
+           ADDNAMESEX=LOAN NAME:SEX
+           ADDNAMEPHONETYPE=LOAN NAME:PHONETYPE
+           ADDNAMECARRIERROUTE=LOAN NAME:CARRIERROUTE
+           ADDNAMECOUNTRYCODE=LOAN NAME:COUNTRYCODE
+           ADDNAMECOUNTRY=LOAN NAME:COUNTRY
+           ADDNAMERESTRICT=LOAN NAME:RESTRICT
+           ADDNAMELASTADDRVERIFDATE=LOAN NAME:LASTADDRVERIFDATE
+
+           CALL CHECKFORDUPLICATENAME
+           IF DUPLICATENAMEFOUND=FALSE THEN
+            CALL ADDNAMETOLIST
+
+          END [IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX]
+
+        END [FOR EACH LOAN NAME]
+      END [IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX]
+    END [FOR EACH LOAN]
+  END [IF VALUE(SACNAMECOPYLOANFLAG)=TRUE]
+
+ BNODEBUGMSG=FORMAT("End of BUILDCOPYNAMELIST. COPYNAMELISTCOUNT:99",COPYNAMELISTCOUNT)
+ CALL BNODEBUGMSGADD
+
+ FOR TMPLOOP=1 TO COPYNAMELISTCOUNT
+  DO
+   BNODEBUGMSG=FORMAT("99 ",TMPLOOP)+
+               COPYNAMELIST(CNLLOCATOR,TMPLOOP)+"  "+
+               COPYNAMELIST(CNLSHORTNAME,TMPLOOP)+"  Duplicated? "+
+               COPYNAMELIST(CNLDUPLICATED,TMPLOOP)
+   CALL BNODEBUGMSGADD
+  END
+END [PROCEDURE]
+
+PROCEDURE CHECKFORDUPLICATENAME
+[* Check if the name being added to the list is already in the list (by
+** ssn.
+*]
+ DUPLICATENAMEFOUND=FALSE
+
+ BNODEBUGMSG="COPY NAME EVAL "+
+              ADDNAMESOURCE+FORMAT(" NAME LOC #####9",ADDNAMELOCATOR)+
+             "  SSN:"+ADDNAMESSN+
+              FORMAT("  NAME TYPE:9999  ",ADDNAMETYPE)
+
+ IF COPYNAMELISTCOUNT>0 THEN
+  DO
+   FOR TMPLOOP=1 TO COPYNAMELISTCOUNT
+    DO
+     IF ADDNAMESSN=COPYNAMELIST(CNLSSN,TMPLOOP) THEN
+      DO
+       DUPLICATENAMEFOUND=TRUE
+       COPYNAMELIST(CNLDUPLICATED,TMPLOOP)="TRUE"
+      END
+    END
+  END
+
+ BNODEBUGMSG=BNODEBUGMSG+"DUP: "+
+             TRUEFALSECHR(DUPLICATENAMEFOUND)
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE ADDNAMETOLIST
+[* Add the current name record being evaluated to the list of eligible name types.
+*]
+ IF COPYNAMELISTCOUNT<COPYNAMECOUNTMAX THEN
+  DO
+   COPYNAMELISTCOUNT=COPYNAMELISTCOUNT+1
+   COPYNAMELIST(CNLSSN,COPYNAMELISTCOUNT)=ADDNAMESSN
+   COPYNAMELIST(CNLLAST,COPYNAMELISTCOUNT)=ADDNAMELAST
+   COPYNAMELIST(CNLFIRST,COPYNAMELISTCOUNT)=ADDNAMEFIRST
+   COPYNAMELIST(CNLSTREET,COPYNAMELISTCOUNT)=ADDNAMESTREET
+   COPYNAMELIST(CNLEXTRAADDRESS,COPYNAMELISTCOUNT)=ADDNAMEEXADDR
+   COPYNAMELIST(CNLCITY,COPYNAMELISTCOUNT)=ADDNAMECITY
+   COPYNAMELIST(CNLSTATE,COPYNAMELISTCOUNT)=ADDNAMESTATE
+   COPYNAMELIST(CNLZIPCODE,COPYNAMELISTCOUNT)=ADDNAMEZIPCODE
+   TMPCHR=FORMAT("########9",ADDNAMELOCATOR)
+   CALL NLS
+   COPYNAMELIST(CNLLOCATOR,COPYNAMELISTCOUNT)=TMPCHR
+   COPYNAMELIST(CNLMBRADDRNUMLINK,COPYNAMELISTCOUNT)=ADDNAMEMBRADDRLINK
+   COPYNAMELIST(CNLMEMBERNUMLINK,COPYNAMELISTCOUNT)=ADDNAMEMBRNUMLINK
+   COPYNAMELIST(CNLTYPE,COPYNAMELISTCOUNT)=FORMAT("99",ADDNAMETYPE)
+   COPYNAMELIST(CNLBIRTHDATE,COPYNAMELISTCOUNT)=FORMAT("99/99/99",ADDNAMEBIRTHDATE)
+   COPYNAMELIST(CNLSOURCE,COPYNAMELISTCOUNT)=ADDNAMESOURCE
+   COPYNAMELIST(CNLSHORTNAME,COPYNAMELISTCOUNT)=ADDNAMESHORTNAME
+   COPYNAMELIST(CNLLONGNAME,COPYNAMELISTCOUNT)=ADDNAMELONGNAME
+
+   COPYNAMELIST(CNLADDRESSTYPE,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMEADDRESSTYPE)
+   COPYNAMELIST(CNLSUBTYPE,COPYNAMELISTCOUNT)=FORMAT("99",ADDNAMESUBTYPE)
+   COPYNAMELIST(CNLNAMEFORMAT,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMENAMEFORMAT)
+   COPYNAMELIST(CNLSSNTYPE,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMESSNTYPE)
+   COPYNAMELIST(CNLSSNOVERRIDE,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMESSNOVERRIDE)
+   COPYNAMELIST(CNLSSNCERTIFICATION,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMESSNCERTIFICATION)
+   COPYNAMELIST(CNLFOREIGNTIN,COPYNAMELISTCOUNT)=ADDNAMEFOREIGNTIN
+   COPYNAMELIST(CNLUSPERSONFLAG,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMEUSPERSONFLAG)
+   COPYNAMELIST(CNLTITLE,COPYNAMELISTCOUNT)=ADDNAMETITLE
+   COPYNAMELIST(CNLMIDDLE,COPYNAMELISTCOUNT)=ADDNAMEMIDDLE
+   COPYNAMELIST(CNLSUFFIX,COPYNAMELISTCOUNT)=ADDNAMESUFFIX
+   COPYNAMELIST(CNLSEX,COPYNAMELISTCOUNT)=ADDNAMESEX
+   COPYNAMELIST(CNLPHONETYPE,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMEPHONETYPE)
+   COPYNAMELIST(CNLHOMEPHONE,COPYNAMELISTCOUNT)=ADDNAMEHOMEPHONE
+   COPYNAMELIST(CNLCARRIERROUTE,COPYNAMELISTCOUNT)=ADDNAMECARRIERROUTE
+   COPYNAMELIST(CNLCOUNTRYCODE,COPYNAMELISTCOUNT)=ADDNAMECOUNTRYCODE
+   COPYNAMELIST(CNLCOUNTRY,COPYNAMELISTCOUNT)=ADDNAMECOUNTRY
+   COPYNAMELIST(CNLRESTRICT,COPYNAMELISTCOUNT)=FORMAT("9",ADDNAMERESTRICT)
+   COPYNAMELIST(CNLLASTADDRVERIFDATE,COPYNAMELISTCOUNT)=FORMAT("99/99/99",ADDNAMELASTADDRVERIFDATE)
+
+   BNODEBUGMSG=FORMAT("ADDING COPYNAME 99",COPYNAMELISTCOUNT)+
+               FORMAT("  NAME LOC #####9",ADDNAMELOCATOR)
+   CALL BNODEBUGMSGADD
+  END [IF COPYNAMELISTCOUNT<COPYNAMELISTCOUNT]
+END [PROCEDURE]
+
+PROCEDURE BNODEBUGMSGADD
+[* Add a message line to the debug message array
+**
+** PASS    BNODEBUGMSGMAX     Current array index max lines allowed
+** PASS    BNODEBUGMSG        Debug message to add to array
+**
+** RETURN  BNODEBUGCOUNT      Count of debug message lines
+** RETURN  BNODEBUGMSGLIST(A) Debug lines of data to print
+**
+**  Last Modification: 02/15/21
+*]
+ IF BNODEBUGCOUNT<BNODEBUGMSGMAX THEN
+  DO
+   BNODEBUGCOUNT=BNODEBUGCOUNT+1
+   BNODEBUGMSGLIST(BNODEBUGCOUNT)=SEGMENT(BNODEBUGMSG,1,120)
+   BNODEBUGMSG=""
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOPRINTDEBUG
+[* Print debug output in proper JSON format. Requires BNODEBUGMODE to be
+** on (or true).
+**
+**  PASS  BNODEBUGMODE        Boolean: Print debug data, T/F
+**  PASS  BNODEBUGMSGLIST(A)  Array of debug messages to print
+**  PASS  BNODEBUGCOUNT       Number of debug lines to print
+**
+**  Last Modification: 02/15/21
+*]
+ IF BNODEBUGMODE=BNODEBUGMODEON OR
+   (LASTMODDATE+90>SYSTEMDATE) THEN
+  DO
+   PRINT ","
+   NEWLINE
+   PRINT BNOINDENT(2)+QQ+"debugData"+QQ+": ["
+   NEWLINE
+   PRINT BNOINDENT(2)+QQ+"Debug note: Debug lines truncated to 100 characters"+QQ
+   IF BNODEBUGCOUNT>0 THEN
+    DO
+     FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
+      DO
+       PRINT ","
+       NEWLINE
+       PRINT BNOINDENT(3)+QQ+[FORMAT("999-",BNODEBUGLOOP)+]Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,100)+QQ
+      END [FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT]
+    END [IF BNODEBUGCOUNT>0 THEN]
+   PRINT BNOINDENT(2)+"]"
+   NEWLINE
+  END
+END [PROCEDURE]
+
+PROCEDURE PARSEDATALINE
+[* Parse through a line of delimited data and store individual fields into an array
+**
+**  PASS    BNODELIMITER       Character delimiter to be used. valid values are:
+**                             BNODELIMQUOTE, BNODELIMCR, BNODELIMLF, BNODELIMCOMMA,
+**                             BNODELIMTAB, BNODELIMPIPE, BNODELIMCARET or the ascii
+**                             numeric value of the delimiter.
+**  PASS    BNODATALINEINPUT   Line of data to be parsed.
+**  RETURN  BNODATALINEFIELD   Array of data elements from the parsed BNODATALINEINPUT
+**  RETURN  BNODATAFIELDCOUNT  Number of elements in the BNODATALINEFIELD array
+*]
+
+ FOR BNOLOCALLOOP=0 TO BNODATALINEFIELDMAX
+  DO
+   BNODATALINEFIELD(BNOLOCALLOOP)=""
+  END
+ BNODATAFIELDCOUNT=0
+ IF BNODELIMITER=BNODELIMNONE THEN
+  BNODELIMITER=BNODELIMCOMMA
+ WHILE BNODATALINEINPUT<>""
+  DO
+   BNOPOS=CHARACTERSEARCH(BNODATALINEINPUT,CTRLCHR(BNODELIMITER))
+   BNODATAFIELDCOUNT=BNODATAFIELDCOUNT+1
+   IF BNOPOS=0 THEN
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=BNODATALINEINPUT
+     BNODATALINEINPUT=""
+    END
+   ELSE
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=SEGMENT(BNODATALINEINPUT,1,BNOPOS-1)
+     BNODATALINEINPUT=SEGMENT(BNODATALINEINPUT,BNOPOS+1,LENGTH(BNODATALINEINPUT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE SETTESTACCTSTATUS
+[* Test account processing. If test account flag is set to true then create a
+** list of test accounts
+*]
+ TESTMODE=FALSE
+ TESTACCOUNT=FALSE
+
+ IF VALUE(SACTESTMODEFLAG)=TRUE THEN
+  TESTMODE=TRUE
+
+ IF SACTESTMODEACCOUNTLIST<>"" THEN
+  DO
+   BNODELIMITER=BNODELIMCOMMA
+   BNODATALINEINPUT=SACTESTMODEACCOUNTLIST
+   CALL PARSEDATALINE
+   IF BNODATAFIELDCOUNT>0 THEN
+    DO
+     FOR TMPLOOP=1 TO BNODATAFIELDCOUNT
+      DO
+       IF BNODATALINEFIELD(TMPLOOP)=ACCOUNT:NUMBER THEN
+        TESTACCOUNT=TRUE
+      END
+    END
+  END [IF VALUE(SACTESTMODEFLAG)=TRUE...]
+
+ BNODEBUGMSG="ACCOUNT:"+ACCOUNT:NUMBER+FORMAT("  TESTMODE 9:",TESTMODE)+
+             FORMAT("  TESTACCOUNT 9:",TESTACCOUNT)
+ CALL BNODEBUGMSGADD
+
+ IF TESTMODE=TRUE AND
+    TESTACCOUNT=FALSE THEN
+  DO
+   SACSHAREGROUPSMAX=9
+   SACCUSTAFFEMAILADDRESS=""
+   SACCUSTAFFEMAILSUBJECT=""
+   SACNAMECOPYSHAREFLAG="0"
+   SACNAMECOPYSHARETYPES=""
+   SACNAMECOPYLOANFLAG="0"
+   SACNAMECOPYLOANTYPES=""
+  END
+END [PROCEDURE]
+
+PROCEDURE SETUPERRORCODES
+[* Set up default error code messages
+*]
+ ERRORCODEDESCR(ECDEFAULT,0)="Program running in memo mode"
+ ERRORCODEDESCR(ECCUSTOM,0)=""
+
+ ERRORCODEDESCR(ECDEFAULT,1)="CFG data file read error"
+ ERRORCODEDESCR(ECCUSTOM,1)=""
+
+ ERRORCODEDESCR(ECDEFAULT,2)="Account warning exists"
+ ERRORCODEDESCR(ECCUSTOM,2)=""
+
+ ERRORCODEDESCR(ECDEFAULT,3)="Ineligible account type"
+ ERRORCODEDESCR(ECCUSTOM,3)=""
+
+ ERRORCODEDESCR(ECDEFAULT,4)="No eligible shares available to be created"
+ ERRORCODEDESCR(ECCUSTOM,4)=""
+
+ ERRORCODEDESCR(ECDEFAULT,5)="Error reading Share group term file"
+ ERRORCODEDESCR(ECCUSTOM,5)=""
+
+ ERRORCODEDESCR(ECDEFAULT,6)="No shares with sufficient funds for required transfer"
+ ERRORCODEDESCR(ECCUSTOM,6)=""
+
+ ERRORCODEDESCR(ECDEFAULT,7)="Error reading passed name info"
+ ERRORCODEDESCR(ECCUSTOM,7)=""
+
+ ERRORCODEDESCR(ECDEFAULT,8)="Next ID calculation error"
+ ERRORCODEDESCR(ECCUSTOM,8)=""
+
+ ERRORCODEDESCR(ECDEFAULT,9)="Error getting new share rate"
+ ERRORCODEDESCR(ECCUSTOM,9)=""
+
+ ERRORCODEDESCR(ECDEFAULT,10)="Could not calculate new maturity date"
+ ERRORCODEDESCR(ECCUSTOM,10)=""
+
+ ERRORCODEDESCR(ECDEFAULT,11)="Error creating new share"
+ ERRORCODEDESCR(ECCUSTOM,11)=""
+
+END [PROCEDURE]
+
 #INCLUDE "RB.LISTEXPAND"
-
-
