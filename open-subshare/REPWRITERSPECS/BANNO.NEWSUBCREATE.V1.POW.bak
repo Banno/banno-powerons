@@ -36,13 +36,10 @@
 **                 which were bypassing current rate calcs and not outputting rate
 **                 JSON
 **  Ver. 1.0.9  05/12/2021 JKeenan
-**              1. Corrected JSON when no shares have and available balance
+**              1. Corrected JSon output when no shares have and available balance
 **              2. Enhanced share type selection to account for available balance for funding
 **              3. Enhanced Program info to JSON Output
 **              4. Corrected JSON for targeted account warning type
-**
-**  Ver. 1.0.10 06/23/2021 JuCarson
-**              1. Added Branch to file maintenance section.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -2004,7 +2001,6 @@ PROCEDURE CREATESHARE
    SET ORIGINALBALANCE TO TRANSFERAMOUNT
    SET MATURITYDATE TO NEWSHAREMATURITYDATE
    SET DIVRATE TO NEWSHARERATE
-   SET BRANCH TO ACCOUNT:BRANCH
   END
 
  IF SHAREERRORMESSAGE="" AND                    [CREATE IRS RECORD IF MISSING]
@@ -2526,5 +2522,6 @@ PROCEDURE PRINTPROGRAMINFO
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
 
 
