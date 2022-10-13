@@ -1614,7 +1614,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* If sending an email confirmation, load an array of email body lines
 *]
        IF PARAMSENDEMAIL=TRUE AND
-          SEGMENT(PARAMNAME,1,2)="ED" AND
+          SEGMENT(PARAMNAME,1,2)="EB" AND
           EMAILLINECOUNT<EMAILLINESMAX THEN
         DO
          EMAILLINECOUNT=EMAILLINECOUNT+1
@@ -1870,29 +1870,29 @@ PROCEDURE VALIDATECONFIG
      PARAMVALIDATIONERROR=TRUE
      PARAMVALIDATIONERRORCHR="Invalid test account found. Must be 10 digits long."
     END
-  END
 [* If email is enabled, check for email detail lines and valid email address, if specified.
 *]
- IF PARAMSENDEMAIL=TRUE THEN
-  DO
-   IF EMAILLINECOUNT=0 THEN
+   IF PARAMSENDEMAIL=TRUE THEN
     DO
-     PARAMVALIDATIONERROR=TRUE
-     PARAMVALIDATIONERRORCHR="No email detail lines specified for member email."
-    END
-   
-   ELSE IF PARAMEMAILFROM<>MEMBEREMAIL THEN
-    DO
-     ATPOS=0
-     DOTPOS=0
-     ATPOS=CHARACTERSEARCH(PARAMEMAILFROM,"@")
-     IF ATPOS>0 THEN
-      DOTPOS=CHARACTERSEARCH(SEGMENT(PARAMEMAILFROM,ATPOS+1,LENGTH(PARAMEMAILFROM)),".")
-     IF ATPOS=0 OR
-        DOTPOS=0 THEN
+     IF EMAILLINECOUNT=0 THEN
       DO
        PARAMVALIDATIONERROR=TRUE
-       PARAMVALIDATIONERRORCHR="Invalid 'from' email address specified for member email."
+       PARAMVALIDATIONERRORCHR="No email detail lines specified for member email."
+      END
+   
+     ELSE IF PARAMEMAILFROM<>MEMBEREMAIL THEN
+      DO
+       ATPOS=0
+       DOTPOS=0
+       ATPOS=CHARACTERSEARCH(PARAMEMAILFROM,"@")
+       IF ATPOS>0 THEN
+        DOTPOS=CHARACTERSEARCH(SEGMENT(PARAMEMAILFROM,ATPOS+1,LENGTH(PARAMEMAILFROM)),".")
+       IF ATPOS=0 OR
+          DOTPOS=0 THEN
+        DO
+         PARAMVALIDATIONERROR=TRUE
+         PARAMVALIDATIONERRORCHR="Invalid 'from' email address specified for member email."
+        END
       END
     END
   END

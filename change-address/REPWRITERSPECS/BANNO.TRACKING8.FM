@@ -55,8 +55,8 @@ END
 
 SETUP
  OPTIONSEL=CODEREAD("Select Run Mode",
-                    "(0) Expire All Tracking 8s",
-                    "(1) Delete All Tracking 8s",
+                    "(0) Expire All Account Level Tracking 8s",
+                    "(1) Delete All Account Level Tracking 8s",
                     "(2) Delete Banno-specific fields",
                     "Input Run Type (0)default")
 END
