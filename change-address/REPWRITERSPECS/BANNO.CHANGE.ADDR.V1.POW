@@ -1832,47 +1832,50 @@ PROCEDURE VALIDATECONFIG
        PARAMVALIDATIONERRORCHR="Invalid Set Warning Type Setup"
       END
     END
-  END
 [* If PO Box restrictions are in effect test for PO Box list entry
 *]
- IF PARAMPORESTRICT=TRUE AND
-    POBOXINPUTFOUND=FALSE AND
-    PARAMVALIDATIONERROR=FALSE THEN
-  DO
-   PARAMVALIDATIONERROR=TRUE
-   PARAMVALIDATIONERRORCHR="PO Box Types Setup Incomplete"
-  END
+   IF PARAMPORESTRICT=TRUE AND
+      POBOXINPUTFOUND=FALSE AND
+      PARAMVALIDATIONERROR=FALSE THEN
+    DO
+     PARAMVALIDATIONERROR=TRUE
+     PARAMVALIDATIONERRORCHR="PO Box Types Setup Incomplete"
+    END
 [* If name matching name levels are set (not none) and no name types
 ** are specified.
 *]
- IF PARAMMATCHNAMELVL<>"NONE" AND
-    PARAMMATCHNMTYPES="NONE" THEN
-  DO
-   PARAMVALIDATIONERROR=TRUE
-   PARAMVALIDATIONERRORCHR="No name types set for name level matching"
-  END
-[* Check test accounts, if any, and validate each is 10 digits long
-*]
- IF PARAMTESTACCTS<>"" THEN
-  DO
-   DATALINE=PARAMTESTACCTS
-   DELIMITER=","
-   CALL PARSEDATALINE
-
-   INVTESTACCTFOUND=FALSE
-   FOR TMPLOOP=1 TO DATAFIELDCOUNT
-    DO
-     IF LENGTH(DATALINEFIELD(TMPLOOP))<>10 THEN
-      INVTESTACCTFOUND=TRUE
-    END
-   IF INVTESTACCTFOUND=TRUE THEN
+   IF PARAMMATCHNAMELVL<>"NONE" AND
+      PARAMMATCHNMTYPES="NONE" AND
+      PARAMVALIDATIONERROR=FALSE THEN
     DO
      PARAMVALIDATIONERROR=TRUE
-     PARAMVALIDATIONERRORCHR="Invalid test account found. Must be 10 digits long."
+     PARAMVALIDATIONERRORCHR="No name types set for name level matching"
+    END
+[* Check test accounts, if any, and validate each is 10 digits long
+*]
+   IF PARAMTESTACCTS<>"" AND
+      PARAMVALIDATIONERROR=FALSE THEN
+    DO
+     DATALINE=PARAMTESTACCTS
+     DELIMITER=","
+     CALL PARSEDATALINE
+
+     INVTESTACCTFOUND=FALSE
+     FOR TMPLOOP=1 TO DATAFIELDCOUNT
+      DO
+       IF LENGTH(DATALINEFIELD(TMPLOOP))<>10 THEN
+        INVTESTACCTFOUND=TRUE
+      END
+     IF INVTESTACCTFOUND=TRUE THEN
+      DO
+       PARAMVALIDATIONERROR=TRUE
+       PARAMVALIDATIONERRORCHR="Invalid test account found. Must be 10 digits long."
+      END
     END
 [* If email is enabled, check for email detail lines and valid email address, if specified.
 *]
-   IF PARAMSENDEMAIL=TRUE THEN
+   IF PARAMSENDEMAIL=TRUE AND
+      PARAMVALIDATIONERROR=FALSE THEN
     DO
      IF EMAILLINECOUNT=0 THEN
       DO
