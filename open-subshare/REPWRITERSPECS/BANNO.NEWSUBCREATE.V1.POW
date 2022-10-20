@@ -42,7 +42,7 @@
 **              4. Corrected JSON for targeted account warning type
 **  Ver. 1.0.10 06/23/2021 JuCarson
 **              1. Added Branch to file maintenance section.
-**  Ver. 1.1.0  10/10/2022 TKainz
+**  Ver. 1.1.0  10/20/2022 TKainz
 **              1. Add ability for existing name records at the share and/or loan
 **                 level to be added (copied) to the new Share. In test mode, only test
 **                 accounts will have access to this function.
@@ -343,7 +343,6 @@ DEFINE
  BNOINDENTMAX              = 9
  BNOINDENT                 = CHARACTER ARRAY(9)
  BNOLOCALLOOP              = NUMBER
- QQ                        = CHARACTER
 
  ADDNAMEADDRESSTYPE        = NUMBER
  ADDNAMEBDAY               = DATE
@@ -446,8 +445,6 @@ DEFINE
  TRUEFALSECHR              = CHARACTER ARRAY(1)
  VALIDLOANNAMETYPES        = NUMBER ARRAY(99)
  VALIDSHARENAMETYPES       = NUMBER ARRAY(99)
- VALIDNAMETYPESCHR         = CHARACTER
- VALIDNAMETYPES            = NUMBER ARRAY(99)
 
  BNODELIMITER              = NUMBER
  BNODELIMNONE              = 0
@@ -510,15 +507,13 @@ DEFINE
  CNLSEX                    = 35
  CNLDUPLICATED             = 36
 
- CNTYPE                    = NUMBER
- NAMETYPESHARE             = 0
- NAMETYPELOAN              = 1
-
  MAXERRORCODE              = 511
+ BNOPRINTDEBUGINFODAYS     = NUMBER
 END
 
 SETUP
  BNODEBUGMODE=BNODEBUGMODEOFF
+ DATAFILETYPE="DATA"
  TRUEFALSECHR(FALSE)="false"
  TRUEFALSECHR(TRUE)="true"
  SACSHAREGROUPSMAX=19
@@ -530,19 +525,16 @@ SETUP
    BNOINDENT(BNOLOCALLOOP)=REPEATCHR(" ",BNOLOCALLOOP)
   END
 
-
- IF BNODEBUGMODE=BNODEBUGMODEON THEN
-  DATAFILETYPE="LETTER"
- ELSE
-  DATAFILETYPE="DATA"
-
  Q=CTRLCHR(34)
- QQ=CTRLCHR(34)
  PROGRAMVERSION="1.1.0"
- LASTMODDATE='10/10/22'
- LASTMODTIME="11:20 MT"
+ LASTMODDATE='10/20/22'
+ LASTMODTIME="12:00 MT"
  PROGRAMUPDATENOTE1="Copy name functionality added"
- PROGRAMUPDATENOTE2="Error code ouput update, JSON code fix"
+ PROGRAMUPDATENOTE2="Error code output update, JSON code fix"
+
+ BNOPRINTDEBUGINFODAYS=90
+ IF LASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
+  BNODEBUGMODE=BNODEBUGMODEON
 
  PRIMARYSSN = NAME:SSN
 
@@ -646,8 +638,6 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
     END
    ELSE
     DO
-     VALIDNAMETYPESCHR="ALL"
-
      IF @RGSTATE="PRELOADDATA" THEN
       DO
        [QUALIFY MEMBER]
@@ -769,11 +759,25 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 *]
        PRINT "  "+Q+"results"+Q+": {"
        NEWLINE
+
+       BNODEBUGMSG="NAME PRELOAD: SACNAMECOPYSHAREFLAG: "+SACNAMECOPYSHAREFLAG+"  "+
+                   "SACNAMECOPYLOANFLAG: "+SACNAMECOPYLOANFLAG+"  "+
+                    FORMAT("SACNAMEMAXNEW: 99",SACNAMEMAXNEW)
+       CALL BNODEBUGMSGADD
+
+       IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE OR
+          VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
+        CALL BUILDCOPYNAMELIST
+
+       BNODEBUGMSG=FORMAT("COPYNAMELISTCOUNT: 99",COPYNAMELISTCOUNT)
+       CALL BNODEBUGMSGADD
+
 [* if new names are not allowed or if they are allowed but the max new names
-** are nset to 0 or and there are no eligible copy names then set new names
-** allowed flag to 0
+** are set to 0 or and there are no eligible copy names then force set new names
+** allowed flag to 0 to bypass UX add names screens
 *]
        PRINT "    "+Q+"canAddNames"+Q+": "
+
        IF VALUE(SACNAMEALLOWFLAG)=0 OR
          (VALUE(SACNAMEALLOWFLAG)=1 AND
           SACNAMEMAXNEW=0 AND
@@ -795,11 +799,6 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
          CALL PROVIDENAMESINFO
          PRINT ","
          NEWLINE
-
-         IF VALUE(SACNAMECOPYSHAREFLAG)=TRUE OR
-            VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
-          CALL BUILDCOPYNAMELIST
-
          PRINT Q+"eligibleCopyNames"+Q+": ["
          NEWLINE
 [* Send list of copy eligible names to the UX
@@ -970,9 +969,7 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
 END [PRINT]
 
 PROCEDURE READCONFIGFILESETTINGS
-[* Read the configuration settings from the CFG data file. If the program
-** is being run in debug mode, then the settings will come from the Letter file
-** otherwise the Datafile
+[* Read the configuration settings from the CFG data file.
 *]
  FILEOPEN(DATAFILETYPE,CONFIGFILENAME,"READ",SACFILENUM,READCONFIGERROR)
  CFGFILEREADERROR=READCONFIGERROR
@@ -1139,6 +1136,14 @@ PROCEDURE READCONFIGFILESETTINGS
     END
   END
  FILECLOSE(SACFILENUM,READCONFIGERROR)
+
+BNODEBUGMSG="After CFG File read ("+DATAFILETYPE+")  "+
+            "SACNAMECOPYSHAREFLAG: "+SACNAMECOPYSHAREFLAG+"  "+
+            "SACNAMECOPYLOANFLAG: "+SACNAMECOPYLOANFLAG+"  "+
+            FORMAT("SACNAMEMAXNEW: 99",SACNAMEMAXNEW)+"  "+
+            FORMAT("COPYNAMELISTCOUNT: 99",COPYNAMELISTCOUNT)
+CALL BNODEBUGMSGADD
+
 END [PROCEDURE READ CONFIG FILE]
 
 PROCEDURE QUALIFYMEMBER
@@ -2875,13 +2880,12 @@ PROCEDURE FUNDSCHECK
   END
  IF TRANERRORTEXT<>"" THEN
   DO
-   [NEED JSON ERROR? TEK]
-    FMPERFORM CREATE SHARE NEWSHAREID NOTE LOC 0
-                     (0,0,NOTELOC,NOTEERROR)
-     DO
-      SET TEXT:1 TO "Opening Transfer Error:"
-      SET TEXT:2 TO TRANERRORTEXT
-     END
+   FMPERFORM CREATE SHARE NEWSHAREID NOTE LOC 0
+                    (0,0,NOTELOC,NOTEERROR)
+    DO
+     SET TEXT:1 TO "Opening Transfer Error:"
+     SET TEXT:2 TO TRANERRORTEXT
+    END
   END
 END   [procedure funds check]
 
@@ -3260,7 +3264,6 @@ PROCEDURE BUILDCOPYNAMELIST
 
  IF VALUE(SACNAMECOPYLOANFLAG)=TRUE THEN
   DO
-
    FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL AND
                         LOAN:CHARGEOFFDATE=DATENULL)
     DO
@@ -3448,16 +3451,16 @@ PROCEDURE BNOPRINTDEBUG
   DO
    PRINT ","
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"debugData"+QQ+": ["
+   PRINT BNOINDENT(2)+Q+"debugData"+Q+": ["
    NEWLINE
-   PRINT BNOINDENT(2)+QQ+"Debug note: Debug lines truncated to 100 characters"+QQ
+   PRINT BNOINDENT(2)+Q+"Debug note: Debug lines truncated to 100 characters"+Q
    IF BNODEBUGCOUNT>0 THEN
     DO
      FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
       DO
        PRINT ","
        NEWLINE
-       PRINT BNOINDENT(3)+QQ+[FORMAT("999-",BNODEBUGLOOP)+]Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,100)+QQ
+       PRINT BNOINDENT(3)+Q+[FORMAT("999-",BNODEBUGLOOP)+]Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,100)+Q
       END [FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT]
     END [IF BNODEBUGCOUNT>0 THEN]
    PRINT BNOINDENT(2)+"]"
@@ -3585,3 +3588,4 @@ PROCEDURE SETUPERRORCODES
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
