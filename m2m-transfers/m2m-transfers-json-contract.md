@@ -8,7 +8,7 @@
   "rgState": "PRELOADDATA",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [], // userchar[1-5] is unused
-  "userNumList": [], //  usernum[1-5] is unused
+  "userNumList": [{ "id": 1, "value": 3 }], //  ux version #
   "rgSession": 1
 }
 ```
@@ -35,21 +35,24 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "type": "savings",
         "name": "SUMMER SAVER",
         "available": "50.00",
-        "accountOwnerName": "Beth Nussbaum"
+        "accountOwnerName": "Beth Nussbaum",
+        "crossAccount": true
       },
       {
         "transferSLId": "0000800005S0010",
         "type": "checking",
         "name": "REGULAR CHECKING",
         "available": "500.00",
-        "accountOwnerName": "Ruth Nordstrom"
+        "accountOwnerName": "Ruth Nordstrom",
+        "crossAccount": false
       },
       {
         "transferSLId": "0000800005S0015",
         "type": "checking",
         "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
-        "accountOwnerName": "Cliff Woodward"
+        "accountOwnerName": "Cliff Woodward",
+        "crossAccount": true
       }
     ],
     "scheduledTransfers": [
@@ -180,7 +183,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgState": "CREATETRAN",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate]|[day1]|[day2]
+    { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][recipient S/L id][frequency]|[startDate or "soonest" ]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
     { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
     { "id": 4, "value":"1000.51"} // transfer amount
