@@ -1,17 +1,21 @@
-#JSON contract for BANNO.M2MTRANSFERS.V1.POW
+#JSON contract for BANNO.M2MTRANSFERS.V3.POW
+
 ## GET PRELOADDATA STATE
 ### Client Request (PRELOADDATA)
+
 ```jsonc
 {
   "rgState": "PRELOADDATA",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [], // userchar[1-5] is unused
   "userNumList": [{ "id": 1, "value": 3 }], //  ux version #
   "rgSession": 1
 }
 ```
+
 ### PowerOn Successful Response (PRELOADDATA)
 list of institution and member limits, eligible shares, list of scheduled transfers, list of saved recipients
+
 ```jsonc
 {
   "currentState": {
@@ -119,6 +123,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 }
 ```
 ### PowerOn response - Invalid Account (by Account Warning):
+
 ```jsonc
 {
   "errorCode": "502",
@@ -126,18 +131,21 @@ list of institution and member limits, eligible shares, list of scheduled transf
 }
 ```
 ### PowerOn response - No Eligible Share(s) found:
+
 ```jsonc
 {
   "errorCode": "503",
   "loggingErrorMessage": "No eligible shares found"
 }
 ```
+
 ## VERIFY MEMBER DETAILS
 ### Client Request (VERIFYMEMBER)
+
 ```jsonc
 {
   "rgState": "VERIFYMEMBER",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [
     { "id": 1, "value": "9876543210|HUB|accountType|0234" }// [member id][first 3 of last name or business name][accountType][accountId]
   ],
@@ -145,7 +153,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "rgSession": 1
 }
 ```
+
 ### Poweron Successful Response (VERIFYMEMBER)
+
 ```jsonc
 {
   "results": {
@@ -153,7 +163,9 @@ list of institution and member limits, eligible shares, list of scheduled transf
   }
 }
 ```
+
 ### Poweron Error Response (VERIFYMEMBER)
+
 ```jsonc
 {
   "results": {
@@ -162,27 +174,19 @@ list of institution and member limits, eligible shares, list of scheduled transf
   }
 }
 ```
+
 ## CREATE TRANSFER REQUEST STATE
 ### Client Request (CREATETRAN)
+
 ```jsonc
 {
   "rgState": "CREATETRAN",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [
-    { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][account type or id][frequency]|[startDate || "soonest" ]|[day1]|[day2]
+    { "id": 1, "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15" },  // [sourceAccount][recipient member id][recipient S/L id][frequency]|[startDate or "soonest" ]|[day1]|[day2]
     { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
     { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
     { "id": 4, "value":"1000.51"} // transfer amount
-
-
-
-
-
-
-
-
-
-
   ],
   "userNumList": [
     { "id": 1, "value": 395 } // recipientLoc if available
@@ -195,6 +199,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 	* New Recipient: if nickname is present, create new
 	* All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
 	* One-time immediate transfers have an optional internal memo field.
+
 ### PowerOn Successful Response (CREATETRAN)
 ```jsonc
 {
@@ -222,11 +227,13 @@ list of institution and member limits, eligible shares, list of scheduled transf
   }
 }
 ```
+
 ### Client Request (EDITTRAN)
+
 ```jsonc
 {
   "rgState": "EDITTRAN",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [
     { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[startDate]|[day1]|[day2] max 132 characters
     { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
@@ -240,6 +247,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```
 EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer)
 	* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2
+
 ### PowerOn Successful Response (EDITTRAN)
 ```jsonc
 {
@@ -265,11 +273,13 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   }
 }
 ```
+
 ### Client Request (DELETERECIP)
+
 ```jsonc
 {
   "rgState": "DELETERECIP",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [],
   "userNumList": [
     {"id": 1, "value": 395} // recipientLoc
@@ -285,11 +295,14 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
     "currentState": "[PRELOADDATA]"
   }
 ```
+
+
 ### Client Request (DELETETRAN)
+
 ```jsonc
 {
   "rgState": "DELETETRAN",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V1.POW",
+  "powerOnFileName": "BANNO.M2MTRANSFERS.V3.POW",
   "userChrList": [],
   "userNumList": [
     { "id": 1, "value": 395 } // transferLoc
@@ -297,6 +310,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "rgSession": 1
 }
 ```
+
 ### PowerOn Successful Response (DELETETRAN)
 ```jsonc
 {
@@ -322,6 +336,8 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   }
 }
 ```
+
+
 ### PowerOn Error Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
 ```jsonc
 {
@@ -331,6 +347,7 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   }
 }
 ```
+
 ### Error Codes
 501 - Config file read / validation error
 502 - Invalid source account
@@ -342,9 +359,11 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 508 - Undefined error
 509 - Member unverified
 510 - AccountId incorrect
+
 ### Transfer Frequencies
 The following strings are all valid transfer frequencies:
 once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
+
 ### Account types
 The recipient member's account id is optional when creating a new transfer and when displaying saved recipients
 available account types are savings checking, loan
