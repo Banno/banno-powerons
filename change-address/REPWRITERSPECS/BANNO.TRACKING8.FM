@@ -1,0 +1,138 @@
+[ File Name: BANNO.TRACKING8.FM
+  
+  Description: Batch PowerOn creates an FM report to update, 
+               expire or delete account level tracking type 8 
+               records depending on user selection.
+                
+  
+  Original Author: JuCarson 10/4/2022   R 2022.00
+
+  Details:  
+   Prompts:
+    Select Run Mode:
+      Expire All Tracking 8s       - PowerOn will expire all unexpired account
+                                     level tracking type 8 records found on any
+                                     open account.
+
+      Delete All Tracking 8s       - PowerOn will delete all account level tracking
+                                     type 8 records found on any open account.
+
+      Delete Banno-specific Fields - PowerOn will delete any data found in
+                                     USERCHAR12-USERCHAR15 of any unexpired
+                                     account level tracking type 8 records found 
+                                     on any open account.
+
+   Selection:
+    Any account level tracking type 8 record found on an open account.
+        
+   Sorting:
+    N/A
+    
+   Program Flow:
+    Program selects all open accounts with an account level tracking
+    type 8 record. 
+
+        - PowerOn prints FM according to user input described above. 
+
+   Output:
+    "TRACKING 8 FM" - FM Report to be targeted in Miscellaneous
+                      Processing.
+    
+   Tips For Running 
+    Miscellaneous Processing Batch Program must be run afterward
+    to post the FM changes.
+]
+
+TARGET=TRACKING
+
+DEFINE
+ OPTIONSEL=NUMBER
+ OPTEXPIRE=0
+ OPTDELETE=1
+ OPTEDIT=2
+ DATENULL='--/--/--'
+END
+
+SETUP
+ OPTIONSEL=CODEREAD("Select Run Mode",
+                    "(0) Expire All Account Level Tracking 8s",
+                    "(1) Delete All Account Level Tracking 8s",
+                    "(2) Delete Banno-specific fields",
+                    "Input Run Type (0)default")
+END
+
+SELECT
+ ACCOUNT:CLOSEDATE=DATENULL AND
+ TRACKING:TYPE=8 
+END
+
+PRINT TITLE="TRACKING 8 FM"
+
+ HEADER=""
+
+ IF (OPTIONSEL=OPTEXPIRE AND
+    (TRACKING:EXPIREDATE=DATENULL OR
+     TRACKING:EXPIREDATE>SYSTEMDATE)) THEN
+  DO
+   PRINT "ACCOUNT "+ACCOUNT:NUMBER+" REVISE TRACKING LOC "
+   PRINT TRACKING:LOCATOR
+   NEWLINE
+   PRINT " CHANGE EXPIREDATE FROM "
+   COL=49 TRACKING:EXPIREDATE
+   COL=89 " TO "
+   COL=93 SYSTEMDATE
+   NEWLINE
+  END
+
+ ELSE IF OPTIONSEL=OPTDELETE THEN
+  DO
+   PRINT "ACCOUNT "+ACCOUNT:NUMBER+" DELETE TRACKING LOC "
+   PRINT TRACKING:LOCATOR
+   NEWLINE
+  END
+
+ ELSE IF (OPTIONSEL=OPTEDIT AND
+         (TRACKING:EXPIREDATE=DATENULL OR
+          TRACKING:EXPIREDATE>SYSTEMDATE) AND
+         (TRACKING:USERCHAR12<>"" OR
+          TRACKING:USERCHAR13<>"" OR
+          TRACKING:USERCHAR14<>"" OR
+          TRACKING:USERCHAR15<>"")) THEN
+  DO
+   PRINT "ACCOUNT "+ACCOUNT:NUMBER+" REVISE TRACKING LOC "
+   PRINT TRACKING:LOCATOR
+   NEWLINE
+   IF TRACKING:USERCHAR12<>"" THEN
+    DO
+     PRINT " CHANGE USERCHAR12 FROM "
+     COL=49 TRACKING:USERCHAR12
+     COL=89 " TO "
+     COL=93 ""
+     NEWLINE
+    END
+   IF TRACKING:USERCHAR13<>"" THEN
+    DO
+     PRINT " CHANGE USERCHAR13 FROM "
+     COL=49 TRACKING:USERCHAR13
+     COL=89 " TO "
+     COL=93 ""
+     NEWLINE
+    END
+   IF TRACKING:USERCHAR14<>"" THEN
+    DO
+     PRINT " CHANGE USERCHAR14 FROM "
+     COL=49 TRACKING:USERCHAR14
+     COL=89 " TO "
+     COL=93 ""
+     NEWLINE
+    END
+   IF TRACKING:USERCHAR15<>"" THEN
+    DO
+     PRINT " CHANGE USERCHAR15 FROM "
+     COL=49 TRACKING:USERCHAR15
+     COL=89 " TO "
+     COL=93 ""
+     NEWLINE
+    END
+  END
+END
