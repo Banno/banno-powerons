@@ -117,7 +117,22 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
         "availableBalance": "1.00",
         "memberAccountNumber": "1234567890S1234",
       }
-    ]
+    ],
+    "fee": {
+      "amount": "20.00",
+      "sourceAccounts": [
+        {
+          "name":"Savings",
+          "availableBalance": "1.00",
+          "memberAccountNumber": "1234567890S1234",
+        },
+        {
+          "name":"Savings",
+          "availableBalance": "1.00",
+          "memberAccountNumber": "1234567890S1234",
+        }
+      ],
+    }
   }
 }
 ```
@@ -131,6 +146,13 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
 		 - name: Share description
 		 - availableBalance: the available balance of the share
 		 - memberAccountNumber: the 10-digit account number, "S" or "L" for share or loan and the Share or Loan ID
+   - fee: fee parameters if a fee is being charged to create the new sub account
+     - amount: the fee amount to be charged
+     - sourceAccounts: a list of member accounts that can be selected as a fee source
+ 		   - name: Share description
+		   - availableBalance: the available balance of the share
+		   - memberAccountNumber: the 10-digit account number, "S" for share and the 4-digit Share ID
+    
 
 ## NAMEPRELOAD
 Here the UX is returning the total user selections to this point - the group, share type, funding share and type of funding with the amount to fund
