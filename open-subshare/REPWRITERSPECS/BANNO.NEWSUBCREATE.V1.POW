@@ -53,7 +53,7 @@
 **                 Letter files.
 **              4. Corrected JSON keeping new names added from being displayed by the UX.
 **  Ver. 1.2.0  11/14/22 RRobison - New Feature
-**              1. Added code that limits the maxiumum number of shares of each type that can be created.
+**              1. Added code that limits the maximum number of shares of each type that can be created.
 **              2. Added new account fee support.
 **
 **  This Banno service PowerOn allows the user to open a new
