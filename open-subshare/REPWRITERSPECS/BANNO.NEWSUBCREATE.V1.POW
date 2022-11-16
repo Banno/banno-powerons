@@ -52,7 +52,7 @@
 **              3. Add ability to include comment lines in the Group terms and conditions
 **                 Letter files.
 **              4. Corrected JSON keeping new names added from being displayed by the UX.
-**  Ver. 1.2.0  11/14/22 RRobison - New Feature
+**  Ver. 1.2.0  11/16/22 RRobison - New Feature
 **              1. Added code that limits the maximum number of shares of each type that can be created.
 **              2. Added new account fee support.
 **
@@ -547,7 +547,7 @@ END
 
 SETUP
  PROGRAMVERSION="1.2.0"
- LASTMODDATE='11/02/22'
+ LASTMODDATE='11/16/22'
  LASTMODTIME="17:00 MT"
  PROGRAMUPDATENOTE1="Copy name functionality added"
  PROGRAMUPDATENOTE2="Error code output update, JSON code fix"
