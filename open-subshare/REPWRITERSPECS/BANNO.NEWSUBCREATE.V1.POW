@@ -201,6 +201,7 @@ DEFINE
  DATENULL                  = '--/--/----'
  FMERRORFLAG               = NUMBER
  LEN                       = NUMBER
+ NOSUCHFILEERROR           = "No such file or directory"
 
  [QUALIFY VARIABLES]
  INELIGIBLEREASON          = CHARACTER
@@ -738,7 +739,8 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
        IF ERRORCODE=0 THEN
         DO
          CALL GETSACFEEINFO   
-         IF SACFEESPECFILEERROR<>"" THEN
+         IF SACFEESPECFILEERROR<>"" AND
+            SACFEESPECFILEERROR<>NOSUCHFILEERROR THEN
           ERRORCODE=513
         END
 
