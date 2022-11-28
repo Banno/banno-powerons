@@ -115,7 +115,7 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
       {
         "name":"Share",
         "availableBalance": "1.00",
-        "memberAccountNumber": "1234567890S1234",
+        "memberAccountNumber": "1234567890S1234"
       }
     ],
     "fee": {
@@ -124,12 +124,12 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
         {
           "name":"Savings",
           "availableBalance": "1.00",
-          "memberAccountNumber": "1234567890S1234",
+          "memberAccountNumber": "1234567890S1234"
         },
         {
           "name":"Savings",
           "availableBalance": "1.00",
-          "memberAccountNumber": "1234567890S1234",
+          "memberAccountNumber": "1234567890S1234"
         }
       ],
     }
