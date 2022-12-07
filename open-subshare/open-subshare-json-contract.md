@@ -273,7 +273,7 @@ All necessary information is passed back from the UX to create and fund the new 
   "rgState": "CREATESHARE",
   "powerOnFileName": "BANNO.NEWSUBCREATE.V1.POW",
   "userChrList": [
-    { "id": 1, "value": "0038;0000;100.00^123;425;1256;24578;125899" },
+    { "id": 1, "value": "0038;0000;100.00;0010^123;425;1256;24578;125899" },
     { "id": 2, "value": "04;Mary;Quite;Contrary;JR;333222111;mary@aol.com" },
     {
       "id": 3,
@@ -292,14 +292,15 @@ All necessary information is passed back from the UX to create and fund the new 
 - userChrList[1]: 2 sections of detail. Sections are delimited by a caret symbol, data within each section are delimited by a semicolon.
   - Section 1:
     - share type of new share (1 to 4 numeric characters)
-    - share ID of funding share - (2 or 4 characters)
+    - share ID of funding share (2 or 4 characters)
     - funding amount (dollar amount with cents - decimal but no commas)
+    - share ID of fee share (2 or 4 characters)
   - Section 2:
     - up to 10 numeric values representing the name record locator codes of the name records the member wishes to copy under the new share. (NAMEPRELOAD state, copyEligibleNames:nameLoc)
 - userChrList[2]:New name record #1 - name type, first name, middle name, last name, name suffix, SSN, email address
 - userChrList[3]:New name record #1 (cont) - street addr, extra addr, city, state, zip, DOB, phone type, phone
 - userChrList[4]:New name record #2 - name type, first name, middle name, last name, name suffix, SSN, email address
-- userChrList[35]:New name record #2 (cont) - street addr, extra addr, city, state, zip, DOB, phone type, phone
+- userChrList[5]:New name record #2 (cont) - street addr, extra addr, city, state, zip, DOB, phone type, phone
 
 ### PowerOn Successful Response
 
@@ -377,3 +378,5 @@ Returns the results of the attempt. Because it's possible for the share to be cr
 | 509  | Error getting new share rate            |
 | 510  | Could not calculate new maturity date   |
 | 511  | Error creating new share                |
+| 512  | Maximum share limit error               |
+| 513  | Error calculating fee                   |

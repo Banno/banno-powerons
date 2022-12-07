@@ -54,7 +54,7 @@
 **              4. Corrected JSON keeping new names added from being displayed by the UX.
 **  Ver. 1.2.0  11/16/22 RRobison - New Feature
 **              1. Added code that limits the maximum number of shares of each type that can be created.
-**              2. Added new account fee support.
+**              2. Added new account fee support via BANNO.NEWSUBCREATE.FEES.V1.POW.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -155,6 +155,7 @@ DEFINE
  CAC                       = CHARACTER
  CN                        = CHARACTER
  TRANERRORTEXT             = CHARACTER
+ FEEFROMID                 = CHARACTER
 
  SACDONE                   = NUMBER
  SACEXCLUDEACCTTYPELIST    = CHARACTER
@@ -239,6 +240,8 @@ DEFINE
  TRACKINGERRORTEXT           = CHARACTER
  SHARETRACKINGERRORTEXT      = CHARACTER
  TEMPTYPE                    = CHARACTER
+ CHUNK                       = CHARACTER
+ CHUNKINDEX                  = NUMBER
 
  EXISTINGIDS                 = CHARACTER(4) ARRAY(9999,3)   [9999,0 = id]
  IDRANGE                     = CHARACTER(4) ARRAY(9999)
@@ -341,6 +344,7 @@ DEFINE
  MEMBERMAXAVAILABLE     = MONEY
 
  COLONPOS               = NUMBER
+ SEMICOLONPOS           = NUMBER
  IDRANGECHR             = CHARACTER
  MAXSHARESCHR           = CHARACTER
  MAXSHARES              = NUMBER
@@ -2124,24 +2128,51 @@ PROCEDURE GETPASSEDINFO
       END
     END [IF J=1]
 
-   IF J=1 AND
-      CHARACTERSEARCH(IMPORT(J),";")=0 THEN
+   IF J=1 THEN
     DO
-     NEWSHARETYPE=IMPORT(J)
-    END
+     NEWSHARETYPE=""
+     TRANSFERFROMID=""
+     TRANSFERAMOUNT=$0.00
+     FEEFROMID=""
 
-   IF J=1 AND
-      CHARACTERSEARCH(IMPORT(J),";")>0 THEN
-    DO
-     POS=CHARACTERSEARCH(IMPORT(J),";")
-     IF POS>0 THEN
+     DONE=FALSE
+     TMPCHR=IMPORT(J)
+     CHUNKINDEX=1
+     WHILE DONE=FALSE
       DO
-       NEWSHARETYPE=SEGMENT(IMPORT(J),1,POS-1)
-       IMPORT(J)=SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))
-       POS=CHARACTERSEARCH(IMPORT(J),";")
-       TRANSFERFROMID=SEGMENT(IMPORT(J),1,POS-1)
-       TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID))
-       TRANSFERAMOUNT=MONEY(VALUE(SEGMENT(IMPORT(J),POS+1,LENGTH(IMPORT(J)))))
+       SEMICOLONPOS=CHARACTERSEARCH(TMPCHR,";");
+       IF SEMICOLONPOS=0 THEN
+        DO
+         CHUNK=TMPCHR
+         DONE=TRUE
+        END 
+       ELSE IF SEMICOLONPOS=1 THEN 
+        DO
+         CHUNK=""
+         TMPCHR=SEGMENT(TMPCHR,SEMICOLONPOS+1,LENGTH(TMPCHR))
+        END 
+       ELSE 
+        DO
+         CHUNK=SEGMENT(TMPCHR,1,SEMICOLONPOS-1)
+         TMPCHR=SEGMENT(TMPCHR,SEMICOLONPOS+1,LENGTH(TMPCHR))
+        END
+       
+       IF CHUNKINDEX=1 THEN
+        NEWSHARETYPE=CHUNK
+       ELSE IF CHUNKINDEX=2 THEN
+        DO
+         TRANSFERFROMID=CHUNK
+         TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID))
+        END 
+       ELSE IF CHUNKINDEX=3 THEN
+        TRANSFERAMOUNT=MONEY(VALUE(CHUNK))
+       ELSE IF CHUNKINDEX=4 THEN 
+        DO
+         FEEFROMID=CHUNK
+         FEEFROMID=FORMAT("9999",VALUE(FEEFROMID))
+        END
+  
+       CHUNKINDEX=CHUNKINDEX+1
       END
     END
 
