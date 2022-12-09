@@ -1,21 +1,21 @@
-************************************************************************************************************************                                        
-* BANNO.NEWSUBCREATE.V1.POW Fee Disclosure Letter file               
-*                                                                               
-* One of these fee disclosure letter files is required for each share group (for which a fee is being charged) defined 
-* by the BANNO.NEWSUBCREATE.V1.CONFIG on-demand program.                               
-*                                                                               
-* Each line started by an asterisk in this letter file will be treated as a comment and ignored by the program                                                  
-*                                                                               
-* Data will be displayed as written. The following HTML tags may be utilized to facilitate text formatting:                                                     
-*   <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <b>, <strong>, <i>, <u>, <ul>, <ol>, <li>, <br>, <p>, <a> and <hr>.                                                     
-* Avoid the use of special characters in your message.                          
-*                                                                               
-* For backwards compatibility, a single blank line will be interpreted as a new line and two blank lines in a row                                               
-* will be interpreted as a new paragraph                                        
-*                                                                               
-* Use this ruler as a guideline when setting up your messages. Do not extend past the end of this line (120 characters).                                        
-*                                                                               
-*        10        20        30        40        50        60        70        80        90        100       110       120                                      
-*23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890                                        
-*--------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|                                        
+************************************************************************************************************************
+* BANNO.NEWSUBCREATE.V1.POW Fee Disclosure Letter file
+*
+* One of these fee disclosure letter files is required for each share group (for which a fee is being charged) defined
+* by the BANNO.NEWSUBCREATE.V1.CONFIG on-demand program.
+*
+* Each line started by an asterisk in this letter file will be treated as a comment and ignored by the program
+*
+* Data will be displayed as written. The following HTML tags may be utilized to facilitate text formatting:
+*   <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <b>, <strong>, <i>, <u>, <ul>, <ol>, <li>, <br>, <p>, <a> and <hr>.
+* Avoid the use of special characters in your message.
+*
+* For backwards compatibility, a single blank line will be interpreted as a new line and two blank lines in a row
+* will be interpreted as a new paragraph
+*
+* Use this ruler as a guideline when setting up your messages. Do not extend past the end of this line (120 characters).
+*
+*        10        20        30        40        50        60        70        80        90        100       110       120
+*23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+*--------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|
 A fee of $xx.xx will be charged when the new account is opened.
