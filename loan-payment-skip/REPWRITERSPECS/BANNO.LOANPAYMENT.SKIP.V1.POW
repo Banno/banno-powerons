@@ -47,6 +47,11 @@
 **               and current program test mode and account's test status.
 **  Ver. 1.1.1  03/04/2022: TKainz - Banno
 **              Corrected Configuration Letterfile name
+**  Ver. 1.1.2  12/15/2022: TKainz - Banno
+**              Modified CFG Letter file read error handling
+**              Corrected loan disqualification check loop
+**              Reworked param LF read procedure
+**              Other code cleanup
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -150,17 +155,21 @@ DEFINE
  FALSE                     = 0
  DATENULL                  = '--/--/--'
 
- INELIGIBLECODESET         = 0
- INELIGIBLECODELOANTYPE    = 1
- INELIGIBLECODELOANWARNING = 2
- INELIGIBLECODEMAXSKIPS    = 3
- INELIGIBLECODETIMESKIP    = 4
- INELIGIBLECODEACCTWARNING = 5
- INELIGIBLECODESERVICECODE = 6
- INELIGIBLECODEMINPAYMENT  = 7
- INELIGIBLECODEMAXPAYMENT  = 8
- INELIGIBLECODETIMEOPEN    = 9
- INELIGIBLECODEPASTDUE     = 10
+ INELIGIBLECODESET         = 0  [loan ineligible flag]
+ INELIGIBLECODELOANTYPE    = 1  [Incorrect loan type]
+ INELIGIBLECODELOANWARNING = 2  [has loan warning]
+ INELIGIBLECODEMAXSKIPS    = 3  [has used max skips already]
+ INELIGIBLECODETIMESKIP    = 4  [not enough time between skips]
+ INELIGIBLECODEACCTWARNING = 5  [has account warning]
+ INELIGIBLECODESERVICECODE = 6  [does not have required svc code]
+ INELIGIBLECODEMINPAYMENT  = 7  [min payment requirement not met]
+ INELIGIBLECODEMAXPAYMENT  = 8  [max payment amount exceeded]
+ INELIGIBLECODETIMEOPEN    = 9  [loan not opened for sufficient time]
+ INELIGIBLECODEPASTDUE     = 10 [past due grace days exceeded]
+ INELIGIBLECODEFREQ        = 11 [has ineligibility payment freq]
+ INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment countnot met]
+ INELIGIBLECODEAPPROVALCODE= 13 [has invalid approval code]
+ INELIGIBLECODEDQPAYMENTS  = 14 [has excessive DQ paymrnt history]
 
  FEEAMOUNT                 = MONEY
  LOANTRACKINGTYPE          = NUMBER
@@ -187,10 +196,7 @@ DEFINE
  [Both start and end date must be set for this feature to work]
  DEFAULTSTARTDATE          = DATENULL
  DEFAULTENDDATE            = DATENULL
-
- GENERICUSERERRORMSG="We're sorry we've encountered an error. Please contact your credit union."
-
-[* 04/16/20 *]
+ GENERICUSERERRORMSG       = CHARACTER
  TMPTEXT                   = CHARACTER
  TMPCHR                    = CHARACTER
  TMPLOOP                   = NUMBER
@@ -199,8 +205,6 @@ DEFINE
  VALIDCHRINPUT1            = CHARACTER
  VALIDCHARS                = NUMBER ARRAY(999)
  MAXCHRVALUE               = 255
-
-[* 02/04/22 *]
  APPROVALCODESEXCLUDED     = NUMBER ARRAY(9999)
  BNOCFGFILENAME            = CHARACTER
  BNODEBUGCOUNT             = NUMBER
@@ -229,10 +233,6 @@ DEFINE
  DUEDATECALCTYPE           = CHARACTER ARRAY(13)
  ELEGIBLEFREQUENCIES       = NUMBER ARRAY(13)
  HONORSKIPS                = NUMBER
- INELIGIBLECODEAPPROVALCODE= 13
- INELIGIBLECODEDQPAYMENTS  = 14
- INELIGIBLECODEFREQ        = 11
- INELIGIBLECODEMINPMTCOUNT = 12
  LNEWDUEMONTH              = NUMBER
  MINIMUMPAYMENTCOUNT       = NUMBER
  TESTACCOUNTLIST           = CHARACTER
@@ -241,6 +241,10 @@ DEFINE
  TMPVAL                    = NUMBER
  TRUEFALSECHR              = CHARACTER ARRAY(1)
  VALIDTESTACCOUNT          = NUMBER
+ TMPPARAM                  = CHARACTER
+ TMPPARAMVAL               = CHARACTER
+ POS                       = NUMBER
+ FOUND                     = NUMBER
 END [DEFINE]
 
 SETUP
@@ -252,11 +256,11 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='03/04/22'
- BNOLASTMODTIME="13:30 MT"
+ BNOLASTMODDATE='12/15/22'
+ BNOLASTMODTIME="12:00 MT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
- BNOPROGRAMVERSION="1.1.0"
+ BNOPROGRAMVERSION="1.1.2"
  BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
@@ -267,14 +271,29 @@ PRINT TITLE="Banno Skip a Loan Payment"
 
  CALL INITIALIZEDATA
  CALL READCONFIGFILESETTINGS
+ NEWLINE
+ PRINT "{"
+ NEWLINE
 
- IF @RGSTATE=GETPRELOADDATA THEN
+ IF READCONFIGERROR=TRUE THEN
   DO
-   CALL PROCGETPRELOADDATA
+   PRINT Q+"clientErrorMessage"+Q+":"
+   PRINT Q+GENERICUSERERRORMSG+Q+","
+   NEWLINE
+   PRINT Q+"loggingErrorMessage"+Q+":"
+   PRINT Q+READCONFIGERRORMSG+Q+","
+   NEWLINE
   END
- ELSE IF @RGSTATE=PERFORMSKIPAPAYMENT THEN
+ ELSE
   DO
-   CALL PROCPERFORMSKIPAPAYMENT
+   IF @RGSTATE=GETPRELOADDATA THEN
+    DO
+     CALL PROCGETPRELOADDATA
+    END
+   ELSE IF @RGSTATE=PERFORMSKIPAPAYMENT THEN
+    DO
+     CALL PROCPERFORMSKIPAPAYMENT
+    END
   END
 
  CALL BNOPRINTPROGRAMINFO
@@ -288,35 +307,15 @@ PRINT TITLE="Banno Skip a Loan Payment"
 END [PRINT]
 
 PROCEDURE PROCGETPRELOADDATA
- PRINT "{"
- NEWLINE
-
- IF READCONFIGERROR=TRUE THEN
-  DO
-   PRINT Q+"clientErrorMessage"+Q+":"
-   NEWLINE
-   PRINT Q+GENERICUSERERRORMSG+Q
-   NEWLINE
-   PRINT ","+Q+"loggingErrorMessage"+Q+":"
-   NEWLINE
-   PRINT Q+READCONFIGERRORMSG+Q+","
-   NEWLINE
-  END
- ELSE
-  DO
-   PRINT Q+"clientErrorMessage"+Q+":"+Q+Q+","
-   NEWLINE
-   PRINT Q+"loggingErrorMessage"+Q+":"+Q+Q+","
-   NEWLINE
-  END
-
  [ Check if skip-a-pay is available based on start and end dates.
    Both dates must be set to a non null value for this to work.
  ]
  PRINT "  "+Q+"available"+Q+":"
  IF STARTDATE<>DATENULL AND ENDDATE<>DATENULL THEN
   DO
-   IF SYSTEMDATE>=STARTDATE AND SYSTEMDATE<=ENDDATE THEN
+   IF SYSTEMDATE>=STARTDATE AND
+      SYSTEMDATE<=ENDDATE AND
+      ENDDATE>=STARTDATE THEN
     PRINT "true,"
    ELSE
     PRINT "false,"
@@ -464,7 +463,7 @@ PROCEDURE PROCGETPRELOADDATA
 END [PROCEDURE]
 
 PROCEDURE PROCPERFORMSKIPAPAYMENT
- PRINT "{"+Q+"loansWithPaymentsSkipped"+Q+": ["
+ PRINT Q+"loansWithPaymentsSkipped"+Q+": ["
  NEWLINE
 
 [* Need the loan data for input validation
@@ -670,6 +669,8 @@ PROCEDURE INITIALIZEDATA
  STARTDATE=DEFAULTSTARTDATE
  ENDDATE=DEFAULTENDDATE
  HONORSKIPS=FALSE
+ GENERICUSERERRORMSG="We're sorry we've encountered an error. "+
+                     "Please contact your credit union."
 
  WHILELIMIT=100000
  FOR I=1 TO LOANSMAX
@@ -785,49 +786,75 @@ PROCEDURE READCONFIGFILESETTINGS
    TERMSLINESCOUNT=0
    WHILE LFERROR=""
     DO
+     TMPPARAM=""
+     TMPPARAMVAL=""
      FILEREADLINE(LFNUMBER,LFLINE,LFERROR)
-     IF SEGMENT(LFLINE,1,1)<>"*" AND LFLINE<>"" THEN
+     IF LFERROR="" AND
+        SEGMENT(LFLINE,1,1)<>"*" AND
+        LFLINE<>"" AND
+        CHARACTERSEARCH(LFLINE,":")>0 THEN
       DO
-[ Terms & conditions]
-       IF SEGMENT(LFLINE,1,3)="TC:" AND TERMSLINESCOUNT<TERMSMAXLINES THEN
+[The text in front of the colon is the parameter and after the colon is
+ the parameter setting.]
+       POS=CHARACTERSEARCH(LFLINE,":")
+       TEXT1=SEGMENT(LFLINE,1,POS-1)
+       CALL TEXTNLTS
+       TMPPARAM=TEXT1
+       TEXT1=SEGMENT(LFLINE,POS+1,LENGTH(LFLINE))
+[Trim leading and trailing spaces from the paramater value unless it's
+ for the terms or conditions (TC)]
+       IF TMPPARAM<>"TC" THEN
+        CALL TEXTNLTS
+       TMPPARAMVAL=TEXT1
+       IF BNOINCLUDEPARMINDEBUG=TRUE THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TERMSLINESCOUNT=TERMSLINESCOUNT+1
-         TMPCHR=SEGMENT(LFLINE,4,LENGTH(LFLINE))
-         CALL CLEANUPTEXT
+         BNODEBUGMSG=TMPPARAM+":"+TMPPARAMVAL
+         CALL BNODEBUGMSGADD
+        END
+      END
+     IF TMPPARAM<>"" THEN
+      DO
 
+[ Terms & conditions ]
+       IF TMPPARAM="TC"  AND
+          READCONFIGERROR=FALSE AND
+          TERMSLINESCOUNT<TERMSMAXLINES THEN
+        DO
+         TERMSLINESCOUNT=TERMSLINESCOUNT+1
+         TMPCHR=TMPPARAMVAL
+         CALL CLEANUPTEXT
          TERMS(TERMSLINESCOUNT)=TMPCHR
          IF TMPCHR<>"" THEN
           TERMSLASTLLINEUSED=TERMSLINESCOUNT
         END
-[ Loan types]
-       IF SEGMENT(LFLINE,1,3)="LT:" THEN
+
+[ Loan types ]
+       ELSE IF TMPPARAM="LT" AND
+               READCONFIGERROR=FALSE THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         LELISTINPUT=TMPPARAMVAL
+         IF LELISTINPUT="" THEN
+          LELISTINPUT="ALL"
          CALL LISTEXPAND
+         FOUND=FALSE
          FOR I=0 TO TYPESMAX
           DO
            LOANTYPES(I)=LELIST(I)
+           IF LOANTYPES(I)=TRUE THEN
+            FOUND=TRUE
+          END
+         IF FOUND=FALSE THEN
+          DO
+           READCONFIGERROR=TRUE
+           READCONFIGERRORMSG="No loan types found in CFG Letter file"
           END
         END
-[ Loan service codes]
-       IF SEGMENT(LFLINE,1,3)="SC:" THEN
+
+[ Loan service codes ]
+       ELSE IF TMPPARAM="SC" AND
+               READCONFIGERROR=FALSE THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         LELISTINPUT=TMPPARAMVAL
          IF LELISTINPUT="" THEN
           LELISTINPUT="NONE"
          CALL LISTEXPAND
@@ -836,199 +863,125 @@ PROCEDURE READCONFIGFILESETTINGS
            LOANSERVICECODE(I)=LELIST(I)
           END
         END
-[ Loan warning codes]
-       IF SEGMENT(LFLINE,1,3)="LW:" THEN
+
+[ Loan warning codes ]
+       ELSE IF TMPPARAM="LW" AND
+               READCONFIGERROR=FALSE THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         IF LENGTH(LFLINE)>3 THEN
-          DO
-           LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
-           CALL LISTEXPAND
-           FOR I=1 TO WARNINGSMAX
-            DO
-             LOANWARNINGS(I)=LELIST(I)
-            END
-          END
-        END
-[ Acct warning codes]
-       IF SEGMENT(LFLINE,1,3)="AW:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         IF LENGTH(LFLINE)>3 THEN
-          DO
-           LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
-           CALL LISTEXPAND
-           FOR I=1 TO WARNINGSMAX
-            DO
-             ACCTWARNINGS(I)=LELIST(I)
-            END
-          END
-        END
-[ Share types]
-       IF SEGMENT(LFLINE,1,3)="ST:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LELISTINPUT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
-         FOR I=0 TO TYPESMAX
+         FOR I=1 TO WARNINGSMAX
+          DO
+           LOANWARNINGS(I)=LELIST(I)
+          END
+        END
+
+[ Acct warning codes ]
+       ELSE IF TMPPARAM="AW" AND
+               READCONFIGERROR=FALSE THEN
+        DO
+         LELISTINPUT=TMPPARAMVAL
+         CALL LISTEXPAND
+         FOR I=1 TO WARNINGSMAX
+          DO
+           ACCTWARNINGS(I)=LELIST(I)
+          END
+        END
+
+[ Share types ]
+       ELSE IF TMPPARAM="ST" AND
+               READCONFIGERROR=FALSE THEN
+        DO
+         LELISTINPUT=TMPPARAMVAL
+         CALL LISTEXPAND
+         FOR I=1 TO TYPESMAX
           DO
            SHARETYPES(I)=LELIST(I)
           END
         END
-[ Program time period]
-       IF SEGMENT(LFLINE,1,3)="TP:" THEN
+
+[ Program time period ]
+       ELSE IF TMPPARAM="TP" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TIMEPERIOD=SEGMENT(LFLINE,4,LENGTH(LFLINE))
+         TIMEPERIOD=TMPPARAMVAL
         END
-[ Min payment amount]
-       IF SEGMENT(LFLINE,1,3)="MA:" THEN
+
+[ Min payment amount ]
+       ELSE IF TMPPARAM="MA" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LOANMINPAYMENT=MONEY(VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE))))
+         LOANMINPAYMENT=MONEY(VALUE(TMPPARAMVAL))
         END
-[ Max payment amount]
-       IF SEGMENT(LFLINE,1,3)="XA:" THEN
+
+[ Max payment amount ]
+       ELSE IF TMPPARAM="XA" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LOANMAXPAYMENT=MONEY(VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE))))
+         LOANMAXPAYMENT=MONEY(VALUE(TMPPARAMVAL))
         END
-[ Loan season]
-       IF SEGMENT(LFLINE,1,3)="LS:" THEN
+
+[ Loan season ]
+       ELSE IF TMPPARAM="LS" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LOANSEASON=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
+         LOANSEASON=VALUE(TMPPARAMVAL)
          IF LOANSEASON>360 THEN
           LOANSEASON=360
         END
-[ Grace days past due]
-       IF SEGMENT(LFLINE,1,3)="GD:" THEN
+
+[ Grace days past due ]
+       ELSE IF TMPPARAM="GD" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         GRACEDAYS=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
+         GRACEDAYS=VALUE(TMPPARAMVAL)
          IF GRACEDAYS<0 THEN
           GRACEDAYS=0
         END
-[ Fee amount(s)]
-       IF SEGMENT(LFLINE,1,3)="FA:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         FEEAMOUNTS(VALUE(SEGMENT(LFLINE,4,5)))=
-                    MONEY(VALUE(SEGMENT(LFLINE,7,LENGTH(LFLINE))))
-        END
-[ Loan tracking type]
-       IF SEGMENT(LFLINE,1,3)="TT:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         LOANTRACKINGTYPE=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-        END
-[ Max skips per year]
-       IF SEGMENT(LFLINE,1,3)="PS:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         MAXSKIPS=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-        END
-[ Min months since last skip]
-       IF SEGMENT(LFLINE,1,3)="MM:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         MINMONTHSINCE=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-        END
-[ Sub Source Code for Fee]
-       IF SEGMENT(LFLINE,1,3)="SS:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         SUBSOURCECODE=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-        END
-[ OTHERACTION for Fee]
-       IF SEGMENT(LFLINE,1,3)="OA:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         OTHERACTION=VALUE(SEGMENT(LFLINE,4,LENGTH(LFLINE)))
-        END
-[ Transaction comment for Fee]
-       IF SEGMENT(LFLINE,1,3)="FC:" THEN
-        DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         FEECOMMENT=SEGMENT(LFLINE,4,LENGTH(LFLINE))
-        END
-[********** Added 01/21/22 - TEK **********]
 
-[ Eligible payment frequencies]
-       IF SEGMENT(LFLINE,1,4)="EPF:" THEN
+[ Fee amount(s) ]
+       ELSE IF TMPPARAM="FA" THEN
         DO
-         TEXT1=SEGMENT(LFLINE,5,LENGTH(LFLINE))
-         CALL TEXTNLTS
-         TMPCHR=TEXT1
-         IF TMPCHR="" THEN
-          TMPCHR="ALL"
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE+"  EPF LELSIT:"+TMPCHR
-           CALL BNODEBUGMSGADD
-          END
+         FEEAMOUNTS(VALUE(SEGMENT(TMPPARAMVAL,1,2)))=
+                    MONEY(VALUE(SEGMENT(TMPPARAMVAL,4,LENGTH(TMPPARAMVAL))))
+        END
 
-         LELISTINPUT=TMPCHR
+[ Loan tracking type ]
+       ELSE IF TMPPARAM="TT" THEN
+        DO
+         LOANTRACKINGTYPE=VALUE(TMPPARAMVAL)
+        END
+
+[ Max skips per year ]
+       ELSE IF TMPPARAM="PS" THEN
+        DO
+         MAXSKIPS=VALUE(TMPPARAMVAL)
+        END
+
+[ Min months since last skip ]
+       ELSE IF TMPPARAM="MM" THEN
+        DO
+         MINMONTHSINCE=VALUE(TMPPARAMVAL)
+        END
+
+[ Sub Source Code for Fee ]
+       ELSE IF TMPPARAM="SS" THEN
+        DO
+         SUBSOURCECODE=VALUE(TMPPARAMVAL)
+        END
+
+[ OTHERACTION for Fee ]
+       ELSE IF TMPPARAM="OA" THEN
+        DO
+         OTHERACTION=VALUE(TMPPARAMVAL)
+        END
+
+[ Transaction comment for Fee ]
+       ELSE IF TMPPARAM="FC" THEN
+        DO
+         FEECOMMENT=TMPPARAMVAL
+        END
+[ Eligible payment frequencies ]
+       ELSE IF TMPPARAM="EPF" THEN
+        DO
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="ALL"
+         LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
          FOR BNOLOCALLOOP=1 TO 13
           DO
@@ -1036,145 +989,80 @@ PROCEDURE READCONFIGFILESETTINGS
           END
         END
 
-[ Due Date Calculations]
-       IF SEGMENT(LFLINE,1,3)="DDA" THEN
+[ Due Date Calculations ]
+       ELSE IF SEGMENT(TMPPARAM,1,3)="DDA" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
+         TMPVAL=VALUE(TMPPARAM)
+         TEXT1=UPPERCASE(TMPPARAMVAL)
+
+         IF ((TMPVAL>=1 AND TMPVAL<10) OR
+             (TMPVAL>=11 AND TMPVAL<=13)) AND
+             (TEXT1="M" OR TEXT1="F") THEN
           DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TMPPOS=CHARACTERSEARCH(LFLINE,":")
-         IF TMPPOS>4 THEN
-          DO
-           TMPVAL=VALUE(SEGMENT(LFLINE,1,TMPPOS-1))
-           TEXT1=UPPERCASE(SEGMENT(LFLINE,TMPPOS+1,LENGTH(LFLINE)))
-           CALL TEXTNLTS
-           IF ((TMPVAL>=1 AND TMPVAL<10) OR
-               (TMPVAL>=11 AND TMPVAL<=13)) AND
-               (TEXT1="M" OR TEXT1="F") THEN
-            DO
-             DUEDATECALCTYPE(TMPVAL)=TEXT1
-            END
+           DUEDATECALCTYPE(TMPVAL)=TEXT1
           END
         END
-[ Minimum Payment Count]
-       IF SEGMENT(LFLINE,1,4)="MPC:" THEN
+
+[ Minimum Payment Count ]
+       ELSE IF TMPPARAM="MPC" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         MINIMUMPAYMENTCOUNT=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         MINIMUMPAYMENTCOUNT=VALUE(TMPPARAMVAL)
          IF MINIMUMPAYMENTCOUNT<0 THEN
           MINIMUMPAYMENTCOUNT=0
         END
-[ Approval Code Exclusion]
-       IF SEGMENT(LFLINE,1,4)="ACE:" THEN
+
+[ Approval Code Exclusion ]
+       ELSE IF TMPPARAM="ACE" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TMPCHR=SEGMENT(LFLINE,5,LENGTH(LFLINE))
-         IF TMPCHR="" THEN
-          TMPCHR="NONE"
-         LELISTINPUT=TMPCHR
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="NONE"
+         LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
          FOR BNOLOCALLOOP=1 TO 9999
           DO
            APPROVALCODESEXCLUDED(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
           END
         END
-[Maximum number of late payments]
-       IF SEGMENT(LFLINE,1,4)="DQA:" THEN
+
+[ Maximum number of late payments ]
+       ELSE IF TMPPARAM="DQA" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         CUTOFFDQA=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         CUTOFFDQA=VALUE(TMPPARAMVAL)
         END
-       IF SEGMENT(LFLINE,1,4)="DQB:" THEN
+       ELSE IF TMPPARAM="DQB" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         CUTOFFDQB=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         CUTOFFDQB=VALUE(TMPPARAMVAL)
         END
-       IF SEGMENT(LFLINE,1,4)="DQC:" THEN
+       ELSE IF TMPPARAM="DQC" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         CUTOFFDQC=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         CUTOFFDQC=VALUE(TMPPARAMVAL)
         END
-       IF SEGMENT(LFLINE,1,4)="DQD:" THEN
+       ELSE IF TMPPARAM="DQD" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         CUTOFFDQD=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         CUTOFFDQD=VALUE(TMPPARAMVAL)
         END
-       IF SEGMENT(LFLINE,1,4)="DQE:" THEN
+       ELSE IF TMPPARAM="DQE" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         CUTOFFDQE=VALUE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
+         CUTOFFDQE=VALUE(TMPPARAMVAL)
         END
 
-[check for honoring of the skip first / skip last criteria ]
-       IF SEGMENT(LFLINE,1,5)="SFLE:" THEN
+[ check for honoring of the skip first / skip last criteria ]
+       ELSE IF TMPPARAM="SFLE" THEN
         DO
-         BNODEBUGMSG="    "+LFLINE
-         CALL BNODEBUGMSGADD
-         TEXT1=UPPERCASE(SEGMENT(LFLINE,6,LENGTH(LFLINE)))
-         CALL TEXTNLTS
-         IF UPPERCASE(TEXT1)="TRUE" THEN
+         IF UPPERCASE(TMPPARAMVAL)="TRUE" THEN
           HONORSKIPS=TRUE
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    SFLE="+TRUEFALSECHR(HONORSKIPS)
-           CALL BNODEBUGMSGADD
-          END
         END
 
-[grab test account list]
-       IF SEGMENT(LFLINE,1,4)="TNC:" THEN
+[ Check for test mode ]
+       ELSE IF TMPPARAM="TNC" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TEXT1=UPPERCASE(SEGMENT(LFLINE,5,LENGTH(LFLINE)))
-         CALL TEXTNLTS
-         IF TEXT1="TRUE" THEN
+         IF UPPERCASE(TMPPARAMVAL)="TRUE" THEN
           TESTMODE=TRUE
         END
 
-[Check for test mode]
-       IF SEGMENT(LFLINE,1,4)="TML:" THEN
+[ grab test account list ]
+       ELSE IF TMPPARAM="TML" THEN
         DO
-         IF BNOINCLUDEPARMINDEBUG=TRUE THEN
-          DO
-           BNODEBUGMSG="    "+LFLINE
-           CALL BNODEBUGMSGADD
-          END
-         TEXT1=SEGMENT(LFLINE,5,LENGTH(LFLINE))
-         CALL TEXTNLTS
          IF LENGTH(TEXT1)>=10 THEN
           TESTACCOUNTLIST=TEXT1
          IF TESTACCOUNTLIST<>"" THEN
@@ -1183,6 +1071,7 @@ PROCEDURE READCONFIGFILESETTINGS
         END
       END
     END [WHILE LFERROR=""]
+
    IF BNOINCLUDEPARMINDEBUG=TRUE THEN
     DO
      BNODEBUGMSG="*** CONFIGURATION FILE SETTINGS - END"
@@ -1190,35 +1079,64 @@ PROCEDURE READCONFIGFILESETTINGS
     END
   END [LFERROR=""]
 
+ IF READCONFIGERROR=FALSE THEN
+  DO
+
 [ validate test mode state]
- IF TESTMODE=TRUE AND
-    LENGTH(TESTACCOUNTLIST)<10 THEN
-  TESTMODE=FALSE
+   IF TESTMODE=TRUE AND
+      LENGTH(TESTACCOUNTLIST)<10 THEN
+    TESTMODE=FALSE
 
 [ Determine which fee to use]
- IF ACCOUNT:RELATIONSHIPOVERRIDE>0 AND
-   (ACCOUNT:RELATIONSHIPOVERRIDEEFFDATE=DATENULL OR
-    ACCOUNT:RELATIONSHIPOVERRIDEEFFDATE<=SYSTEMDATE) AND
-   (ACCOUNT:RELATIONSHIPOVERRIDEEXPDATE=DATENULL OR
-    ACCOUNT:RELATIONSHIPOVERRIDEEXPDATE>SYSTEMDATE) THEN [Rel Code Override]
-  FEEAMOUNT=FEEAMOUNTS(ACCOUNT:RELATIONSHIPOVERRIDE)
- ELSE IF ACCOUNT:RELATIONSHIPCODE>0 THEN [Relationship Code]
-  FEEAMOUNT=FEEAMOUNTS(ACCOUNT:RELATIONSHIPCODE)
- ELSE [Base fee]
-  FEEAMOUNT=FEEAMOUNTS(0)
+   IF ACCOUNT:RELATIONSHIPOVERRIDE>0 AND
+     (ACCOUNT:RELATIONSHIPOVERRIDEEFFDATE=DATENULL OR
+      ACCOUNT:RELATIONSHIPOVERRIDEEFFDATE<=SYSTEMDATE) AND
+     (ACCOUNT:RELATIONSHIPOVERRIDEEXPDATE=DATENULL OR
+      ACCOUNT:RELATIONSHIPOVERRIDEEXPDATE>SYSTEMDATE) THEN [Rel Code Override]
+    FEEAMOUNT=FEEAMOUNTS(ACCOUNT:RELATIONSHIPOVERRIDE)
+   ELSE IF ACCOUNT:RELATIONSHIPCODE>0 THEN [Relationship Code]
+    FEEAMOUNT=FEEAMOUNTS(ACCOUNT:RELATIONSHIPCODE)
+   ELSE [Base fee]
+    FEEAMOUNT=FEEAMOUNTS(0)
 
- IF FEEAMOUNT=0 THEN
-  FEEAMOUNT=FEEAMOUNTS(0)
+   IF FEEAMOUNT=0 THEN
+    FEEAMOUNT=FEEAMOUNTS(0)
 
 [ Check if time period is valid, and parse start and end dates ]
- IF TIMEPERIOD<>"" AND LENGTH(TIMEPERIOD)=21 THEN
+   IF TIMEPERIOD<>"" THEN
+    DO
+     POS=CHARACTERSEARCH(TIMEPERIOD,"-")
+     IF POS>10 THEN
+      DO
+       TEXT1=SEGMENT(TIMEPERIOD,1,POS-1)
+       CALL TEXTNLTS
+       IF LENGTH(TEXT1)=10 THEN
+        STARTDATE=DATE(VALUE(SEGMENT(TEXT1,1,2)),
+                    VALUE(SEGMENT(TEXT1,4,5)),
+                    VALUE(SEGMENT(TEXT1,7,10)))
+       TEXT1=SEGMENT(TIMEPERIOD,POS+1,LENGTH(TIMEPERIOD))
+       CALL TEXTNLTS
+       IF LENGTH(TEXT1)=10 THEN
+        ENDDATE=DATE(VALUE(SEGMENT(TEXT1,1,2)),
+                     VALUE(SEGMENT(TEXT1,4,5)),
+                     VALUE(SEGMENT(TEXT1,7,10)))
+      END
+    END
+  END
+ IF READCONFIGERROR=FALSE AND
+   (LOANTRACKINGTYPE<30 OR
+    LOANTRACKINGTYPE>99) THEN
   DO
-   STARTDATE=DATE(VALUE(SEGMENT(TIMEPERIOD,1,2)),
-                  VALUE(SEGMENT(TIMEPERIOD,4,5)),
-                  VALUE(SEGMENT(TIMEPERIOD,7,10)))
-   ENDDATE=DATE(VALUE(SEGMENT(TIMEPERIOD,12,13)),
-                VALUE(SEGMENT(TIMEPERIOD,15,16)),
-                VALUE(SEGMENT(TIMEPERIOD,18,21)))
+   READCONFIGERROR=TRUE
+   READCONFIGERRORMSG="Invalid Program Configuration Setup - Tracking Type"
+  END
+ IF READCONFIGERROR=FALSE AND
+    STARTDATE<>DATENULL AND
+    ENDDATE<>DATENULL AND
+    ENDDATE<=STARTDATE THEN
+  DO
+   READCONFIGERROR=TRUE
+   READCONFIGERRORMSG="Invalid start/end date(s)"
   END
 END [PROCEDURE]
 
@@ -1262,10 +1180,10 @@ PROCEDURE GETLOANDATA
     DO
      [default to none found]
      SERVICEFOUND=TRUE
-     FOR I=0 TO SERVICECODEMAX
+     FOR SERVICELOOP=1 TO SERVICECODEMAX
       DO
 [ One found, loan ineligible]
-       IF LOANSERVICECODE(I)=TRUE THEN
+       IF LOANSERVICECODE(SERVICELOOP)=TRUE THEN
         SERVICEFOUND=FALSE
       END
     END
@@ -1311,9 +1229,6 @@ PROCEDURE GETLOANDATA
    IF SKIPCOUNT>0 THEN
     LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODETIMESKIP)=TRUE
 
-
-[* 01/21/22 *]
-
 [* only evaluate the following settings if in test mode and the account is
 ** a test account or if running for everyone
 *]
@@ -1337,16 +1252,29 @@ PROCEDURE GETLOANDATA
 
 [* Maximum number of late payments *]
      IF ((CUTOFFDQA>0 AND
-         LOAN:PAYMENTHISTORY:2>=CUTOFFDQA) OR
+          LOAN:PAYMENTHISTORY:2>=CUTOFFDQA) OR     [11-30 Days DQ]
          (CUTOFFDQB>0 AND
-         LOAN:PAYMENTHISTORY:3>=CUTOFFDQB) OR
+          LOAN:PAYMENTHISTORY:3>=CUTOFFDQB) OR     [31-60 Days DQ]
          (CUTOFFDQC>0 AND
-         LOAN:PAYMENTHISTORY:4>=CUTOFFDQC) OR
+          LOAN:PAYMENTHISTORY:4>=CUTOFFDQC) OR     [61-90 Days DQ]
          (CUTOFFDQD>0 AND
-         LOAN:PAYMENTHISTORY:5>=CUTOFFDQD) OR
+          LOAN:PAYMENTHISTORY:5>=CUTOFFDQD) OR     [91-120 Days DQ]
          (CUTOFFDQE>0 AND
-         LOAN:PAYMENTHISTORY:6>=CUTOFFDQE)) THEN
+         LOAN:PAYMENTHISTORY:6>=CUTOFFDQE)) THEN  [121 & up Days DQ]
       LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEDQPAYMENTS)=TRUE
+
+     BNODEBUGMSG="LID:"+LOAN:ID+FORMAT("  CUTOFFDQA:99",CUTOFFDQA)+
+                 FORMAT("  DQB:99",CUTOFFDQB)+
+                 FORMAT("  DQC:99",CUTOFFDQC)+
+                 FORMAT("  DQD:99",CUTOFFDQD)+
+                 FORMAT("  DQE:99",CUTOFFDQE)
+     CALL BNODEBUGMSGADD
+     BNODEBUGMSG=FORMAT("LOANPYMNTHISTA:99",LOAN:PAYMENTHISTORY:2)+
+                 FORMAT("  HISTB:99",LOAN:PAYMENTHISTORY:3)+
+                 FORMAT("  HISTC:99",LOAN:PAYMENTHISTORY:4)+
+                 FORMAT("  HISTD:99",LOAN:PAYMENTHISTORY:5)+
+                 FORMAT("  HISTE:99",LOAN:PAYMENTHISTORY:6)
+     CALL BNODEBUGMSGADD
     END [IF TESTMODE=FALSE OR ...]
 
 [ If any codes are set, loan is ineligible]
@@ -1563,7 +1491,7 @@ PROCEDURE GETSKIPCRITERIA
         LNEWMATURITYDATE=LMATURITYDATE+28
 
 
-[* TEK-01/27 Adding check for skip first, skip last for freqs. 6,7,11,12 and adjusting due date
+[* Check for skip first, skip last for freqs. 6,7,11,12 and adjusting due date
 ** by one payment cycle (plus 2 weeks for freqs. 6 or 7, plus 1 week for freqs. 11 or 12 IF
 ** the new payment due falls into the skip first/skip last scenario. Maturity date will also be
 ** adjusted accordingly
@@ -1681,14 +1609,11 @@ PROCEDURE GETNEXTLID
  LID=TEXT1
 END [PROCEDURE]
 
-[
- Remove leading spaces from a text string.
-
- PASS:   TEXT1     The string to trim
- RETURN: TEXT1     The trimmed string
-]
 PROCEDURE TEXTNLS
-
+[* Remove leading spaces from a text string.
+** PASS:   TEXT1     The string to trim
+** RETURN: TEXT1     The trimmed string
+*]
  TT=1
  TEXTFOUND=FALSE
  WHILE (TT<=LENGTH(TEXT1) AND TEXTFOUND=FALSE)
@@ -1702,14 +1627,11 @@ PROCEDURE TEXTNLS
   TEXT1=SEGMENT(TEXT1,TT,LENGTH(TEXT1))
 END [PROCEDURE]
 
-[
- Remove trailing spaces from a text string.
-
- PASS:   TEXT1     The string to trim
- RETURN: TEXT1     The trimmed string
-]
 PROCEDURE TEXTNTS
-
+[* Remove trailing spaces from a text string.
+** PASS:   TEXT1     The string to trim
+** RETURN: TEXT1     The trimmed string
+*]
  TT=LENGTH(TEXT1)
  TEXTFOUND=FALSE
  WHILE (TT>0 AND TEXTFOUND=FALSE)
@@ -1722,20 +1644,17 @@ PROCEDURE TEXTNTS
  TEXT1=SEGMENT(TEXT1,1,TT)
 END [PROCEDURE]
 
-[
- Remove leading and trailing spaces from a text string.
-
- PASS:   TEXT1     The string to trim
- RETURN: TEXT1     The trimmed string
-]
 PROCEDURE TEXTNLTS
+[* Remove leading & trailing spaces from a text string.
+** PASS:   TEXT1     The string to trim
+** RETURN: TEXT1     The trimmed string
+*]
  CALL TEXTNLS
  CALL TEXTNTS
 END [PROCEDURE]
 
 PROCEDURE CLEANUPTEXT
-[* 04/16/20
-** Check character string and remove out any characters or hidden
+[* Check character string and remove out any characters or hidden
 ** characters which have an ASCII value which is not established in
 ** the VALIDCHRINPUT1 string in the SETUP division . This is to avoid
 ** display issues with displaying the terms or conditions. Additionally,
@@ -1779,7 +1698,8 @@ PROCEDURE BNOPRINTPROGRAMINFO
 **  PASS    BNOLASTMODDATE     Last mod date
 **  PASS    BNOLASTMODTIME     Last mod time
 *]
- PRINT BNOINDENT(1)+","
+ IF READCONFIGERROR=FALSE THEN
+  PRINT BNOINDENT(1)+","
  NEWLINE
  PRINT BNOINDENT(1)+Q+"programInfo"+Q+":"+Q+
                     BNOPROGRAMNAME+"  "+
@@ -1860,7 +1780,7 @@ PROCEDURE BNOPRINTDEBUG
       DO
        PRINT ","
        NEWLINE
-       PRINT BNOINDENT(3)+Q+[FORMAT("999-",BNODEBUGLOOP)+]Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,120)+Q
+       PRINT BNOINDENT(3)+Q+SEGMENT(BNODEBUGMSGLIST(BNODEBUGLOOP),1,120)+Q
       END [FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT]
     END [IF BNODEBUGCOUNT>0 THEN]
    PRINT BNOINDENT(2)+"]"
@@ -1869,6 +1789,4 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
-
 
