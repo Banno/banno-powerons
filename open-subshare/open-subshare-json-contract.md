@@ -315,6 +315,10 @@ Returns the results of the attempt. Because it's possible for the share to be cr
       "amount": "1.00",
       "successfulTransfer": true
     },
+    "fee": {
+      "amount": "1.00",
+      "successfulFee": true
+    },
     "newShareId": "35",
     "names": [
       {
@@ -340,6 +344,9 @@ Returns the results of the attempt. Because it's possible for the share to be cr
     - type: Type of funding
     - amount: Funding amount
     - successfulTransfer: Was the funding transfer successful? (boolean)
+  - fee: Fee details if a fee was charged
+    - amount: Fee amount
+    - successfulFee: Was the fee transaction successful? (boolean)
   - newShareId: The system assigned ID to the new Share
   - names: array of new name recors either created or copied over to the new Share
     - nameType: Name type description
