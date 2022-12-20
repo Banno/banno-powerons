@@ -4,7 +4,7 @@
 **  Copyright 2021 Jack Henry and Associates
 **
 **  03/08/2021 JuCarson        Original Author
-**  12/05/2022 RRobison        Refactor of code
+**  12/20/2022 RRobison        Refactor of code
 **
 **  This Banno PowerOn returns all data found in any given
 **  account level tracking record.
@@ -567,7 +567,7 @@ PROCEDURE GETCODEDATA
   END
  IF TRACKING:USERCODE8<>0 THEN 
   DO
-  TRKLABELINDEX=8
+   TRKLABELINDEX=8
    TRKDATACODE=TRACKING:USERCODE8
    CALL ADDTRKDATA
   END
@@ -627,7 +627,7 @@ PROCEDURE GETCODEDATA
   END
  IF TRACKING:USERCODE18<>0 THEN 
   DO
-  TRKLABELINDEX=18
+   TRKLABELINDEX=18
    TRKDATACODE=TRACKING:USERCODE18
    CALL ADDTRKDATA
   END
