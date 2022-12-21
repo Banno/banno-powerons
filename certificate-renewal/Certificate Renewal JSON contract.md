@@ -25,7 +25,9 @@
       "maturityDate": "01/01/21",
       "minimumBalance": "12345.67",
       "currentStatus": "Renew",
-      "currentTerm": "24 months",
+      "renewName": "24 MONTH CERTIFICATE",
+      "renewTermPeriod": 24,
+      "renewTermFrequency": "Months",
       "ineligibleIrsCode": false,
       "transfers": [
         {
@@ -163,17 +165,19 @@
   - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
   - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
-  - 5-**currentTerm**: The current term of the targeted certificate/club.
-  - 6-**transfers**: List of existing maturity tranfers.  Funds will be transferred to these shares/loans at maturity.
+  - 5-**renewName**: New share name/description for a certificate/club renewal.
+  - 6-**renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
+  - 7-**renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
+  - 8-**transfers**: List of existing maturity tranfers.  Funds will be transferred to these shares/loans at maturity.
     - 1-**transferSLID**: If the current maturity option includes transferring funds out of the CD, this will be the current 10-digit account number and share/loan ID.
     - 2-**transferName**: If the current maturity option includes transferring funds out of the CD, this will be the current name of the share/loan.
     - 3-**transferAmount**: If the current maturity option includes transferring funds out of the CD, this will be the current amount to be transferred.
     - 4-**transferPercent**: If the current maturity option includes transferring funds out of the CD, this will be the current percent to be transferred.
-  - 7-**autoTransfers**: List of existing auto tranfers.  If the current maturity option includes transferring into the CD, funds will be transferred from these shares at maturity.
+  - 9-**autoTransfers**: List of existing auto tranfers.  If the current maturity option includes transferring into the CD, funds will be transferred from these shares at maturity.
     - 1-**transferSLID**: The current 10-digit account number and share ID of the from share.
     - 2-**transferName**: The current name of the from share.
     - 3-**transferAmount**: The current transfer amount.
-  - 8-**ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
+  - 10-**ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
 
 - **_options_**: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
 
@@ -246,7 +250,9 @@
     "maturityDate": "01/01/21",
     "minimumBalance": "12345.67",
     "currentStatus": "Transfer",
-    "currentTerm": "24 months",
+    "renewName": "24 MONTH CERTIFICATE",
+    "renewTermPeriod": 24,
+    "renewTermFrequency": "Months",
     "transferSLId": "1234567890S0010",
     "transferAmount": "12345.67"
   }
@@ -258,9 +264,11 @@
   - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
   - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
   - 4-**currentStatus**: The new maturity option set for the targeted certificate/club.
-  - 5-**currentTerm**: The new term of the targeted certificate/club.
-  - 6-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  - 7-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+  - 5-**renewName**: New share name/description for a certificate/club renewal.
+  - 6-**renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
+  - 7-**renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
+  - 8-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+  - 9-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
 ## Unsuccessful Response:
 
