@@ -166,8 +166,8 @@ DEFINE
  INELIGIBLECODEMAXPAYMENT  = 8  [max payment amount exceeded]
  INELIGIBLECODETIMEOPEN    = 9  [loan not opened for sufficient time]
  INELIGIBLECODEPASTDUE     = 10 [past due grace days exceeded]
- INELIGIBLECODEFREQ        = 11 [has ineligibility payment freq]
- INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment countnot met]
+ INELIGIBLECODEFREQ        = 11 [has ineligible payment freq]
+ INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment count not met]
  INELIGIBLECODEAPPROVALCODE= 13 [has invalid approval code]
  INELIGIBLECODEDQPAYMENTS  = 14 [has excessive DQ paymrnt history]
 
@@ -801,7 +801,7 @@ PROCEDURE READCONFIGFILESETTINGS
        CALL TEXTNLTS
        TMPPARAM=TEXT1
        TEXT1=SEGMENT(LFLINE,POS+1,LENGTH(LFLINE))
-[Trim leading and trailing spaces from the paramater value unless it's
+[Trim leading and trailing spaces from the parameter value unless it's
  for the terms or conditions (TC)]
        IF TMPPARAM<>"TC" THEN
         CALL TEXTNLTS
