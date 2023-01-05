@@ -15,7 +15,7 @@
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 **
 **  Modification History:
-**    Ver. 1.0.0  12/07/22 R. Robison - Original Programming
+**    Ver. 1.0.0  01/04/23 R. Robison - Original Programming
 **
 **  Data will be passed to the subroutine specfile as follows:
 **
@@ -47,6 +47,7 @@ DEFINE
  SACFEEAMT=MONEY ARRAY(10)
  SACFEEDESC=CHARACTER ARRAY(10)
  SACFEEUSERGLCODE=NUMBER ARRAY(10)
+ 
  SACFEECOUNT=NUMBER
  SACFEEERROR=CHARACTER
  SACFEEMAX=10
