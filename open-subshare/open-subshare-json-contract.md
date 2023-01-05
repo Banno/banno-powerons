@@ -387,3 +387,4 @@ Returns the results of the attempt. Because it's possible for the share to be cr
 | 511  | Error creating new share                |
 | 512  | Maximum share limit error               |
 | 513  | Error calculating fee                   |
+| 514  | Error reading fee disclosure for group  |
