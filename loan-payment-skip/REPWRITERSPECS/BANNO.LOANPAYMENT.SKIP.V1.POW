@@ -47,9 +47,10 @@
 **               and current program test mode and account's test status.
 **  Ver. 1.1.1  03/04/2022: TKainz - Banno
 **              Corrected Configuration Letterfile name
-**  Ver. 1.1.2  12/15/2022: TKainz - Banno
+**  Ver. 1.1.2  01/12/2023: TKainz - Banno
 **              Modified CFG Letter file read error handling
 **              Corrected loan disqualification check loop
+**              Corrected test mode pay freq logic
 **              Reworked param LF read procedure
 **              Other code cleanup
 **
@@ -166,10 +167,10 @@ DEFINE
  INELIGIBLECODEMAXPAYMENT  = 8  [max payment amount exceeded]
  INELIGIBLECODETIMEOPEN    = 9  [loan not opened for sufficient time]
  INELIGIBLECODEPASTDUE     = 10 [past due grace days exceeded]
- INELIGIBLECODEFREQ        = 11 [has ineligibility payment freq]
- INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment countnot met]
+ INELIGIBLECODEFREQ        = 11 [has ineligible payment freq]
+ INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment count not met]
  INELIGIBLECODEAPPROVALCODE= 13 [has invalid approval code]
- INELIGIBLECODEDQPAYMENTS  = 14 [has excessive DQ paymrnt history]
+ INELIGIBLECODEDQPAYMENTS  = 14 [has excessive DQ payment history]
 
  FEEAMOUNT                 = MONEY
  LOANTRACKINGTYPE          = NUMBER
@@ -256,7 +257,7 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='12/15/22'
+ BNOLASTMODDATE='01/12/23'
  BNOLASTMODTIME="12:00 MT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
@@ -784,7 +785,8 @@ PROCEDURE READCONFIGFILESETTINGS
      CALL BNODEBUGMSGADD
     END
    TERMSLINESCOUNT=0
-   WHILE LFERROR=""
+   WHILE LFERROR="" AND
+         READCONFIGERROR=FALSE
     DO
      TMPPARAM=""
      TMPPARAMVAL=""
@@ -801,7 +803,7 @@ PROCEDURE READCONFIGFILESETTINGS
        CALL TEXTNLTS
        TMPPARAM=TEXT1
        TEXT1=SEGMENT(LFLINE,POS+1,LENGTH(LFLINE))
-[Trim leading and trailing spaces from the paramater value unless it's
+[Trim leading and trailing spaces from the parameter value unless it's
  for the terms or conditions (TC)]
        IF TMPPARAM<>"TC" THEN
         CALL TEXTNLTS
@@ -817,7 +819,6 @@ PROCEDURE READCONFIGFILESETTINGS
 
 [ Terms & conditions ]
        IF TMPPARAM="TC"  AND
-          READCONFIGERROR=FALSE AND
           TERMSLINESCOUNT<TERMSMAXLINES THEN
         DO
          TERMSLINESCOUNT=TERMSLINESCOUNT+1
@@ -829,12 +830,11 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Loan types ]
-       ELSE IF TMPPARAM="LT" AND
-               READCONFIGERROR=FALSE THEN
+       ELSE IF TMPPARAM="LT" THEN
         DO
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="ALL"
          LELISTINPUT=TMPPARAMVAL
-         IF LELISTINPUT="" THEN
-          LELISTINPUT="ALL"
          CALL LISTEXPAND
          FOUND=FALSE
          FOR I=0 TO TYPESMAX
@@ -851,23 +851,23 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Loan service codes ]
-       ELSE IF TMPPARAM="SC" AND
-               READCONFIGERROR=FALSE THEN
+       ELSE IF TMPPARAM="SC" THEN
         DO
          LELISTINPUT=TMPPARAMVAL
          IF LELISTINPUT="" THEN
           LELISTINPUT="NONE"
          CALL LISTEXPAND
-         FOR I=0 TO SERVICECODEMAX
+         FOR I=1 TO SERVICECODEMAX
           DO
            LOANSERVICECODE(I)=LELIST(I)
           END
         END
 
 [ Loan warning codes ]
-       ELSE IF TMPPARAM="LW" AND
-               READCONFIGERROR=FALSE THEN
+       ELSE IF TMPPARAM="LW" THEN
         DO
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="NONE"
          LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
          FOR I=1 TO WARNINGSMAX
@@ -877,9 +877,10 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Acct warning codes ]
-       ELSE IF TMPPARAM="AW" AND
-               READCONFIGERROR=FALSE THEN
+       ELSE IF TMPPARAM="AW" THEN
         DO
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="NONE"
          LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
          FOR I=1 TO WARNINGSMAX
@@ -889,8 +890,7 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Share types ]
-       ELSE IF TMPPARAM="ST" AND
-               READCONFIGERROR=FALSE THEN
+       ELSE IF TMPPARAM="ST" THEN
         DO
          LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
@@ -942,9 +942,17 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Loan tracking type ]
-       ELSE IF TMPPARAM="TT" THEN
+       ELSE IF TMPPARAM="TT" AND
+               TMPPARAMVAL<>"" THEN
         DO
-         LOANTRACKINGTYPE=VALUE(TMPPARAMVAL)
+         IF VALUE(TMPPARAMVAL)>=30 AND
+            VALUE(TMPPARAMVAL)<=99 THEN
+          LOANTRACKINGTYPE=VALUE(TMPPARAMVAL)
+         ELSE
+          DO
+           READCONFIGERROR=TRUE
+           READCONFIGERRORMSG=FORMAT("Invalid loan tracking type: ###9",VALUE(TMPPARAMVAL))
+          END
         END
 
 [ Max skips per year ]
@@ -960,15 +968,32 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Sub Source Code for Fee ]
-       ELSE IF TMPPARAM="SS" THEN
+       ELSE IF TMPPARAM="SS" AND
+               TMPPARAMVAL<>"" THEN
         DO
-         SUBSOURCECODE=VALUE(TMPPARAMVAL)
+         IF VALUE(TMPPARAMVAL)>=0 AND
+            VALUE(TMPPARAMVAL)<=50 THEN
+          SUBSOURCECODE=VALUE(TMPPARAMVAL)
+         ELSE
+          DO
+           READCONFIGERROR=TRUE
+           READCONFIGERRORMSG=FORMAT("Invalid sub source code: 999",VALUE(TMPPARAMVAL))
+          END
         END
 
+
 [ OTHERACTION for Fee ]
-       ELSE IF TMPPARAM="OA" THEN
+       ELSE IF TMPPARAM="OA" AND
+               TMPPARAMVAL<>"" THEN
         DO
-         OTHERACTION=VALUE(TMPPARAMVAL)
+         IF VALUE(TMPPARAMVAL)>=0 AND
+            VALUE(TMPPARAMVAL)<=1 THEN
+          OTHERACTION=VALUE(TMPPARAMVAL)
+         ELSE
+          DO
+           READCONFIGERROR=TRUE
+           READCONFIGERRORMSG=FORMAT("Invalid other action: 999",VALUE(TMPPARAMVAL))
+          END
         END
 
 [ Transaction comment for Fee ]
@@ -976,6 +1001,7 @@ PROCEDURE READCONFIGFILESETTINGS
         DO
          FEECOMMENT=TMPPARAMVAL
         END
+
 [ Eligible payment frequencies ]
        ELSE IF TMPPARAM="EPF" THEN
         DO
@@ -1063,13 +1089,15 @@ PROCEDURE READCONFIGFILESETTINGS
 [ grab test account list ]
        ELSE IF TMPPARAM="TML" THEN
         DO
-         IF LENGTH(TEXT1)>=10 THEN
-          TESTACCOUNTLIST=TEXT1
+         IF LENGTH(TMPPARAMVAL)>=10 THEN
+          TESTACCOUNTLIST=TMPPARAMVAL
          IF TESTACCOUNTLIST<>"" THEN
-          IF CHARACTERSEARCH(TESTACCOUNTLIST,ACCOUNT:NUMBER)>0 THEN
-           VALIDTESTACCOUNT=TRUE
+          DO
+           IF CHARACTERSEARCH(TESTACCOUNTLIST,ACCOUNT:NUMBER)>0 THEN
+            VALIDTESTACCOUNT=TRUE
+          END
         END
-      END
+      END [IF TMPPARAM<>"" THEN]
     END [WHILE LFERROR=""]
 
    IF BNOINCLUDEPARMINDEBUG=TRUE THEN
@@ -1081,11 +1109,6 @@ PROCEDURE READCONFIGFILESETTINGS
 
  IF READCONFIGERROR=FALSE THEN
   DO
-
-[ validate test mode state]
-   IF TESTMODE=TRUE AND
-      LENGTH(TESTACCOUNTLIST)<10 THEN
-    TESTMODE=FALSE
 
 [ Determine which fee to use]
    IF ACCOUNT:RELATIONSHIPOVERRIDE>0 AND
@@ -1123,13 +1146,20 @@ PROCEDURE READCONFIGFILESETTINGS
       END
     END
   END
+
+[* Check for at least one test account if test mode is on
+*]
  IF READCONFIGERROR=FALSE AND
-   (LOANTRACKINGTYPE<30 OR
-    LOANTRACKINGTYPE>99) THEN
+    TESTMODE=TRUE AND
+    LENGTH(TESTACCOUNTLIST)<10 THEN
   DO
    READCONFIGERROR=TRUE
-   READCONFIGERRORMSG="Invalid Program Configuration Setup - Tracking Type"
+   READCONFIGERRORMSG="Test mode on but no test account(s) defined"
   END
+
+[*Check for valid start and end dates. if both dates are present in the
+** config Letter file then the end date must be after the start date.
+*]
  IF READCONFIGERROR=FALSE AND
     STARTDATE<>DATENULL AND
     ENDDATE<>DATENULL AND
@@ -1310,9 +1340,9 @@ PROCEDURE GETSKIPCRITERIA
    LDESCRIPTION=TMPCHR
 
    IF DUEDATECALCTYPE(LOAN:PAYMENTFREQUENCY)="F" AND
-      TESTMODE=FALSE OR
-     (TESTMODE=TRUE AND
-      VALIDTESTACCOUNT=TRUE) THEN
+      (TESTMODE=FALSE OR
+      (TESTMODE=TRUE AND
+       VALIDTESTACCOUNT=TRUE)) THEN
     DO
      BNODEBUGMSG="Evaluating LOAN "+LID+" by frequency  - "+FORMAT("Freq=99",LOAN:PAYMENTFREQUENCY)
 
@@ -1472,10 +1502,10 @@ PROCEDURE GETSKIPCRITERIA
        IF LMATURITYDATE<>DATENULL THEN
         LNEWMATURITYDATE=DATEOFFSET(LMATURITYDATE,2,LOAN:DUEDAY1)
       END
-     BNODEBUGMSG=BNODEBUGMSG+FORMAT("  OLD DUE:99/99/99",LDUEDATE)+
-                             FORMAT("  NEW DUE:99/99/99",LNEWDUEDATE)+
-                             FORMAT("  OLD MAT:99/99/99",LMATURITYDATE)+
-                             FORMAT("  NEW MAT:99/99/99",LNEWMATURITYDATE)
+     BNODEBUGMSG=BNODEBUGMSG+FORMAT("  OLD DUE:99/99/9999",LDUEDATE)+
+                             FORMAT("  NEW DUE:99/99/9999",LNEWDUEDATE)+
+                             FORMAT("  OLD MAT:99/99/9999",LMATURITYDATE)+
+                             FORMAT("  NEW MAT:99/99/9999",LNEWMATURITYDATE)
      CALL  BNODEBUGMSGADD
     END
    ELSE [Next due date cals is 1 month / 28 days]
@@ -1540,10 +1570,10 @@ PROCEDURE GETSKIPCRITERIA
           END
         END [IF HONORSKIPS=TRUE]
        BNODEBUGMSG="Evaluating LOAN "+LID+" by 28 day - "+FORMAT("Freq=99",LOAN:PAYMENTFREQUENCY)+
-                    FORMAT("  OLD DUE:99/99/99",LDUEDATE)+
-                    FORMAT("  NEW DUE:99/99/99",LNEWDUEDATE)+
-                    FORMAT("  OLD MAT:99/99/99",LMATURITYDATE)+
-                    FORMAT("  NEW MAT:99/99/99",LNEWMATURITYDATE)
+                    FORMAT("  OLD DUE:99/99/9999",LDUEDATE)+
+                    FORMAT("  NEW DUE:99/99/9999",LNEWDUEDATE)+
+                    FORMAT("  OLD MAT:99/99/9999",LMATURITYDATE)+
+                    FORMAT("  NEW MAT:99/99/9999",LNEWMATURITYDATE)
        CALL  BNODEBUGMSGADD
       END
      ELSE
@@ -1571,10 +1601,10 @@ PROCEDURE GETSKIPCRITERIA
           LNEWMATURITYDATE=DATEOFFSET(LMATURITYDATE,1,LOAN:DUEDAY1)
         END
        BNODEBUGMSG="Evaluating LOAN "+LID+" by std month - "+FORMAT("Freq=99",LOAN:PAYMENTFREQUENCY)+
-                   FORMAT("  OLD DUE:99/99/99",LDUEDATE)+
-                   FORMAT("  NEW DUE:99/99/99",LNEWDUEDATE)+
-                   FORMAT("  OLD MAT:99/99/99",LMATURITYDATE)+
-                   FORMAT("  NEW MAT:99/99/99",LNEWMATURITYDATE)
+                   FORMAT("  OLD DUE:99/99/9999",LDUEDATE)+
+                   FORMAT("  NEW DUE:99/99/9999",LNEWDUEDATE)+
+                   FORMAT("  OLD MAT:99/99/9999",LMATURITYDATE)+
+                   FORMAT("  NEW MAT:99/99/9999",LNEWMATURITYDATE)
        CALL  BNODEBUGMSGADD
       END
     END
@@ -1789,4 +1819,5 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
 
