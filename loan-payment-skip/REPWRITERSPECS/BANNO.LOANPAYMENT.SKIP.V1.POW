@@ -1,4 +1,4 @@
-[*  Copyright 2019-2022 Jack Henry and Associates
+[*  Copyright 2019-2023 Jack Henry
 **
 **  PowerOn Name:                   BANNO.LOANPAYMENT.SKIP.V1.POW
 **  Configuration Letterfile Name:  BANNO.LOANPAYMENT.SKIP.CFG
@@ -670,6 +670,7 @@ PROCEDURE INITIALIZEDATA
  STARTDATE=DEFAULTSTARTDATE
  ENDDATE=DEFAULTENDDATE
  HONORSKIPS=FALSE
+ LOANSEASON=0
  GENERICUSERERRORMSG="We're sorry we've encountered an error. "+
                      "Please contact your credit union."
 
@@ -892,6 +893,8 @@ PROCEDURE READCONFIGFILESETTINGS
 [ Share types ]
        ELSE IF TMPPARAM="ST" THEN
         DO
+         IF TMPPARAMVAL="" THEN
+          TMPPARAMVAL="ALL"
          LELISTINPUT=TMPPARAMVAL
          CALL LISTEXPAND
          FOR I=1 TO TYPESMAX
@@ -935,7 +938,8 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Fee amount(s) ]
-       ELSE IF TMPPARAM="FA" THEN
+       ELSE IF TMPPARAM="FA" AND
+               TMPPARAMVAL<>"" THEN
         DO
          FEEAMOUNTS(VALUE(SEGMENT(TMPPARAMVAL,1,2)))=
                     MONEY(VALUE(SEGMENT(TMPPARAMVAL,4,LENGTH(TMPPARAMVAL))))
@@ -956,13 +960,15 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [ Max skips per year ]
-       ELSE IF TMPPARAM="PS" THEN
+       ELSE IF TMPPARAM="PS" AND
+               TMPPARAMVAL<>"" THEN
         DO
          MAXSKIPS=VALUE(TMPPARAMVAL)
         END
 
 [ Min months since last skip ]
-       ELSE IF TMPPARAM="MM" THEN
+       ELSE IF TMPPARAM="MM" AND
+               TMPPARAMVAL<>"" THEN
         DO
          MINMONTHSINCE=VALUE(TMPPARAMVAL)
         END
