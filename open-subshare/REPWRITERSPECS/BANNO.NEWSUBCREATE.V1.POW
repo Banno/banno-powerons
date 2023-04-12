@@ -57,6 +57,10 @@
 **              1. Added code that limits the maximum number of shares of each type that can be created.
 **              2. Added new account fee support via BANNO.NEWSUBCREATE.FEES.V1.POW.
 **
+**  Ver. 1.2.1  04/12/23 JuCarson
+**              1. Corrected rate calcs for balance tables starting with a balance limit of $0.00.
+**              2. Corrected rate calc issue where 10th balance range in table was not being read.
+**
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
 **
@@ -550,11 +554,11 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.2.0"
- LASTMODDATE='01/04/23'
- LASTMODTIME="20:00 MT"
- PROGRAMUPDATENOTE1="Added new share create limit"
- PROGRAMUPDATENOTE2="Added fee support"
+ PROGRAMVERSION="1.2.1"
+ LASTMODDATE='04/12/23'
+ LASTMODTIME="12:00 ET"
+ PROGRAMUPDATENOTE1="Corrected issues with"
+ PROGRAMUPDATENOTE2="dividend calculations"
  CONFIGPROGRAMMINDATE='10/20/22'
 
  BNODEBUGMODE=BNODEBUGMODEOFF
@@ -2476,22 +2480,27 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
        NEWSHAREDIVDEFBALCUTOFF     = $0.00
        NEWSHAREDIVDEFPREVBALCUTOFF = $0.00
 
-       WHILE DR<10 AND RATEDONE=FALSE
+       WHILE DR<=10 AND RATEDONE=FALSE
         DO
          NEWSHAREDIVDEFRATE=GETDATARATE(GETPARAMDIVDEFRATE,NEWSHAREDIVTYPE,DR)           [GET RATE]
          NEWSHAREDIVDEFBALCUTOFF=GETDATAMONEY(GETPARAMDIVDEFBALCUTOFF,NEWSHAREDIVTYPE,DR)[GET BAL CUTOFF]
 
-         IF DR=1 AND                                    [1st time & orig.bal less than first cutoff]
-            TRANSFERAMOUNT<NEWSHAREDIVDEFBALCUTOFF THEN
+         IF DR=1 THEN                                            [1st time ]
           DO
-           NEWSHARERATE=NEWSHAREDIVDEFRATE
-           RATEDONE=TRUE
-          END
-
-         IF DR=1 AND                                    [1st time, establish low range]
-            TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN
-          DO
-           NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
+           IF NEWSHAREDIVDEFBALCUTOFF=$0.00 THEN                 [first cutoff is $0.00]
+            DO
+             NEWSHARERATE=NEWSHAREDIVDEFRATE
+             RATEDONE=TRUE
+            END
+           ELSE IF TRANSFERAMOUNT<NEWSHAREDIVDEFBALCUTOFF THEN    [else orig.bal less than first cutoff]
+            DO
+             NEWSHARERATE=NEWSHAREDIVDEFRATE
+             RATEDONE=TRUE
+            END
+           ELSE IF TRANSFERAMOUNT>=NEWSHAREDIVDEFBALCUTOFF THEN   [else establish low range]                                   
+            DO
+             NEWSHAREDIVDEFPREVBALCUTOFF=NEWSHAREDIVDEFBALCUTOFF
+            END
           END
 
          IF DR>1 AND
