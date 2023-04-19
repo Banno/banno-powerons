@@ -49,6 +49,10 @@
 **               * Added Reg E flag to be set to true for immediate transfer
 **               * Added Share transfer user created check to logic determining
 **                  whether to allow edit of manually created share transfers.
+**   Ver. 3.1.0  04/19/2023 R. Robison - Added support for label soft text on
+**               the member name and id input.  These labels are for the sub-title
+**               text under the main labels.
+**           
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -349,11 +353,11 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.0.0"
- LASTMODDATE               = '10/10/2022'
- LASTMODTIME               = "10:30 MT"
- PROGRAMUPDATENOTE1        = "added test mode, updated logic for immediate xfer."
- PROGRAMUPDATENOTE2        = "Modified savings,checking,cert refs to share"
+ PROGRAMVERSION            = "3.1.0"
+ LASTMODDATE               = '04/19/2023'
+ LASTMODTIME               = "11:00 MT"
+ PROGRAMUPDATENOTE1        = "added support for label soft text"
+ PROGRAMUPDATENOTE2        = ""
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
  NTACCESSTYPE              = NTACCESSTYPEIQ
