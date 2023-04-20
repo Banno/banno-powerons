@@ -1640,7 +1640,7 @@ PROCEDURE PRINTCURRENTSTATE
 *]
  IF PARAMLBLMEMBERNAME<>"" OR PARAMLBLID<>"" THEN
   DO
-   PRINT Q+",labels"+Q+": {"
+   PRINT ","+Q+"labels"+Q+": {"
    NEWLINE
    PRINT Q+"memberNameSubTitle"+Q+": "+Q+PARAMLBLMEMBERNAME+Q+","
    NEWLINE
