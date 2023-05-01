@@ -56,10 +56,12 @@
 **  Ver. 1.2.0  01/04/23 RRobison - New Feature
 **              1. Added code that limits the maximum number of shares of each type that can be created.
 **              2. Added new account fee support via BANNO.NEWSUBCREATE.FEES.V1.POW.
-**
 **  Ver. 1.2.1  04/12/23 JuCarson
 **              1. Corrected rate calcs for balance tables starting with a balance limit of $0.00.
 **              2. Corrected rate calc issue where 10th balance range in table was not being read.
+**  Ver. 1.2.2  05/01/23 JuCarson
+**              1. Corrected rate calc for rate selection of 0 (fixed) to get rate from first balance
+**                 range slot in dividend type definitions. 
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -554,11 +556,11 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.2.1"
- LASTMODDATE='04/12/23'
- LASTMODTIME="12:00 ET"
- PROGRAMUPDATENOTE1="Corrected issues with"
- PROGRAMUPDATENOTE2="dividend calculations"
+ PROGRAMVERSION="1.2.2"
+ LASTMODDATE='05/01/23'
+ LASTMODTIME="11:00 ET"
+ PROGRAMUPDATENOTE1="Corrected issue with fixed"
+ PROGRAMUPDATENOTE2="dividend calculations."
  CONFIGPROGRAMMINDATE='10/20/22'
 
  BNODEBUGMODE=BNODEBUGMODEOFF
@@ -2459,8 +2461,13 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
     END
    IF NEWSHAREDIVDEFDEFINED=1 THEN
     DO
-     IF NEWSHAREDIVDEFRATESELECT<>1 THEN   [NOT A FILL IN RATE]
+     IF NEWSHAREDIVDEFRATESELECT>1 THEN   [NOT A FILL IN RATE]
       DO
+       RATEDONE=TRUE
+      END
+     ELSE IF NEWSHAREDIVDEFRATESELECT=0 THEN   [FIXED FILL IN FROM DIV DEFINITIONS]
+      DO
+       NEWSHARERATE=GETDATARATE(GETPARAMDIVDEFRATE,NEWSHAREDIVTYPE,1)           [GET RATE FROM FIRST SLOT]
        RATEDONE=TRUE
       END
      ELSE IF NEWSHAREDIVDEFRATESELECT=1 AND   [FILL IN FROM SHARE DEFAULTS]
