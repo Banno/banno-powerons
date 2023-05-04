@@ -1,0 +1,1628 @@
+
+[* <COPYRIGHT>
+**   Copyright 2023, Jack Henry & Associates
+**
+** <NAME>
+**   RB.PREFACCESS.SSNMATCHING
+**
+** <VERSION>
+**   1.0.0
+**
+** <SUMMARY>
+**   This Batch PowerOn Allows the user to create, update or remove
+**   Preference Access (PA) records based upon Primary Name SSN matching
+**   using the input of various user changeable options.
+**
+** <DETAIL>
+1. For each open account which meets the following criteria:
+**    a. has a preference record.
+**    b. is not an excluded account type.
+**    c. if test mode is being used is one of the listed test accounts.
+** 2. Create a list of existing PA records. Mark each record with a
+**    status of UNKNOWN
+** 3. Loop through the list of existing PA records, looking for those
+**    with an ID type of 2 (unrestricted). For those PA records found,
+**    check the list for other PA records pointing to the same account
+**    and if any are found, mark them as INVALID (as they are
+**    redundant).
+** 4. Taking the primary SSN, search the database, generating a list of
+**    alternate accounts where the SSN is found. The program can process
+**    a list of up to 300 alternate accounts for any given home account.
+**    a. For each alternate account, look for the SSN. If the SSN is not
+**       found at the account level, then continue the search with any
+**       eligible Shares, Loans and External Loans.
+** 5. For each match found, look through the PA list
+**    a. If there is already an existing PA record pointing to the
+**       target Account, Share, Loan or External Loan, mark the PA
+**       record status as VALID.
+**    b. If a PA match is not found, add a new PA record to the list and
+**       mark its’ status as NEW.
+** 6. Loop through the final list of PA records.
+**    a. If the record’s current status is UNKNOWN process the record
+**       further based upon the CFG Letter file parameter.
+**      i. If the invalid Preference Access Records Processing parameter
+**         is set to DELETE, change the record’s status to INVALID
+**      ii. If the parameter is set to IGNORE then set the record’s
+**          status to IGNORE
+**      iii. If the parameter is set to VALIDATE then validate that the
+**           PA record points to a valid account and, as appropriate a
+**           valid Share, Loan or External Loan and if so, mark the
+**           record’s status as VALID otherwise, change the record’s
+**           status to INVALID.
+**    b. If the record’s status is VALID and the access flags (WD,
+**       Inquiry, Deposit) do not match the related settings in the CFG
+**       Letter file, mark the record for UPDATE.
+**    c. Process the PA record based upon its’ final record status.
+**      i. If the status is NEW, create a new PA record.
+**      ii. If the status is UPDATE, update the existing PA record so
+**          the access flags match the current CFG Letter file settings.
+**      iii. If the status is INVALID, delete the PA record.
+**      iv. If the status is IGNORE, leave the PA record as-is.
+**    d. Update the report with the account and PA list information
+**       along with the action taken for each of the PA records.
+**    e. Output the necessary data to the FM report to be used by Misc.
+**       Processing to update the member’s accounts.
+**
+** <PROMPTS>
+**   There are no batch prompts as the program's run-time parameters are
+**   set in a configuration Letter file.
+**
+** <INPUT>
+**   <LETTERFILE>
+**     PREFACCESS.SSNMATCHING.CFG
+**       Program configuration parameters. Instructions for setting
+**       parameters are within the Letter file.
+** <OUTPUT>
+**   <REPORTS>
+**     Pref Access SSN Update RPT
+**       Summary Report
+**     Pref Access SSN Update FM
+**       Used by Misc. Processing to update the member's accounts
+**
+** <SUPPORT FILES>
+**
+** <FM PERFORMED>
+**   Preference Access records created, updated and/or deleted
+**
+** <ADDITIONAL INFO>
+**   The program can process up to 200 alternate accounts for each
+**   home account found and up to
+** <SETUP>
+**   Update configuration Letter file as needed
+**
+** <RUNTIME>
+**   1. Run this program from batch control.
+**   2. From batch control, run Miscellaneous Processing using the report titled
+**     "Pref Access SSN Update FM" as input and verify the Miscellaneous
+**      Processing run completed successfully and results are satisfactory.
+**
+** <MOD HISTORY>
+**   <VER 1.0.0>
+**     PROGRAMMER:  TKainz Symitar
+**     DATE:        05/03/2023
+**     RELEASE:     2022.01 SP2
+**     CASE/DEFECT: N/A - Internal
+**     DETAILS:     Original Programming
+**
+*]
+
+TARGET=ACCOUNT
+
+DEFINE
+ #INCLUDE "RD.GETDATA.DEF"
+ #INCLUDE "RB.LISTEXPAND.DEF"
+ #INCLUDE "RD.OUTPUT.DEF"
+ TRUE                        = 1
+ FALSE                       = 0
+ DATENULL                    = '--/--/--'
+ BNODEBUGMODEOFF             = 0
+ BNODEBUGMODEON              = 1
+ BNOACCTTYPESMAX             = 9999
+ BNONAMETYPESMAX             = 99
+ BNOEXTLOANTYPESMAX          = 8
+ BNOCFGPARAMMAX              = 19
+ BNOERRORCODENONE            = 0
+ BNOECODECFGOPENERROR        = 510
+ BNOECODECFGREADERROR        = 511
+ BNOECODECFGDUPLICATEENTRY   = 512
+ PASTATUSUNKNOWN             = 0
+ PASTATUSVALID               = 1
+ PASTATUSNEW                 = 2
+ PASTATUSINVALID             = 3
+ PASTATUSUPDATE              = 4
+ PASTATUSIGNORE              = 5
+
+ PACOUNTMAX                  = 300
+ PAVALIDATE                  = 0
+ PADELETE                    = 1
+ PAIGNORE                    = 2
+ TARGETACCTMAX               = 200
+
+ NO                          = 0
+ YES                         = 1
+ EXISTING                    = 2
+ NEW                         = 3
+
+ ACCOUNTADDED                = NUMBER
+ ACCOUNTCOUNT                = NUMBER
+ ACCOUNTLIMIT                = NUMBER
+ ACCTCLOSEDATE               = DATE
+ ACCTNAMEFOUND               = NUMBER
+ BASEACCOUNT                 = CHARACTER
+ BNOCFGFILEERROR             = CHARACTER
+ BNOCFGFILEFERROR            = CHARACTER
+ BNOCFGFILELINE              = CHARACTER
+ BNOCFGFILENAME              = CHARACTER
+ BNOCFGFILENUMBER            = NUMBER
+ BNOCFGPARAM                 = CHARACTER ARRAY(19)
+ BNOCFGPARAMCOUNT            = NUMBER
+ BNOCFGPARAMVAL              = CHARACTER ARRAY(19)
+ BNODEBUGLFERROR             = CHARACTER
+ BNODEBUGLFLINE              = CHARACTER
+ BNODEBUGLFNUM               = NUMBER
+ BNODEBUGLFTITLE             = CHARACTER
+ BNODEBUGMODE                = NUMBER
+ BNODEBUGMSG                 = CHARACTER
+ BNOERRORCODE                = NUMBER
+ BNOIDLENGTH                 = NUMBER
+ BNOLOCALLOOP                = NUMBER
+ BNOPARAMFIND                = CHARACTER
+ BNOPARAMFOUND               = NUMBER
+ BNOPARAMLOOP                = NUMBER
+ BNOPARAMTMP                 = CHARACTER
+ BNOPARAMVAL                 = CHARACTER
+ BNOPARAMVALTMP              = CHARACTER
+ BNOPOS                      = NUMBER
+ BNOREADCONFIGERROR          = NUMBER
+ BNOREADCONFIGERRORMSG       = CHARACTER
+ BNOREADCONFIGRESPONSEMSG    = CHARACTER
+ BNORESPONSECODE             = NUMBER
+ BNOSLTYPELENGTH             = NUMBER
+ BNOSLTYPESMAX               = NUMBER
+ BNOTEXT                     = CHARACTER
+ BNOTMPLOOP                  = NUMBER
+ BNOTRUEFALSECHR             = CHARACTER ARRAY(1)
+ BNOVALIDRANGEINPUT          = NUMBER
+ DEBUGSTATE                  = CHARACTER
+ EXTLOANCLOSEDATE            = DATE
+ EXTLOANNAMEFOUND            = NUMBER
+ FIRSTPAGE                   = NUMBER
+ FMFILEERROR                 = CHARACTER
+ FMFILENUMBER                = NUMBER
+ FMFILETITLE                 = CHARACTER
+ FOUND                       = NUMBER
+ IRSCODEFOUND                = NUMBER
+ LOANCLOSEDATE               = DATE
+ LOANNAMEFOUND               = NUMBER
+ MAXACCOUNTS                 = NUMBER
+ NAMEFOUND                   = NUMBER
+ PACHECKLOOP                 = NUMBER
+ PACOUNT                     = NUMBER
+ PAFINDLOOP                  = NUMBER
+ PAFOUND                     = NUMBER
+ PALISTLOOP                  = NUMBER
+ PALOCCHR                    = CHARACTER
+ PALOOP                      = NUMBER
+ PARAMEXCLUDEIRSCODES        = NUMBER
+ PARAMINVALIDSSN             = CHARACTER
+ PARAMINVHOMEACCTTYPES       = NUMBER ARRAY(9999)
+ PARAMINVTARGETACCTTYPES     = NUMBER ARRAY(9999)
+ PARAMINVTARGETEXTLOANTYPES  = NUMBER ARRAY(8)
+ PARAMINVTARGETLOANTYPES     = NUMBER ARRAY(9999)
+ PARAMINVTARGETSHARETYPES    = NUMBER ARRAY(9999)
+ PARAMPROCESSPAFLAG          = NUMBER
+ PARAMSETDPFLAG              = NUMBER
+ PARAMSETIQFLAG              = NUMBER
+ PARAMSETWDFLAG              = NUMBER
+ PARAMVALIDNAMETYPES         = NUMBER ARRAY(99)
+ PARECORDFOUND               = NUMBER
+ PASTATUSCHR                 = CHARACTER ARRAY(5)
+ PATYPE2INELIGIBLE           = NUMBER
+ PAUNRESTRICTEDCREATED       = NUMBER
+ PREFACCESSACCT              = CHARACTER ARRAY(300)
+ PREFACCESSENABLEDP          = NUMBER ARRAY(300)
+ PREFACCESSENABLEIQ          = NUMBER ARRAY(300)
+ PREFACCESSENABLEWD          = NUMBER ARRAY(300)
+ PREFACCESSEXTLOANACCTNUM    = CHARACTER ARRAY(300)
+ PREFACCESSID                = CHARACTER ARRAY(300)
+ PREFACCESSIDTYPE            = NUMBER ARRAY(300)
+ PREFACCESSLOC               = NUMBER ARRAY(300)
+ PREFACCESSSTATUS            = NUMBER ARRAY(300)
+ PREFACCESSSTATUSREASON      = CHARACTER ARRAY(300)
+ PREFLOC                     = NUMBER
+ PREFLOCCHR                  = CHARACTER
+ PRINTREPORTHEADER           = NUMBER
+ RECCLOSEDATE                = DATE
+ SHARECLOSEDATE              = DATE
+ SHARENAMEFOUND              = NUMBER
+ SOURCESSN                   = CHARACTER
+ TARGETACCTCOUNT             = NUMBER
+ TARGETACCTFOUND             = NUMBER
+ TARGETACCTLOOP              = NUMBER
+ TARGETACCTS                 = CHARACTER(10) ARRAY(200)
+ TESTACCOUNTS                = CHARACTER
+ TMPACCT                     = CHARACTER
+ TMPCHR                      = CHARACTER
+ TMPEXTLOANACCT              = CHARACTER
+ TMPPAACCT                   = CHARACTER
+ TMPPADP                     = NUMBER
+ TMPPAID                     = CHARACTER
+ TMPPAIDTYPE                 = NUMBER
+ TMPPAIQ                     = NUMBER
+ TMPPAWD                     = NUMBER
+ UNRESTRICTEDFOUND           = NUMBER
+
+END [DEFINE]
+
+SETUP
+ FIRSTPAGE                   = TRUE
+ PRINTREPORTHEADER           = TRUE
+
+ BNODEBUGLFTITLE             = "PREFACCESS.SSNMATCHING.DB"
+ BNOCFGFILENAME              = "PREFACCESS.SSNMATCHING.CFG"
+ FMFILETITLE                 = "Pref Access SSN Update FM"
+
+ BNOIDLENGTH                 = GETDATANUMBER(GETPARAMIDLENGTH)
+ BNOSLTYPELENGTH             = GETDATANUMBER(GETPARAMTYPELENGTH)
+ BNOSLTYPESMAX               = VALUE(SEGMENT("9999",1,BNOSLTYPELENGTH))
+ BNOREADCONFIGERROR          = FALSE
+ BNOREADCONFIGERRORMSG       = ""
+ BNOERRORCODE                = 0
+ BNOTRUEFALSECHR(FALSE)      = "FALSE"
+ BNOTRUEFALSECHR(TRUE)       = "TRUE"
+
+ PASTATUSCHR(PASTATUSUNKNOWN)= "UNKNOWN"
+ PASTATUSCHR(PASTATUSVALID)  = "VALID"
+ PASTATUSCHR(PASTATUSNEW)    = "NEW"
+ PASTATUSCHR(PASTATUSINVALID)= "INVALID"
+ PASTATUSCHR(PASTATUSUPDATE) = "UPDATE"
+ PASTATUSCHR(PASTATUSIGNORE) = "IGNORE"
+
+ CALL BNOCFGFILEREAD
+ IF BNOERRORCODE=0 THEN
+  CALL BNOSETPARAMVALS
+ ELSE
+  DO
+   PRINT "Error reading CFG Letter file "+BNODEBUGLFTITLE+FORMAT(": 999",BNOERRORCODE)+
+         " - "+BNOCFGFILEFERROR
+   NEWLINE
+   TERMINATE
+  END
+
+ OUTPUTOPEN(OUTPUTDEVREPORT,0,FMFILETITLE,"FMOUTPUT",FMFILENUMBER,FMFILEERROR)
+ IF FMFILEERROR<>"" THEN
+  DO
+   PRINT "ERROR OPENING FM OUTPUT REPORT:"+FMFILEERROR
+   NEWLINE
+   TERMINATE
+  END
+ ELSE
+  DO
+   OUTPUTSWITCH(OUTPUTCHANNELDEFAULT,FMFILEERROR)
+  END
+END [SETUP]
+
+SELECT
+[* Open accts with a Pref record and a non-excluded acct type and a valid
+** test acct number if test accts are being used
+*]
+   ACCOUNT:CLOSEDATE=DATENULL AND
+   ANY PREFERENCE AND
+   PARAMINVHOMEACCTTYPES(ACCOUNT:TYPE)=FALSE AND
+ ((TESTACCOUNTS<>"" AND
+   CHARACTERSEARCH(TESTACCOUNTS,ACCOUNT:NUMBER)>0) OR
+   TESTACCOUNTS="")
+END [SELECT]
+
+PRINT TITLE="Pref Access SSN Update RPT"
+ CALL MAINHEADER
+
+ IF ((MAXACCOUNTS>0 AND
+      ACCOUNTCOUNT<MAXACCOUNTS) OR
+      MAXACCOUNTS=0) AND
+      NAME:SSN<>"" AND
+      CHARACTERSEARCH(PARAMINVALIDSSN,NAME:SSN)=0 THEN
+  DO
+   IF ACCOUNTCOUNT>0 THEN
+    DO
+     BNODEBUGLFLINE=REPEATCHR("=",130)
+     CALL BNODEBUGOUT
+    END
+   ACCOUNTCOUNT=ACCOUNTCOUNT+1
+   BNODEBUGLFLINE="BASE ACCOUNT:"+ACCOUNT:NUMBER
+   CALL BNODEBUGOUT
+
+   CALL INITIALIZEDATA
+
+[* Get a list of Preference Access (PA) records currently under the account
+*]
+   CALL BUILDPALIST
+   IF PACOUNT>1 THEN
+    DO
+[* Validate certain aspects of the PA list
+*]
+     CALL VALIDATEPALIST
+     DEBUGSTATE="PA LIST - POST PALIST VALIDATION"
+     CALL PRINTPALISTTODEBUG
+    END
+
+[* Build a list of unique account numbers which have the target SSN
+*]
+   BNODEBUGLFLINE="BUILDING ALTERNATE ACCOUNT LIST"
+   CALL BNODEBUGOUT
+   FOR ACCOUNT WITH SSN SOURCESSN
+    DO
+     IF PARAMINVTARGETACCTTYPES(ACCOUNT:TYPE)=FALSE AND
+        ACCOUNT:CLOSEDATE=DATENULL THEN
+      DO
+       TMPACCT=ACCOUNT:NUMBER
+       CALL ADDACCTTOLIST
+      END
+    END
+   BNODEBUGLFLINE=""
+   CALL BNODEBUGOUT
+
+[* Loop through the list of alternate accounts and for each location where
+** the matching SSN is (account, share & loan levels) determine if there already
+** is an existing PA record. If there is, mark it as valid and if not add it to the PA list.
+**
+** If the source SSN is found at the target account's account level then there is no need to check
+** for the same SSN at the share/loan levels. Once found, check the current PA list to see if that
+** preference access equivelant exists. If yes, mark it in the PA list as valid. If not found in
+** the PA list, add it.
+*]
+   IF TARGETACCTCOUNT>0 THEN
+    DO
+     FOR TARGETACCTLOOP=1 TO TARGETACCTCOUNT
+      DO
+       TARGETACCTFOUND=FALSE
+       ACCTNAMEFOUND=FALSE
+       SHARENAMEFOUND=FALSE
+       LOANNAMEFOUND=FALSE
+       EXTLOANNAMEFOUND=FALSE
+       BNODEBUGLFLINE="  Searching account: "+TARGETACCTS(TARGETACCTLOOP)+" for SSN:"+SOURCESSN
+       CALL BNODEBUGOUT
+
+       FOR ACCOUNT TARGETACCTS(TARGETACCTLOOP)
+        DO
+         SHARENAMEFOUND=FALSE
+         LOANNAMEFOUND=FALSE
+         PAUNRESTRICTEDCREATED=FALSE
+
+[* Check for any Share, Loan or Ext. Loan which is unqualified and if found then there cannot
+** be an unrestricted PA record.
+*]
+         CALL CHECKFORINELIGIBLES    [Returns PATYPE2INELIGIBLE=TRUE if ANY ineligible
+                                      shares/loans/ext. Loans exist]
+
+         FOR EACH NAME WITH (ACCTNAMEFOUND=FALSE AND
+                            (NAME:EXPIRATIONDATE=DATENULL OR
+                             NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                             NAME:SSN=SOURCESSN AND
+                             PARAMVALIDNAMETYPES(NAME:TYPE)=TRUE)
+          DO
+           ACCTNAMEFOUND=TRUE
+           BNODEBUGLFLINE="    NAME RECORD FOUND ON ACCOUNT "+ACCOUNT:NUMBER+FORMAT("  NAME TYPE:99",NAME:TYPE)+
+                           FORMAT("  NAME LOC:999999",NAME:LOCATOR)
+           CALL BNODEBUGOUT
+           IF PATYPE2INELIGIBLE=FALSE THEN
+            DO
+             TMPPAACCT=ACCOUNT:NUMBER
+             TMPPAIDTYPE=2
+             TMPPAID="XXXX"
+
+             BNODEBUGLFLINE="    **** ACCOUNT LEVEL NAME FOUND:  "+TMPPAACCT+
+                             FORMAT("NAME TYPE:99  ", NAME:TYPE)+
+                             FORMAT("NAME LOC:999999", NAME:LOCATOR)
+             CALL BNODEBUGOUT
+             CALL FINDPA
+             PAUNRESTRICTEDCREATED=TRUE
+            END
+          END [FOR EACH NAME WITH]
+[* If there wasn't an unrestricted PA record created then check each Share & Loan and create individual
+** PA records as necessary
+*]
+         IF PAUNRESTRICTEDCREATED=FALSE THEN
+          DO
+           FOR EACH SHARE WITH(SHARE:CLOSEDATE=DATENULL AND
+                               PARAMINVTARGETSHARETYPES(SHARE:TYPE)=FALSE AND
+                              (PARAMEXCLUDEIRSCODES=FALSE OR
+                              (PARAMEXCLUDEIRSCODES=TRUE AND
+                               SHARE:IRSCODE=0)))
+            DO
+[* If an account level SSN match was found but there was at least one Share or Loan
+** which is disqualified, then create individual PA records for each eligible Share
+** record (matching SSN not required). If an account level SSN match WAS NOT found
+** then ceate a PA record for the share if a Share name SSN match is found
+*]
+             IF (ACCTNAMEFOUND=TRUE AND
+                 PATYPE2INELIGIBLE=TRUE) THEN [Name SSN match not required - create PA record]
+              DO
+               TMPPAACCT=ACCOUNT:NUMBER
+               TMPPAIDTYPE=0
+               TMPPAID=SHARE:ID
+               CALL FINDPA
+              END
+             ELSE [Name SSSN match required]
+              DO
+               SHARENAMEFOUND=FALSE
+               FOR EACH SHARE NAME WITH (SHARENAMEFOUND=FALSE AND
+                                        (SHARE NAME:EXPIRATIONDATE=DATENULL OR
+                                         SHARE NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                                         SHARE NAME:SSN=SOURCESSN AND
+                                         PARAMVALIDNAMETYPES(SHARE NAME:TYPE)=TRUE)
+                DO
+                 SHARENAMEFOUND=TRUE
+                 TMPPAACCT=ACCOUNT:NUMBER
+                 TMPPAIDTYPE=0
+                 TMPPAID=SHARE:ID
+                 BNODEBUGLFLINE="  **** SHARE LEVEL NAME FOUND:"+TMPPAACCT+" S"+SHARE:ID+
+                                 FORMAT(" NAME TYPE:99", SHARE NAME:TYPE)+
+                                 FORMAT(" NAME LOC:999999", SHARE NAME:LOCATOR)
+                 CALL BNODEBUGOUT
+                 CALL FINDPA
+                END
+              END
+            END  [FOR EACH SHARE]
+           FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL AND
+                               PARAMINVTARGETLOANTYPES(LOAN:TYPE)=FALSE)
+            DO
+[* If an account level SSN match was found but there was at least one Share or Loan
+** which is disqualified, then create individual PA records for each eligible Loan
+** record (matching SSN not required). If an account level SSN match WAS NOT found
+** then ceate a PA record for the Loan if a Loan Name SSN match is found
+*]
+             IF ACCTNAMEFOUND=TRUE AND
+                PATYPE2INELIGIBLE=TRUE THEN
+              DO
+               TMPPAACCT=ACCOUNT:NUMBER
+               TMPPAIDTYPE=1
+               TMPPAID=LOAN:ID
+               CALL FINDPA
+              END
+             ELSE
+              DO
+               LOANNAMEFOUND=FALSE
+               FOR EACH LOAN NAME WITH (LOANNAMEFOUND=FALSE AND
+                                       (LOAN NAME:EXPIRATIONDATE=DATENULL OR
+                                        LOAN NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                                        LOAN NAME:SSN=SOURCESSN AND
+                                        PARAMVALIDNAMETYPES(LOAN NAME:TYPE)=TRUE)
+                DO
+                 LOANNAMEFOUND=TRUE
+                 TMPPAACCT=ACCOUNT:NUMBER
+                 TMPPAIDTYPE=1
+                 TMPPAID=LOAN:ID
+
+                 BNODEBUGLFLINE="    **** LOAN LEVEL NAME FOUND:"+TMPPAACCT+" L"+LOAN:ID+
+                                 FORMAT(" NAME TYPE:99", LOAN NAME:TYPE)+
+                                 FORMAT(" NAME LOC:999999", LOAN NAME:LOCATOR)
+                 CALL BNODEBUGOUT
+                 CALL FINDPA
+                END
+              END
+            END  [FOR EACH LOAN]
+[* If an account level SSN match was found but there was at least one Share or Loan
+** which is disqualified, then create individual PA records for each eligible Ext. Loan
+** record (matching SSN not required). If an account level SSN match WAS NOT found
+** then ceate a PA record for the Ext. Loan if an Ext. Loan name SSN match is found
+*]
+           FOR EACH EXTERNALLOAN WITH (EXTERNALLOAN:CLOSEDATE=DATENULL AND
+                                       PARAMINVTARGETEXTLOANTYPES(EXTERNALLOAN:TYPE)=FALSE)
+            DO
+             IF ACCTNAMEFOUND=TRUE AND
+                PATYPE2INELIGIBLE=TRUE THEN
+              DO
+               TMPPAACCT=ACCOUNT:NUMBER
+               TMPPAIDTYPE=3
+               TMPPAID=""
+               TMPEXTLOANACCT=EXTERNALLOAN:ACCOUNTNUMBER
+               CALL FINDPA
+              END
+             ELSE
+              DO
+               EXTLOANNAMEFOUND=FALSE
+               FOR EACH EXTERNALLOAN NAME WITH (EXTLOANNAMEFOUND=FALSE AND
+                                               (EXTERNALLOAN NAME:EXPIRATIONDATE=DATENULL OR
+                                                EXTERNALLOAN NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                                                EXTERNALLOAN NAME:SSN=SOURCESSN AND
+                                                PARAMVALIDNAMETYPES(EXTERNALLOAN NAME:TYPE)=TRUE)
+                DO
+                 EXTLOANNAMEFOUND=TRUE
+                 CALL BNODEBUGOUT
+                 TMPPAACCT=ACCOUNT:NUMBER
+                 TMPPAIDTYPE=3
+                 TMPPAID=""
+                 TMPEXTLOANACCT=EXTERNALLOAN:ACCOUNTNUMBER
+
+                 BNODEBUGLFLINE="    **** EXTERNAL LOAN LEVEL NAME FOUND:"+TMPPAACCT+" EXT:"+TMPEXTLOANACCT+
+                                 FORMAT("  TMPPAIDTYPE:9",TMPPAIDTYPE)+
+                                 FORMAT("  NAME TYPE:99", EXTERNALLOAN NAME:TYPE)+
+                                 FORMAT("  NAME LOC:999999", EXTERNALLOAN NAME:LOCATOR)
+                 CALL BNODEBUGOUT
+
+                 CALL FINDPA
+                END
+              END
+            END  [FOR EACH EXTERNALLOAN WITH ]
+          END
+        END [FOR ACCOUNT TARGETACCTS(TARGETACCTLOOP)]
+       BNODEBUGLFLINE=""
+       CALL BNODEBUGOUT
+      END
+    END [IF TARGETACCTCOUNT>0 THEN]
+
+[* At this point the Account list has been checked against the existing PA list. Any PA records
+** still marked as 'UNKNOWN' are due to them pointing to an account which was not on the account list,
+** meaning that there is a PA record pointing to an account, share, loan or ext. loan that is not supported
+** by the SSN search matches.
+**
+** If the INVALID PREFERENCE ACCESS RECORDS PROCESSING parameter (IPAP) is set to DELETE, then delete them.
+** If the IPAP parameter is set to VALIDATE, then validate them to make sure account number and share/loan
+**   ID or external record is valid.
+** IF the IPAP parameter is set to IGNORE then skip over them.
+** Loop through the PA list looking for PA records with a status of "UNKNOWN" and validate them
+*]
+   IF PACOUNT>0 THEN
+    DO
+     FOR PALISTLOOP=1 TO PACOUNT
+      DO
+       PARECORDFOUND=FALSE
+       ACCTCLOSEDATE=DATENULL
+       SHARECLOSEDATE=DATENULL
+       LOANCLOSEDATE=DATENULL
+       EXTLOANCLOSEDATE=DATENULL
+       RECCLOSEDATE=DATENULL
+       IRSCODEFOUND=FALSE
+
+       IF PREFACCESSSTATUS(PALISTLOOP)=PASTATUSUNKNOWN THEN
+        DO
+         IF PARAMPROCESSPAFLAG=PADELETE THEN
+          DO
+           PREFACCESSSTATUS(PALISTLOOP)=PASTATUSINVALID
+           PREFACCESSSTATUSREASON(PALISTLOOP)="No supporting SSN match"
+          END
+         ELSE IF PARAMPROCESSPAFLAG=PAIGNORE THEN
+          DO
+           PREFACCESSSTATUS(PALISTLOOP)=PASTATUSIGNORE
+          END
+         ELSE [Attempt to validate the record]
+          DO
+           BNODEBUGLFLINE="VALIDATING PA REC "+PREFACCESSACCT(PALISTLOOP)+
+                           FORMAT(" TYPE:9  ",PREFACCESSIDTYPE(PALISTLOOP))+
+                          "ID:"+PREFACCESSID(PALISTLOOP)+"  "+
+                          "EXT:"+PREFACCESSEXTLOANACCTNUM(PALISTLOOP)+"  "+
+                          "PASTATUS:"+PASTATUSCHR(PREFACCESSSTATUS(PALISTLOOP))+
+                           FORMAT("  D:9",PREFACCESSENABLEDP(PALISTLOOP))+
+                           FORMAT("  W:9",PREFACCESSENABLEWD(PALISTLOOP))+
+                           FORMAT("  I:9",PREFACCESSENABLEIQ(PALISTLOOP))
+           CALL BNODEBUGOUT
+
+           FOR ACCOUNT PREFACCESSACCT(PALISTLOOP)
+            DO
+             IF PARAMINVTARGETACCTTYPES(ACCOUNT:TYPE)=FALSE THEN
+              DO
+               IF PREFACCESSIDTYPE(PALISTLOOP)=2 THEN [ACCOUNT LEVEL]
+                DO
+                 RECCLOSEDATE=ACCOUNT:CLOSEDATE
+                 IF RECCLOSEDATE=DATENULL THEN
+                  DO
+                   PARECORDFOUND=TRUE
+                   PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID
+                  END
+                END
+               ELSE IF PREFACCESSIDTYPE(PALISTLOOP)=0 THEN    [SHARE LEVEL]
+                DO
+                 FOR EACH SHARE WITH (PARAMINVTARGETSHARETYPES(SHARE:TYPE)=FALSE AND
+                                      SHARE:ID=PREFACCESSID(PALISTLOOP))
+                  DO
+                   IF PARAMEXCLUDEIRSCODES=TRUE AND
+                      SHARE:IRSCODE>0 THEN
+                    DO
+                     PREFACCESSSTATUS(PALISTLOOP)=PASTATUSINVALID
+                     PREFACCESSSTATUSREASON(PALISTLOOP)="Share IRS Code>0"
+                    END
+                   ELSE
+                    DO
+                     RECCLOSEDATE=SHARE:CLOSEDATE
+                     IF RECCLOSEDATE=DATENULL THEN
+                      DO
+                       PARECORDFOUND=TRUE
+                       PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID
+                      END
+                    END
+                   BNODEBUGLFLINE="SHARE FOUND - ID:"+SHARE:ID+FORMAT("  CLOSEDATE:99/99/99",RECCLOSEDATE)
+                   CALL BNODEBUGOUT
+                  END
+                END
+               ELSE IF PREFACCESSIDTYPE(PALISTLOOP)=1 THEN    [LOAN LEVEL]
+                DO
+                 FOR EACH LOAN WITH (PARAMINVTARGETLOANTYPES(LOAN:TYPE)=FALSE AND
+                                     LOAN:ID=PREFACCESSID(PALISTLOOP))
+                  DO
+                   RECCLOSEDATE=LOAN:CLOSEDATE
+                   IF RECCLOSEDATE=DATENULL THEN
+                    DO
+                     PARECORDFOUND=TRUE
+                     PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID
+                    END
+                  END
+                END
+               ELSE IF PREFACCESSIDTYPE(PALISTLOOP)=3 THEN    [EXTERNAL LOAN LEVEL]
+                DO
+                 BNODEBUGLFLINE="TESTING ACCT "+ACCOUNT:NUMBER+" FOR EXT LOAN: '"+PREFACCESSEXTLOANACCTNUM(PALISTLOOP)+"'"
+
+                 FOR EACH EXTERNALLOAN WITH (PARAMINVTARGETEXTLOANTYPES(EXTERNALLOAN:TYPE)=FALSE AND
+                                             EXTERNALLOAN:ACCOUNTNUMBER=PREFACCESSEXTLOANACCTNUM(PALISTLOOP))
+                  DO
+                   RECCLOSEDATE=EXTERNALLOAN:CLOSEDATE
+                   IF RECCLOSEDATE=DATENULL THEN
+                    DO
+                     PARECORDFOUND=TRUE
+                     PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID
+                    END
+                  END
+
+                 IF PARECORDFOUND=TRUE THEN
+                  DO
+                   BNODEBUGLFLINE=BNODEBUGLFLINE+" - FOUND"
+                  END
+                 ELSE
+                  DO
+                   BNODEBUGLFLINE=BNODEBUGLFLINE+" - NOT FOUND"
+                   IF RECCLOSEDATE<>DATENULL THEN
+                    PREFACCESSSTATUSREASON(PALISTLOOP)="TARGET RECORD CLOSED"
+                   ELSE
+                    PREFACCESSSTATUSREASON(PALISTLOOP)="TARGET RECORD NOT FOUND"
+                  END
+                 CALL BNODEBUGOUT
+                END
+              END  [IF PARAMINVTARGETACCTTYPES(ACCOUNT:TYPE)=FALSE THEN]
+             IF PARECORDFOUND=TRUE THEN
+              DO
+               BNODEBUGLFLINE=BNODEBUGLFLINE+" - FOUND"
+              END
+             ELSE
+              DO
+               BNODEBUGLFLINE=BNODEBUGLFLINE+" - NOT FOUND"
+               IF RECCLOSEDATE<>DATENULL THEN
+                PREFACCESSSTATUSREASON(PALISTLOOP)="TARGET RECORD CLOSED"
+              END
+             CALL BNODEBUGOUT
+            END [FOR ACCOUNT PREFACCESSACCT(PALISTLOOP)]
+          END [ELSE [Attempt to validate the record]]
+        END  [IF PREFACCESSSTATUS(PALISTLOOP)=PASTATUSUNKNOWN THEN]
+
+       IF PREFACCESSSTATUS(PALISTLOOP)=PASTATUSUNKNOWN THEN
+        DO
+         IF PARAMPROCESSPAFLAG=PAIGNORE THEN
+          PREFACCESSSTATUS(PALISTLOOP)=PASTATUSIGNORE
+         ELSE
+          PREFACCESSSTATUS(PALISTLOOP)=PASTATUSINVALID
+        END
+[* For valid records, perform a check to make sure the PA enable flags are set to parameters
+** and if not change their status to update
+*]
+       IF PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID THEN
+        DO
+         IF PREFACCESSENABLEDP(PALISTLOOP)<>PARAMSETDPFLAG OR
+            PREFACCESSENABLEWD(PALISTLOOP)<>PARAMSETWDFLAG OR
+            PREFACCESSENABLEIQ(PALISTLOOP)<>PARAMSETIQFLAG THEN
+          DO
+           PREFACCESSSTATUS(PALISTLOOP)=PASTATUSUPDATE
+           PREFACCESSSTATUSREASON(PALISTLOOP)="Update Access Flags"
+           BNODEBUGLFLINE=BNODEBUGLFLINE+" PA ACCESS FLAGS NEED UPDATING"
+          END
+        END  [IF PREFACCESSSTATUS(PALISTLOOP)=PASTATUSVALID THEN]
+
+      END [FOR PALISTLOOP=1 TO PACOUNT]
+    END
+
+[* Re-validate the PA list to insure we didn't end up adding an unrestricted ID type when individual
+** shares, loans or ext.loans are referenced for the same account
+*]
+   CALL VALIDATEPALIST
+
+   DEBUGSTATE="UPDATED PA LIST"
+   CALL PRINTPALISTTODEBUG
+
+   COL=001 FORMAT("R999999",ACCOUNTCOUNT)
+   COL=009 ACCOUNT:NUMBER
+   COL=021 SOURCESSN
+   COL=041 RIGHT ACCOUNT:TYPE
+   IF TARGETACCTCOUNT=0 THEN
+    COL=043 "NO MATCHES FOUND"
+   ELSE
+    COL=043 "MATCHES FOUND"
+   NEWLINE
+
+   FOR TARGETACCTLOOP=1 TO TARGETACCTCOUNT
+    DO
+     COL=057 "ALT ACCOUNT "
+     COL=069 TARGETACCTS(TARGETACCTLOOP)
+     NEWLINE
+    END
+
+   IF PACOUNT>0 THEN
+    CALL REPORTPASTATUS
+   IF UNRESTRICTEDFOUND=TRUE THEN
+    DO
+     COL=003 "Some SSN name matches were excluded due to an unrestricted"+
+             " PA to the same acct either existing or being created."
+     NEWLINE
+    END
+
+   PRINT REPEATCHR("-",132)
+   NEWLINE
+   IF PACOUNT>0 THEN
+    DO
+     CALL OUTPUTFMDATA
+    END
+   FIRSTPAGE=FALSE
+  END [IF MAXACCOUNTS>0 AND...]
+END [PRINT]
+
+PROCEDURE CHECKFORINELIGIBLES
+[* Look at ALL open shares, loans and Ext. Loans to see if there are
+** ANY with disqualifications (IRS codes, ineligible types, etc.) If
+** any ONE is found, then set a flag to keep the account level preference
+** access record from being created and instead force PA records for
+** individual Share, Loan or Ext. Loan records if they would otherwise
+** be eligible - regardless as to whether or not they have a matching
+** SSN under each individual record.
+*]
+ PATYPE2INELIGIBLE=FALSE
+
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL)
+  DO
+   IF (PARAMEXCLUDEIRSCODES=TRUE AND
+       SHARE:IRSCODE>0) OR
+       PARAMINVTARGETSHARETYPES(SHARE:TYPE)=TRUE THEN
+    DO
+     PATYPE2INELIGIBLE=TRUE
+    END
+  END
+ IF PATYPE2INELIGIBLE=FALSE THEN
+  DO
+   FOR EACH LOAN WITH (LOAN:CLOSEDATE=DATENULL AND
+                       PARAMINVTARGETLOANTYPES(LOAN:TYPE)=TRUE)
+    DO
+     PATYPE2INELIGIBLE=TRUE
+    END
+  END
+ IF PATYPE2INELIGIBLE=FALSE THEN
+  DO
+   FOR EACH EXTERNALLOAN WITH (EXTERNALLOAN:CLOSEDATE=DATENULL AND
+                               PARAMINVTARGETEXTLOANTYPES(EXTERNALLOAN:TYPE)=TRUE)
+    DO
+     PATYPE2INELIGIBLE=TRUE
+    END
+  END
+ BNODEBUGLFLINE="Check for PA Type 2 ineligibility. "+
+                "PATYPE2INELIGIBLE="+BNOTRUEFALSECHR(PATYPE2INELIGIBLE)
+ CALL BNODEBUGOUT
+
+END [PROCEDURE]
+
+PROCEDURE REPORTPASTATUS
+[* Send output to the summary report
+** PASS    PACOUNT   The number of PA records to process for the account
+*]
+ FOR PALOOP=1 TO PACOUNT
+  DO
+   TMPCHR=""
+   COL=003 "PA LOC"
+   COL=011 FORMAT("999999",PREFACCESSLOC(PALOOP))
+   COL=018 "ACCT:"
+   COL=023 PREFACCESSACCT(PALOOP)
+   COL=034 FORMAT("IDTYPE:9",PREFACCESSIDTYPE(PALOOP))
+   COL=043 "ID:"+PREFACCESSID(PALOOP)
+   COL=051 "EXT:"+PREFACCESSEXTLOANACCTNUM(PALOOP)
+   COL=076 FORMAT("DP:9",PREFACCESSENABLEDP(PALOOP))
+   COL=081 FORMAT("WD:9",PREFACCESSENABLEWD(PALOOP))
+   COL=086 FORMAT("IQ:9",PREFACCESSENABLEIQ(PALOOP))
+   COL=091 "STATUS:"
+   COL=098 PASTATUSCHR(PREFACCESSSTATUS(PALOOP))
+   IF PREFACCESSSTATUS(PALOOP)=PASTATUSINVALID THEN
+    DO
+     IF PREFACCESSSTATUSREASON(PALOOP)="" THEN
+      TMPCHR=" :"+"Check"
+     ELSE
+     TMPCHR=" :"+PREFACCESSSTATUSREASON(PALOOP)
+    END
+   COL=106 SEGMENT(TMPCHR,1,25)
+   NEWLINE
+  END
+END [PROCEDURE]
+
+PROCEDURE OUTPUTFMDATA
+[* Output data to the FM report
+*]
+ HEADER=""
+ OUTPUTSWITCH(FMFILENUMBER,FMFILEERROR)
+ IF FMFILEERROR<>"" THEN
+  DO
+   PRINT "ERROR SWITCHING TO FM OUTPUT FILE:"+FMFILEERROR
+   NEWLINE
+   TERMINATE
+  END
+ ELSE
+  DO
+   FOR PALOOP=1 TO PACOUNT
+    DO
+     BNOTEXT=FORMAT("######9",PREFACCESSLOC(PALOOP))
+     CALL BNONLS
+     PALOCCHR=BNOTEXT
+     IF PARAMPROCESSPAFLAG<>PAIGNORE AND
+       (PREFACCESSSTATUS(PALOOP)=PASTATUSUNKNOWN OR
+        PREFACCESSSTATUS(PALOOP)=PASTATUSINVALID) THEN
+      DO
+       PRINT "ACCOUNT "+ACCOUNT:NUMBER+" DELETE PREFERENCE LOC "+PREFLOCCHR+" ACCESS LOC "+PALOCCHR
+       NEWLINE
+      END
+     ELSE IF PREFACCESSSTATUS(PALOOP)=PASTATUSNEW  THEN
+      DO
+       PRINT "ACCOUNT "+ACCOUNT:NUMBER+" CREATE PREFERENCE LOC "+PREFLOCCHR+" ACCESS LOC AFTERLAST"
+       NEWLINE
+       PRINT " SET ACCESSTYPE TO 2"
+       NEWLINE
+       PRINT " SET ACCOUNTNUMBER TO "
+       COL=049 PREFACCESSACCT(PALOOP)
+       NEWLINE
+       PRINT FORMAT(" SET IDTYPE TO 9",PREFACCESSIDTYPE(PALOOP))
+       NEWLINE
+       IF PREFACCESSIDTYPE(PALOOP)<=1 THEN
+        DO
+         PRINT " SET ID TO "
+         COL=049 PREFACCESSID(PALOOP)
+         NEWLINE
+        END
+       IF PREFACCESSIDTYPE(PALOOP)=3 THEN
+        DO
+         PRINT " SET EXTLOANACCOUNT TO "
+         COL=049 PREFACCESSEXTLOANACCTNUM(PALOOP)
+         NEWLINE
+        END
+       PRINT FORMAT(" SET ENABLEDEPOSIT TO 9",PREFACCESSENABLEDP(PALOOP))
+       NEWLINE
+       PRINT FORMAT(" SET ENABLEWITHDRAWAL TO 9",PREFACCESSENABLEWD(PALOOP))
+       NEWLINE
+       PRINT FORMAT(" SET ENABLEINQUIRY TO 9",PREFACCESSENABLEIQ(PALOOP))
+       NEWLINE
+      END
+     ELSE IF PREFACCESSSTATUS(PALOOP)=PASTATUSUPDATE THEN
+      DO
+       PRINT "ACCOUNT "+ACCOUNT:NUMBER+" REVISE PREFERENCE LOC "+PREFLOCCHR+" ACCESS LOC "+PALOCCHR
+       NEWLINE
+
+       IF PREFACCESSENABLEDP(PALOOP)<>PARAMSETDPFLAG THEN
+        DO
+         PRINT FORMAT(" CHANGE ENABLEDEPOSIT FROM 9",PREFACCESSENABLEDP(PALOOP))+" TO "+
+               FORMAT("9",PARAMSETDPFLAG)
+         NEWLINE
+        END
+
+       IF PREFACCESSENABLEWD(PALOOP)<>PARAMSETWDFLAG THEN
+        DO
+         PRINT FORMAT(" CHANGE ENABLEWITHDRAWAL FROM 9",PREFACCESSENABLEWD(PALOOP))+" TO "+
+               FORMAT("9",PARAMSETWDFLAG)
+         NEWLINE
+        END
+
+       IF PREFACCESSENABLEIQ(PALOOP)<>PARAMSETIQFLAG THEN
+        DO
+         PRINT FORMAT(" CHANGE ENABLEINQUIRY FROM 9",PREFACCESSENABLEIQ(PALOOP))+" TO "+
+               FORMAT("9",PARAMSETIQFLAG)
+         NEWLINE
+        END
+      END
+    END
+  END
+
+ CALL MAINHEADER
+ OUTPUTSWITCH(OUTPUTCHANNELDEFAULT,FMFILEERROR)
+ IF FMFILEERROR<>"" THEN
+  DO
+   PRINT "ERROR SWITCHING FROM FM OUTPUT TO MAIN REPORT:"+FMFILEERROR
+   NEWLINE
+   TERMINATE
+  END
+END [PROCEDURE]
+
+PROCEDURE FINDPA
+[* Attempt to match the tmp PA info from the alternate account to an actual PA record
+** under the base account. If a match is found mark it as valid. Then check the three
+** enable flags (WD, IQ, DEP). If any one is different, then change the status to
+*  update noting that although the PA record was found it needs to be updated to
+** the correct flag settings
+**
+** PASS   PACOUNT         The number of PA records
+** PASS   TMPPAIDTYPE     Preference Access ID type
+** PASS   TMPPAACCT       Preference Access Account
+** PASS   TMPPAID         Preference Access ID
+** PASS   TMPEXTLOANACCT  Preference Access External Loan account number
+*]
+ PAFOUND=FALSE
+ UNRESTRICTEDFOUND=FALSE
+
+ FOR PAFINDLOOP=1 TO PACOUNT
+  DO
+   IF (TMPPAIDTYPE<=2 AND
+       PREFACCESSACCT(PAFINDLOOP)=TMPPAACCT AND
+       PREFACCESSIDTYPE(PAFINDLOOP)=TMPPAIDTYPE AND
+       PREFACCESSID(PAFINDLOOP)=TMPPAID) OR
+      (TMPPAIDTYPE=3 AND
+       PREFACCESSACCT(PAFINDLOOP)=TMPPAACCT AND
+       PREFACCESSIDTYPE(PAFINDLOOP)=TMPPAIDTYPE AND
+       PREFACCESSEXTLOANACCTNUM(PAFINDLOOP)=TMPEXTLOANACCT) THEN
+    DO
+     PAFOUND=TRUE
+     BNODEBUGLFLINE=FORMAT("    PA MATCH FOUND AT INDEX 999",PAFINDLOOP)+
+                    FORMAT("  LOC:999999",PREFACCESSLOC(PAFINDLOOP))
+     PREFACCESSSTATUS(PAFINDLOOP)=PASTATUSVALID
+     IF PREFACCESSENABLEDP(PAFINDLOOP)<>PARAMSETDPFLAG OR
+        PREFACCESSENABLEWD(PAFINDLOOP)<>PARAMSETWDFLAG OR
+        PREFACCESSENABLEIQ(PAFINDLOOP)<>PARAMSETIQFLAG THEN
+      DO
+       PREFACCESSSTATUS(PAFINDLOOP)=PASTATUSUPDATE
+       PREFACCESSSTATUSREASON(PAFINDLOOP)="Update Access Flags"
+       BNODEBUGLFLINE=BNODEBUGLFLINE+" PA ACCESS FLAGS NEED UPDATING"
+      END
+     CALL BNODEBUGOUT
+    END
+  END
+
+[* Check the list of PA records and look to see if there is already a
+** PA record which has unrestricted access to the same account either already
+** existing or going to be made (NEW)
+*]
+ IF PAFOUND=FALSE THEN
+  DO
+   FOR PAFINDLOOP=1 TO PACOUNT
+    DO
+     IF PREFACCESSIDTYPE(PAFINDLOOP)=2 AND
+        PREFACCESSACCT(PAFINDLOOP)=TMPPAACCT THEN
+      DO
+       UNRESTRICTEDFOUND=TRUE
+      END
+    END
+  END
+[* If a matching PA record was not found, then it needs to be created so
+** increment the PA count by 1 and add the new info with the new flag set
+*]
+ IF PAFOUND=FALSE AND
+    UNRESTRICTEDFOUND=FALSE AND
+    PACOUNT<PACOUNTMAX THEN
+  DO
+   PACOUNT=PACOUNT+1
+   PREFACCESSACCT(PACOUNT)=TMPPAACCT
+   PREFACCESSIDTYPE(PACOUNT)=TMPPAIDTYPE
+   IF TMPPAIDTYPE<=2 THEN
+    PREFACCESSID(PACOUNT)=TMPPAID
+   IF TMPPAIDTYPE=3 THEN
+    PREFACCESSEXTLOANACCTNUM(PACOUNT)=TMPEXTLOANACCT
+   PREFACCESSENABLEDP(PACOUNT)=PARAMSETDPFLAG
+   PREFACCESSENABLEWD(PACOUNT)=PARAMSETWDFLAG
+   PREFACCESSENABLEIQ(PACOUNT)=PARAMSETIQFLAG
+   PREFACCESSSTATUS(PACOUNT)=PASTATUSNEW
+   BNODEBUGLFLINE=FORMAT("    PA MATCH NOT FOUND - ADDED TO LIST AT INDEX 999",PACOUNT)
+   CALL BNODEBUGOUT
+  END
+END [PROCEDURE]
+
+PROCEDURE VALIDATEPALIST
+[* The list of Preference access records is cycled through. For each PA record
+** which has an ID type of 2 (unrestricted), the list is checked to see if there
+** are any other preference access records pointing to the same account but to a
+** specific share or loan. If found, the access record is marked for deletion
+*]
+ FOR PALOOP=1 TO PACOUNT
+  DO
+   IF PREFACCESSIDTYPE(PALOOP)=2 THEN [Only test PA record if it's unrestricted]
+    DO
+     FOR PACHECKLOOP=1 TO PACOUNT
+      DO
+       IF PACHECKLOOP<>PALOOP AND [Skip over the PA record currently being tested]
+          PREFACCESSACCT(PALOOP)=PREFACCESSACCT(PACHECKLOOP) THEN
+        DO
+         PREFACCESSSTATUS(PACHECKLOOP)=PASTATUSINVALID
+         PREFACCESSSTATUSREASON(PACHECKLOOP)="Unrestricted PA record exists"
+        END
+      END
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BUILDPALIST
+[* Build a list of current Preference Access Records on the account.
+** Program assumes only one Preference record on the account.
+**
+** RETURN PACOUNT     Number of Preference Access Accounts
+*]
+ PACOUNT=0
+ PREFLOC=0
+ FOR EACH PREFERENCE
+  DO
+   IF PREFLOC=0 THEN
+    DO
+     PREFLOC=PREFERENCE:LOCATOR
+     BNOTEXT=FORMAT("######9",PREFLOC)
+     CALL BNONLS
+     PREFLOCCHR=BNOTEXT
+
+     FOR EACH PREFERENCE ACCESS WITH (PREFERENCE ACCESS:ACCESSTYPE=2 AND
+                                      PACOUNT<PACOUNTMAX)
+      DO
+       PACOUNT=PACOUNT+1
+       PREFACCESSLOC(PACOUNT)=PREFERENCE ACCESS:LOCATOR
+       PREFACCESSACCT(PACOUNT)=PREFERENCE ACCESS:ACCOUNTNUMBER
+       PREFACCESSIDTYPE(PACOUNT)=PREFERENCE ACCESS:IDTYPE
+       PREFACCESSEXTLOANACCTNUM(PACOUNT)=PREFERENCE ACCESS:EXTLOANACCOUNT
+
+       IF PREFERENCE ACCESS:ID<>"" THEN
+        PREFACCESSID(PACOUNT)=PREFERENCE ACCESS:ID
+       PREFACCESSENABLEDP(PACOUNT)=PREFERENCE ACCESS:ENABLEDEPOSIT
+       PREFACCESSENABLEWD(PACOUNT)=PREFERENCE ACCESS:ENABLEWITHDRAWAL
+       PREFACCESSENABLEIQ(PACOUNT)=PREFERENCE ACCESS:ENABLEINQUIRY
+       PREFACCESSSTATUS(PACOUNT)=0
+      END
+    END
+  END
+ DEBUGSTATE="INITIAL PA LIST"
+ CALL PRINTPALISTTODEBUG
+END [PROCEDURE]
+
+PROCEDURE PRINTPALISTTODEBUG
+[* If in debug mode, print out the list of PA records to the debug Letter file
+*]
+ IF BNODEBUGMODE=TRUE THEN
+  DO
+
+   IF BNODEBUGLFNUM=0 THEN
+    FILEOPEN("LETTER",BNODEBUGLFTITLE,"APPEND",BNODEBUGLFNUM,BNODEBUGLFERROR)
+
+   BNODEBUGLFLINE="ACCOUNT:"+ACCOUNT:NUMBER+" "+DEBUGSTATE+":"
+   CALL BNODEBUGOUT
+   FOR BNOLOCALLOOP=1 TO PACOUNT
+    DO
+     BNODEBUGLFLINE=FORMAT("  999  ",BNOLOCALLOOP)+
+                    FORMAT("PA LOC 9999999",PREFACCESSLOC(BNOLOCALLOOP))+
+                    " - A:"+PREFACCESSACCT(BNOLOCALLOOP)+
+                    FORMAT(" - IDT:9",PREFACCESSIDTYPE(BNOLOCALLOOP))+
+                    " - ID:"+PREFACCESSID(BNOLOCALLOOP)+
+                    FORMAT(" - ED:9",PREFACCESSENABLEDP(BNOLOCALLOOP))+
+                    FORMAT(" - EW:9",PREFACCESSENABLEWD(BNOLOCALLOOP))+
+                    FORMAT(" - EI:9",PREFACCESSENABLEIQ(BNOLOCALLOOP))+
+                    "  Status:"+PASTATUSCHR(PREFACCESSSTATUS(BNOLOCALLOOP))
+      CALL BNODEBUGOUT
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE ADDACCTTOLIST
+[* Loop through the current list of alternate accounts and if the TMPACCT
+** is not in the list, and not the same as the base account then add it
+** to the list
+*]
+ ACCOUNTADDED=FALSE
+ IF TMPACCT<>BASEACCOUNT THEN
+  DO
+   FOUND=FALSE
+   FOR TARGETACCTLOOP=1 TO TARGETACCTCOUNT
+    DO
+     IF TMPACCT=TARGETACCTS(TARGETACCTLOOP) THEN
+      DO
+       FOUND=TRUE
+       TARGETACCTLOOP=TARGETACCTCOUNT
+      END
+    END
+   IF FOUND=FALSE THEN
+    DO
+     IF TARGETACCTCOUNT<TARGETACCTMAX THEN
+      DO
+       TARGETACCTCOUNT=TARGETACCTCOUNT+1
+       TARGETACCTS(TARGETACCTCOUNT)=TMPACCT
+       ACCOUNTADDED=TRUE
+
+       BNODEBUGLFLINE=FORMAT("  999 ",TARGETACCTCOUNT)+
+                     "ACCOUNT "+TARGETACCTS(TARGETACCTCOUNT)+" ADDED TO ACCOUNT LIST"
+       CALL BNODEBUGOUT
+      END
+     ELSE
+      DO [Home acct has too many SSN matches. record position, account then terminate]
+       BNOTEXT=FORMAT("#####9",ACCOUNTCOUNT)
+       CALL BNONLS
+       PRINT "TERMINATING RUN AT RECORD "+BNOTEXT+" ACCT:"+TMPACCT+"."
+       NEWLINE
+       BNOTEXT=FORMAT("###,##9",TARGETACCTMAX)
+       CALL BNONLS
+       PRINT "Max SSN account matches of "+BNOTEXT+" exceeded. SSN:"+SOURCESSN
+       NEWLINE
+       NEWLINE
+       TERMINATE
+      END
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE INITIALIZEDATA
+[* Initializations
+*]
+ BASEACCOUNT=ACCOUNT:NUMBER
+ SOURCESSN=NAME:SSN
+ TARGETACCTCOUNT=0
+ FOR TARGETACCTLOOP=1 TO TARGETACCTMAX
+  DO
+   TARGETACCTS(TARGETACCTLOOP)=""
+  END
+ FOR BNOLOCALLOOP=0 TO PACOUNTMAX
+  DO
+   PREFACCESSLOC(BNOLOCALLOOP)=0
+   PREFACCESSACCT(BNOLOCALLOOP)=""
+   PREFACCESSIDTYPE(BNOLOCALLOOP)=0
+   PREFACCESSID(BNOLOCALLOOP)="XXXX"
+   PREFACCESSEXTLOANACCTNUM(BNOLOCALLOOP)=""
+   PREFACCESSENABLEDP(BNOLOCALLOOP)=0
+   PREFACCESSENABLEWD(BNOLOCALLOOP)=0
+   PREFACCESSENABLEIQ(BNOLOCALLOOP)=0
+   PREFACCESSSTATUS(BNOLOCALLOOP)=PASTATUSUNKNOWN
+   PREFACCESSSTATUSREASON(BNOLOCALLOOP)=""
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOCFGFILEREAD
+[* Open and read through the parameter file to create an array of
+** parameter names and associated values.
+**
+** Parameter settings need to be in the following format in the
+** configuration Letter file
+**   PARAMNAME: Parameter Setting
+**
+**  PASS    BCFGFILENAME      Parameter Letter file name
+**  PASS    BNOCFGPARAMMAX    Maximum number of parameters
+**
+**  RETURN  BNOCFGFILEFERROR  File open/read error
+**  RETURN  BNOERRORCODE      Error code
+**  RETURN  BNOCFGPARAM(A)    Parameter Name
+**  RETURN  BNOCFGPARAMVAL(A) Parameter Value
+**  RETURN  BNOCFGPARAMCOUNT  Parameters Found
+*]
+ BNOCFGFILEERROR=""
+
+ FOR BNOCFGPARAMCOUNT=0 TO BNOCFGPARAMMAX
+  DO
+   BNOCFGPARAM(BNOCFGPARAMCOUNT)=""
+   BNOCFGPARAMVAL(BNOCFGPARAMCOUNT)=""
+  END
+ BNOCFGPARAMCOUNT=0
+
+ WHILELIMIT=1000000
+ FILEOPEN("LETTER",BNOCFGFILENAME,"READ",BNOCFGFILENUMBER,BNOCFGFILEFERROR)
+ IF BNOCFGFILEFERROR<>"" THEN
+  DO
+   BNOERRORCODE=BNOECODECFGOPENERROR
+  END
+ ELSE
+  DO
+   WHILE BNOCFGFILEFERROR=""
+    DO
+     FILEREADLINE(BNOCFGFILENUMBER,BNOCFGFILELINE,BNOCFGFILEFERROR)
+     IF BNOCFGFILEFERROR<>"" AND
+        BNOCFGFILEFERROR<>"EOF" THEN
+      DO
+       BNOERRORCODE=BNOECODECFGREADERROR
+      END
+     ELSE
+      DO
+       BNOTEXT=BNOCFGFILELINE
+       CALL BNONLTS
+       BNOCFGFILELINE=BNOTEXT
+       BNOPOS=CHARACTERSEARCH(BNOCFGFILELINE,":")
+       IF SEGMENT(BNOCFGFILELINE,1,1)<>"*" THEN [Check for comment line]
+        DO
+         IF BNOPOS>0 THEN [line is a parameter setting]
+          DO
+           IF BNOCFGPARAMCOUNT<BNOCFGPARAMMAX THEN
+            DO
+
+             BNOCFGPARAMCOUNT=BNOCFGPARAMCOUNT+1
+             BNOPARAMTMP=SEGMENT(BNOCFGFILELINE,1,BNOPOS-1)
+             BNOTEXT=SEGMENT(BNOCFGFILELINE,BNOPOS+1,LENGTH(BNOCFGFILELINE))
+             CALL BNONLS
+             BNOPARAMVALTMP=BNOTEXT
+             IF BNOCFGPARAMCOUNT>0 THEN
+              DO
+               BNOPARAMFOUND=FALSE
+               FOR BNOTMPLOOP=1 TO BNOCFGPARAMCOUNT
+                DO
+                 IF BNOCFGPARAM(BNOTMPLOOP)=BNOPARAMTMP THEN
+                  BNOPARAMFOUND=TRUE
+                END
+               IF BNOPARAMFOUND=TRUE THEN
+                DO
+                 BNOERRORCODE=BNOECODECFGDUPLICATEENTRY
+                END
+               ELSE
+                DO
+                 BNOCFGPARAM(BNOCFGPARAMCOUNT)=BNOPARAMTMP
+                 BNOCFGPARAMVAL(BNOCFGPARAMCOUNT)=BNOPARAMVALTMP
+
+[* Since the program is in the SETUP division, print out the values
+** of any parameter settings to the batch output report
+*]
+                 PRINT FORMAT("99: ",BNOCFGPARAMCOUNT)+BNOCFGPARAM(BNOCFGPARAMCOUNT)+"-"+
+                       BNOCFGPARAMVAL(BNOCFGPARAMCOUNT)
+                 NEWLINE
+                END
+              END  [IF BNOCFGPARAMCOUNT>0]
+            END  [IF BNOCFGPARAMCOUNT<BNOCFGPARAMMAX]
+          END
+        END [IF SEGMENT(BNOCFGFILELINE,1,1)<>"*"]
+      END  [IF BNOCFGFILEFERROR=""]
+    END  [WHILE BNOCFGFILEFERROR=""]
+  END
+ FILECLOSE(BNOCFGFILENUMBER,BNOCFGFILEFERROR)
+END [PROCEDURE]
+
+PROCEDURE BNOSETPARAMVALS
+[* Retrieve parameter settings
+**
+*]
+ FOR BNOLOCALLOOP=0 TO BNOACCTTYPESMAX
+  DO
+   PARAMINVHOMEACCTTYPES(BNOLOCALLOOP)=FALSE
+   PARAMINVTARGETACCTTYPES(BNOLOCALLOOP)=FALSE
+  END
+ FOR BNOLOCALLOOP=0 TO BNOSLTYPESMAX
+  DO
+   PARAMINVTARGETSHARETYPES(BNOLOCALLOOP)=FALSE
+   PARAMINVTARGETLOANTYPES(BNOLOCALLOOP)=FALSE
+  END
+ FOR BNOLOCALLOOP=1 TO BNOEXTLOANTYPESMAX
+  DO
+   PARAMINVTARGETEXTLOANTYPES(BNOLOCALLOOP)=FALSE
+  END
+ FOR BNOLOCALLOOP=0 TO BNONAMETYPESMAX
+  DO
+   PARAMVALIDNAMETYPES(BNOLOCALLOOP)=FALSE
+  END
+
+ PARAMEXCLUDEIRSCODES=TRUE
+ PARAMSETDPFLAG=FALSE
+ PARAMSETWDFLAG=FALSE
+ PARAMSETIQFLAG=FALSE
+ PARAMPROCESSPAFLAG=PAVALIDATE
+ BNODEBUGMODE=FALSE
+ TESTACCOUNTS=""
+ PARAMINVALIDSSN=""
+ MAXACCOUNTS=0
+
+ BNOPARAMFIND="IHAT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=LOWERCASE(BNOPARAMVAL)
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="none"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=0 TO BNOACCTTYPESMAX
+    DO
+     PARAMINVHOMEACCTTYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+   BNODEBUGLFLINE="IHAT:"+BNOPARAMVAL
+   CALL BNODEBUGOUT
+  END
+
+ BNOPARAMFIND="ITAT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=LOWERCASE(BNOPARAMVAL)
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="none"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=0 TO BNOACCTTYPESMAX
+    DO
+     PARAMINVTARGETACCTTYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+  END
+
+ BNOPARAMFIND="ITST"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=BNOPARAMVAL
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="none"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=0 TO BNOSLTYPESMAX
+    DO
+     PARAMINVTARGETSHARETYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+  END
+
+ BNOPARAMFIND="ITLT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=BNOPARAMVAL
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="none"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=0 TO BNOSLTYPESMAX
+    DO
+     PARAMINVTARGETLOANTYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+  END
+
+ BNOPARAMFIND="ITET"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=BNOPARAMVAL
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="none"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=1 TO BNOEXTLOANTYPESMAX
+    DO
+     PARAMINVTARGETEXTLOANTYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+  END
+
+ BNOPARAMFIND="ENZS"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    CHARACTERSEARCH(UPPERCASE(BNOPARAMVAL),"FALSE")>0 THEN
+  PARAMEXCLUDEIRSCODES=FALSE
+
+ BNOPARAMFIND="VTNT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   LELISTINPUT=LOWERCASE(BNOPARAMVAL)
+   IF LELISTINPUT="" THEN
+    LELISTINPUT="all"
+   CALL LISTEXPAND
+   FOR BNOLOCALLOOP=0 TO BNONAMETYPESMAX
+    DO
+     PARAMVALIDNAMETYPES(BNOLOCALLOOP)=LELIST(BNOLOCALLOOP)
+    END
+  END
+
+ BNOPARAMFIND="PAWF"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    CHARACTERSEARCH(UPPERCASE(BNOPARAMVAL),"TRUE")>0 THEN
+  PARAMSETWDFLAG=TRUE
+
+ BNOPARAMFIND="PADF"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    CHARACTERSEARCH(UPPERCASE(BNOPARAMVAL),"TRUE")>0 THEN
+  PARAMSETDPFLAG=TRUE
+
+ BNOPARAMFIND="PAIF"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    CHARACTERSEARCH(UPPERCASE(BNOPARAMVAL),"TRUE")>0 THEN
+  PARAMSETIQFLAG=TRUE
+
+ BNOPARAMFIND="IPAP"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   TMPCHR=UPPERCASE(BNOPARAMVAL)
+   IF TMPCHR="DELETE" THEN
+    PARAMPROCESSPAFLAG=PADELETE
+   ELSE IF TMPCHR="IGNORE" THEN
+    PARAMPROCESSPAFLAG=PAIGNORE   [Else defaults to PAVALIDATE]
+  END
+
+ BNOPARAMFIND="ISSN"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMINVALIDSSN=BNOPARAMVAL
+
+ BNOPARAMFIND="DEBUGMODE"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    CHARACTERSEARCH("TRUEYES1",UPPERCASE(BNOPARAMVAL))>0 THEN
+  BNODEBUGMODE=TRUE
+
+ BNOPARAMFIND="MAXACCOUNTS"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  MAXACCOUNTS=VALUE(BNOPARAMVAL)
+
+ BNOPARAMFIND="TESTACCOUNTS"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  TESTACCOUNTS=BNOPARAMVAL
+
+ IF BNODEBUGMODE=TRUE THEN
+  DO
+   FILEDELETE("LETTER",BNODEBUGLFTITLE,BNODEBUGLFERROR)
+   FILEOPEN("LETTER",BNODEBUGLFTITLE,"APPEND",BNODEBUGLFNUM,BNODEBUGLFERROR)
+   IF BNODEBUGLFERROR<>"" THEN
+    DO
+     PRINT "ERROR OPENING DEBUG LF "+BNODEBUGLFTITLE+" - "+BNODEBUGLFERROR
+     NEWLINE
+     TERMINATE
+    END
+   ELSE
+    DO
+     PRINT "DEBUG LETTERFILE '"+BNODEBUGLFTITLE+"' OPEND SUCCESSFULLY"
+     NEWLINE
+     BNODEBUGLFLINE="PROGRAM: PREFACCESS.SSNMATCHING.POW"
+     CALL BNODEBUGOUT
+     BNODEBUGLFLINE=FORMAT("PROGRAM PARAMETER SETTINGS (99)",BNOCFGPARAMCOUNT)
+     CALL BNODEBUGOUT
+     BNODEBUGLFLINE=REPEATCHR("=",35)
+     CALL BNODEBUGOUT
+     FOR BNOPARAMLOOP=1 TO BNOCFGPARAMCOUNT
+      DO
+       BNODEBUGLFLINE=BNOCFGPARAM(BNOPARAMLOOP)+":"+BNOCFGPARAMVAL(BNOPARAMLOOP)
+       CALL BNODEBUGOUT
+      END
+     BNODEBUGLFLINE=REPEATCHR("-",100)
+     CALL BNODEBUGOUT
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNODEBUGOUT
+[* Send a line of debug data out to the Letter file
+*]
+ IF BNODEBUGMODE=TRUE AND
+    BNODEBUGLFLINE<>"" THEN
+  DO
+   FILEWRITELINE(BNODEBUGLFNUM,BNODEBUGLFLINE,BNODEBUGLFERROR)
+   IF BNODEBUGLFERROR<>"" THEN
+    DO
+     PRINT "ERROR WRITING TO DEBUG LF "+BNODEBUGLFTITLE+" - "+BNODEBUGLFERROR
+     NEWLINE
+     TERMINATE
+    END
+  END
+ BNODEBUGLFLINE=""
+END [PROCEDURE]
+
+PROCEDURE BNOGETPARAMVAL
+[* Find requested parameter setting and return value.
+**
+**  PASS    BNOPARAMFIND   Targeted parameter setting
+**
+**  RETURN  BNOPARAMFOUND  T/F found flag
+**  RETURN  BNOPARAMVAL    Parameter value found
+*]
+ BNOPARAMFOUND=FALSE
+ FOR BNOPARAMLOOP=1 TO BNOCFGPARAMCOUNT
+  DO
+   IF BNOCFGPARAM(BNOPARAMLOOP)=BNOPARAMFIND THEN
+    DO
+     BNOPARAMVAL=BNOCFGPARAMVAL(BNOPARAMLOOP)
+     BNOPARAMFOUND=TRUE
+     BNOPARAMLOOP=BNOCFGPARAMCOUNT
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNONLTS
+[* Remove leading and trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ CALL BNONTS
+ CALL BNONLS
+END [PROCEDURE]
+
+PROCEDURE BNONLS
+[* Remove leading spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF LENGTH(BNOTEXT)=0 THEN
+  BNOTEXT=""
+ ELSE
+  DO
+   WHILE (LENGTH(BNOTEXT)>0 AND
+          SEGMENT(BNOTEXT,1,1)=" ")
+    DO
+     BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNONTS
+[* Remove trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  BNOTEXT=SEGMENT(BNOTEXT,1,LENGTH(BNOTEXT))
+END [PROCEDURE]
+
+PROCEDURE BNONLZ
+[* Removes leading zeros. Does not remove leading spaces.
+** '00123' results in '123'.
+** ' 0123' results in ' 0123'
+** '00000' results in ''.
+** As a byproduct, trailing spaces are also removed.
+**
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  DO
+   WHILE (SEGMENT(BNOTEXT,1,1)="0")
+    DO
+     IF LENGTH(BNOTEXT)=1 THEN
+      BNOTEXT=""
+     ELSE
+      BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE VALIDATERANGEINPUT
+[* Validate user input as valid listexpand input. Procedure assumes
+** string is valid until invalid character is found.
+**
+**  PASS     BNOTEXT             Character string to test
+**  RETURN   BNOVALIDRANGEINPUT  Boolean T/F
+*]
+ BNOVALIDRANGEINPUT=TRUE
+ FOR BNOLOCALLOOP=1 TO LENGTH(BNOTEXT)
+  DO
+   IF CHARACTERSEARCH("0123456789,- ALLNONE",UPPERCASE(SEGMENT(BNOTEXT,BNOLOCALLOOP,BNOLOCALLOOP)))=0 THEN
+    DO
+     BNOVALIDRANGEINPUT=FALSE
+     BNOLOCALLOOP=LENGTH(BNOTEXT)
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE MAINHEADER
+[* Print this report detail on the first page only to assist the user with better interpreting the report
+**
+**                   1         2         3         4         5         6         7         8         9         0         1         2         3
+**          123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
+*]
+ HEADERS
+  IF FIRSTPAGE=TRUE AND
+     PRINTREPORTHEADER=TRUE THEN
+   DO
+    COL=001 "Only qualifying accounts are listed. Results will indicate if any other accounts in the data base have the target SSN. If a match"
+    NEWLINE
+    COL=001 "is found, each of the alternate accounts will be listed. If there are any Preference Access (PA) records under the base account,"
+    NEWLINE
+    COL=001 "they will be listed with the various values that PA record is set up for, unless a new PA record is being created in which case the"
+    NEWLINE
+    COL=001 "values represent the values the new PA record will be created with. Each PA record will have one of the following status values:"
+    NEWLINE
+    COL=001 "VALID: the record is valid as-is. INVALID: The record will be deleted, expired or left as-is (based upon the configuration"
+    NEWLINE
+    COL=001 "settings). UPDATE: The enable flags need to be revised to align with the current parameter settings for this program. NEW: A new"
+    NEWLINE
+    COL=001 "PA record will be created with the listed values. UNKNOWN:The PA record has not accurately been processed by the program and"
+    NEWLINE
+    COL=001 "further investigation is warranted."
+    NEWLINE
+    COL=001 REPEATCHR("=",132)
+    NEWLINE
+   END
+
+  COL=001 "REC#"
+  COL=009 "ACCOUNT"
+  COL=021 "SSN"
+  COL=033 "ACCT TYPE"
+  COL=043 "RESULTS"
+  NEWLINE
+  COL=001 REPEATCHR("-",132)
+  NEWLINE
+  END
+END [PROCEDURE]
+
+#INCLUDE "RB.LISTEXPAND"
+
+
