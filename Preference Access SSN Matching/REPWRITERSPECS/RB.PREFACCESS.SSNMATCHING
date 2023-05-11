@@ -36,23 +36,23 @@
 **       target Account, Share, Loan or External Loan, mark the PA
 **       record status as VALID.
 **    b. If a PA match is not found, add a new PA record to the list and
-**       mark its’ status as NEW.
+**       mark its' status as NEW.
 ** 6. Loop through the final list of PA records.
-**    a. If the record’s current status is UNKNOWN process the record
-**       further based upon the CFG Letter file parameter.
+**    a. If the record's current status is UNKNOWN process the record
+**       further based upon the CFG Letter file parameters.
 **      i. If the invalid Preference Access Records Processing parameter
-**         is set to DELETE, change the record’s status to INVALID
-**      ii. If the parameter is set to IGNORE then set the record’s
+**         is set to DELETE, change the record's status to INVALID
+**      ii. If the parameter is set to IGNORE then set the record's
 **          status to IGNORE
 **      iii. If the parameter is set to VALIDATE then validate that the
 **           PA record points to a valid account and, as appropriate a
 **           valid Share, Loan or External Loan and if so, mark the
-**           record’s status as VALID otherwise, change the record’s
+**           record's status as VALID otherwise, change the record's
 **           status to INVALID.
-**    b. If the record’s status is VALID and the access flags (WD,
+**    b. If the record's status is VALID and the access flags (WD,
 **       Inquiry, Deposit) do not match the related settings in the CFG
 **       Letter file, mark the record for UPDATE.
-**    c. Process the PA record based upon its’ final record status.
+**    c. Process the PA record based upon its' final record status.
 **      i. If the status is NEW, create a new PA record.
 **      ii. If the status is UPDATE, update the existing PA record so
 **          the access flags match the current CFG Letter file settings.
@@ -61,7 +61,7 @@
 **    d. Update the report with the account and PA list information
 **       along with the action taken for each of the PA records.
 **    e. Output the necessary data to the FM report to be used by Misc.
-**       Processing to update the member’s accounts.
+**       Processing to update the member's accounts.
 **
 ** <PROMPTS>
 **   There are no batch prompts as the program's run-time parameters are
@@ -100,7 +100,7 @@
 ** <MOD HISTORY>
 **   <VER 1.0.0>
 **     PROGRAMMER:  TKainz Symitar
-**     DATE:        05/08/2023
+**     DATE:        05/11/2023
 **     RELEASE:     2022.01 SP2
 **     CASE/DEFECT: N/A - Internal
 **     DETAILS:     Original Programming
@@ -443,7 +443,7 @@ PRINT TITLE="Pref Access SSN Update RPT"
                TMPPAID=SHARE:ID
                CALL FINDPA
               END
-             ELSE [Name SSSN match required]
+             ELSE [Name SSN match required]
               DO
                SHARENAMEFOUND=FALSE
                FOR EACH SHARE NAME WITH (SHARENAMEFOUND=FALSE AND
@@ -726,7 +726,7 @@ PRINT TITLE="Pref Access SSN Update RPT"
    DEBUGSTATE="UPDATED PA LIST"
    CALL PRINTPALISTTODEBUG
 
-   COL=001 FORMAT("R999999",ACCOUNTCOUNT)
+   COL=001 FORMAT("999999",ACCOUNTCOUNT)
    COL=009 ACCOUNT:NUMBER
    COL=021 SOURCESSN
    COL=041 RIGHT ACCOUNT:TYPE
