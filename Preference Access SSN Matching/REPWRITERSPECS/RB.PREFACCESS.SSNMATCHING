@@ -1018,7 +1018,9 @@ PROCEDURE VALIDATEPALIST
 *]
  FOR PALOOP=1 TO PACOUNT
   DO
-   IF PREFACCESSIDTYPE(PALOOP)=2 THEN [Only test PA record if it's unrestricted]
+   IF PREFACCESSIDTYPE(PALOOP)=2 AND
+      PREFACCESSSTATUS(PALOOP)<>PASTATUSINVALID THEN [Only test PA record if it's unrestricted and
+                                                      is not invalid already]
     DO
      FOR PACHECKLOOP=1 TO PACOUNT
       DO
