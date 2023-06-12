@@ -23,6 +23,8 @@
 **    Ver. 1.0.4  07/29/22 R. Robison - Added Service Instructions, Opt-in information
 **                         and Opt-out information soft text.  Added feature for setting
 **                         Overdraw Tolerance field on share record.
+**    Ver. 1.1.0  06/12/23 R. Robison - Added opt-in/opt-out information soft text 
+**
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
 
@@ -93,9 +95,9 @@ DEFINE
  PARAMOTASHARETYPE             = NUMBER ARRAY(99)
  PARAMOTACOUNT                 = NUMBER
  PARAMOTAMAX                   = 99
- PARAMOPTINOUTINFOTEXT         = CHARACTER ARRAY(99)
+ PARAMOPTINOUTINFOTEXT         = CHARACTER ARRAY(10)
  PARAMOPTINOUTINFOTEXTLINES    = NUMBER
- PARAMOPTINOUTINFOTEXTLINESMAX = 5
+ PARAMOPTINOUTINFOTEXTLINESMAX = 10
  
  PARAMNAME                 = CHARACTER
  PARAMVALUE                = CHARACTER
@@ -185,9 +187,9 @@ END [DEFINE]
 
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
- PROGRAMVERSION="1.0.4"
- LASTMODDATE='07/29/22'
- LASTMODTIME="08:30 MT"
+ PROGRAMVERSION="1.1.0"
+ LASTMODDATE='06/12/23'
+ LASTMODTIME="10:30 MT"
 
  Q=CTRLCHR(34)
  BACKSLASH=CTRLCHR(92)
