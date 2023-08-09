@@ -169,7 +169,7 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
     - name: Share description
     - availableBalance: the available balance of the share
     - memberAccountNumber: the 10-digit account number, "S" or "L" for share or loan and the Share or Loan ID
-  - nsfMessage: CUSTOM PO only - Message displayed if no xfer shares with sufficient funds. Up to 70 chars.
+  - nsfMessage: CUSTOM PO only - Message displayed if electronicFundingAccount array is empty. Up to 70 chars.
   - feeDisclosure: custom fee disclosure
   - fee: fee parameters if a fee is being charged to create the new sub account
     - amount: the fee amount to be charged
