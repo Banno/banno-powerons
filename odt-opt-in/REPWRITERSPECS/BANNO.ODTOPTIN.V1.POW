@@ -24,8 +24,9 @@
 **                         and Opt-out information soft text.  Added feature for setting
 **                         Overdraw Tolerance field on share record.
 **    Ver. 1.1.0  06/12/23 R. Robison - Added opt-in/opt-out information soft text 
-**    Ver. 1.1.1  08/04/23 T. Kainz - Corrected faulty JSON when debug mode is turned on
+**    Ver. 1.1.1  08/09/23 T. Kainz - Corrected faulty JSON when debug mode is turned on
 **                         Added additional debug output to facilitate troubleshooting.
+**                         Corrected S/L type calc/reference.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -122,7 +123,7 @@ DEFINE
  ERRORMSG                     = CHARACTER
  ERRORDETAIL                  = CHARACTER ARRAY(99)
  ERRORDETAILOFFSET            = NUMBER
- IDLENGTH                     = NUMBER
+ TYPELENGTH                   = NUMBER
  MAXWARNINGTYPES              = NUMBER
  MAXSLTYPES                   = NUMBER
  TMPTEXT                      = CHARACTER
@@ -214,8 +215,8 @@ SETUP
  IF @RGUSERNUM1>0 THEN
   SDMAX=@RGUSERNUM1
 
- IDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
- IF IDLENGTH=2 THEN
+ TYPELENGTH=GETDATANUMBER(GETPARAMTYPELENGTH)
+ IF TYPELENGTH=2 THEN
   MAXSLTYPES=99
  ELSE
   MAXSLTYPES=9999
