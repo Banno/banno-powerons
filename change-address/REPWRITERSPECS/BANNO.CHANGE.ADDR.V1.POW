@@ -26,6 +26,9 @@
 **                         Updated CFG file read error msg. Set param for note expiration days to 30
 **    Ver. 1.1.0  07/27/22 J. Carson - Added old address matching functionality to override 
 **                                     tracking 8 linking. Added confirmation email to be sent to member.
+**    Ver. 1.1.1  08/10/23 J. Carson - Added option of sending email to CU and adding address information 
+**                                     to account note record if any error is encountered instead
+**                                     of sending request to conversations.
 *]
 SYMCONNECT
 STATELESS
@@ -140,6 +143,8 @@ DEFINE
  PARAMVALIDATIONERRORCHR   = CHARACTER
  PARAMVALUE                = CHARACTER
  PARAMWARNINGSACCT         = CHARACTER
+ PARAMOVERRIDECONVS        = NUMBER
+ PARAMOVERRIDEEMAIL        = CHARACTER
  PARSEDTEXT                = CHARACTER(40) ARRAY(50)
  PARSEDTEXTCOUNT           = NUMBER
  PARSEDTEXTSTART           = NUMBER
@@ -225,11 +230,11 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.1.0"
- LASTMODDATE='10/04/22'
+ PROGRAMVERSION="1.1.1"
+ LASTMODDATE='08/10/23'
  LASTMODTIME="10:00 ET"
- PROGRAMUPDATENOTE1="Added old address matching functionality to override "
- PROGRAMUPDATENOTE2="tracking 8 linking. Added member email confirmation."
+ PROGRAMUPDATENOTE1="Added ability to override conversations with an email "
+ PROGRAMUPDATENOTE2="to the CU and new address info in note record."
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -693,18 +698,10 @@ PROCEDURE POSTFMPROCESS
     BNODEBUGMSG=FORMAT("WARNING #####9 SUCCESSFULLY SET",WARNINGTOSET)
    CALL BNODEBUGMSGADD
   END
-[ Upon next update deactivate the testing for this change
-  by replacing code below with: 
 
  IF PARAMSENDEMAIL=TRUE THEN
   CALL SENDEMAIL
-]
 
- IF (PARAMSENDEMAIL=TRUE AND
-    (PARAMTESTACCTS="" OR
-    (PARAMTESTACCTS<>"" AND
-     TESTUSER=TRUE))) THEN
-  CALL SENDEMAIL
 END [PROCEDURE]
 
 PROCEDURE GETNAMELOCS
@@ -1436,11 +1433,70 @@ PROCEDURE ERRORHANDLER
   ELSE
    ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type 9999",ACCOUNT:TYPE)
 
+[ Upon next update deactivate the testing for this change
+  by replacing code below with: 
+
+ IF PARAMOVERRIDECONVS=TRUE AND
+    RESPONSECODE<>504 THEN
+  CALL OVERRIDECONVERSATIONS
+]
+
+ IF ((PARAMOVERRIDECONVS=TRUE AND
+      RESPONSECODE<>504) AND
+     (PARAMTESTACCTS="" OR
+     (PARAMTESTACCTS<>"" AND
+      TESTUSER=TRUE))) THEN
+  CALL OVERRIDECONVERSATIONS
+   
  PRINT "    "+Q+"responseCode"+Q+": "+FORMAT(Q+"999"+Q,RESPONSECODE)+","
  NEWLINE
  PRINT "    "+Q+ERRORMSG+Q+": "+
             Q+ERRORDETAIL(ERRORDETAILOFFSET)+Q
  NEWLINE
+END [PROCEDURE]
+
+PROCEDURE OVERRIDECONVERSATIONS
+[* If conversations override is enabled, this procedure
+** sends an email to the specified CU email address, adds
+** address information to the account note, and overrides
+** response code to 504 (successful address change) so the
+** UX does not open a conversation in Banno People.
+*]
+ EMAILSTART(PARAMOVERRIDEEMAIL,PARAMOVERRIDEEMAIL,"Banno Address Change - Intervention Needed",EMAILSENDERROR)
+ EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
+ EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
+ EMAILLINE("",EMAILSENDERROR)
+ EMAILLINE("The following account attempted a Banno address change but there was an error, ",EMAILSENDERROR)
+ EMAILLINE("manual intervention is needed :",EMAILSENDERROR)
+ EMAILLINE("<br /><br />",EMAILSENDERROR)
+ EMAILLINE("Account : xxxxxx"+SEGMENT(ACCOUNT:NUMBER,7,10)+" "+NAME:SHORTNAME,EMAILSENDERROR)
+ EMAILLINE("<br />",EMAILSENDERROR)
+ EMAILLINE("Error Detail : "+ERRORDETAIL(ERRORDETAILOFFSET),EMAILSENDERROR)
+ EMAILLINE("<br /><br />",EMAILSENDERROR)
+ EMAILLINE("New address information can be found in the account notes.",EMAILSENDERROR)
+ EMAILLINE("<br />",EMAILSENDERROR)
+ EMAILSEND(EMAILSENDERROR)
+
+ CALL ADDADDRDETAILSTONOTE
+
+ RESPONSECODE=504
+ ERRORDETAIL(ERRORDETAILOFFSET)="Conversations override email sent to "+PARAMOVERRIDEEMAIL
+END [PROCEDURE]
+
+PROCEDURE ADDADDRDETAILSTONOTE
+[* If conversations override is enabled, this procedure adds
+** the new address information to the note record added to the
+** members account.
+*]
+ PARSEDTEXT(3)="New address details:"
+ PARSEDTEXT(4)=UPPERCASE(NEWSTREET)
+ IF NEWEXTRAADDR<>"" THEN
+  DO
+   PARSEDTEXT(5)=UPPERCASE(NEWEXTRAADDR)
+   PARSEDTEXT(6)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
+  END
+ ELSE IF NEWEXTRAADDR="" THEN
+  PARSEDTEXT(5)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
 END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
@@ -1479,6 +1535,8 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMEMAILSUBJECT="Address Update Notice"
  PARAMMATCHNAMELVL="NONE"
  PARAMMATCHNMTYPES="NONE"
+ PARAMOVERRIDECONVS=FALSE
+ PARAMOVERRIDEEMAIL=""
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -1584,6 +1642,21 @@ PROCEDURE READCONFIGFILESETTINGS
                PARAMVALUE<>"" THEN
         PARAMTESTACCTS=PARAMVALUE         
 
+[* Override conversations
+*]
+       ELSE IF PARAMNAME="OC" AND
+          PARAMVALUE<>"" THEN
+        DO
+         IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
+         PARAMOVERRIDECONVS=TRUE
+        END
+
+[* Override conversations email 
+*]
+       ELSE IF PARAMNAME="OE" AND
+               PARAMVALUE<>"" THEN
+        PARAMOVERRIDEEMAIL=PARAMVALUE
+
 [* Debug mode
 *]
        ELSE IF PARAMNAME="DB" AND
@@ -1651,6 +1724,10 @@ PROCEDURE READCONFIGFILESETTINGS
  BNODEBUGMSG="MT:"+PARAMMATCHNMTYPES
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="TA:"+PARAMTESTACCTS
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="OC:"+FORMAT("9",PARAMOVERRIDECONVS)
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="OE:"+PARAMOVERRIDEEMAIL
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="DB:"+FORMAT("9",DEBUGMODE)
  CALL BNODEBUGMSGADD
@@ -1741,16 +1818,7 @@ PROCEDURE READCONFIGFILESETTINGS
  IF CHARACTERSEARCH(PARAMTESTACCTS,ACCOUNT:NUMBER)>0 THEN
   TESTUSER=TRUE
  
-[ Upon next update deactivate the testing for this change
-  by replacing code below with: 
-
  IF PARAMMATCHNAMELVL<>"NONE" THEN
-  PERFORMMATCHING=TRUE
-]
- IF (PARAMMATCHNAMELVL<>"NONE" AND
-    (PARAMTESTACCTS="" OR
-    (PARAMTESTACCTS<>"" AND
-     TESTUSER=TRUE))) THEN
   PERFORMMATCHING=TRUE
 
 END [PROCEDURE]
@@ -1898,6 +1966,21 @@ PROCEDURE VALIDATECONFIG
         END
       END
     END
+   IF PARAMOVERRIDECONVS=TRUE AND
+      PARAMVALIDATIONERROR=FALSE THEN
+    DO
+      ATPOS=0
+      DOTPOS=0
+      ATPOS=CHARACTERSEARCH(PARAMOVERRIDEEMAIL,"@")
+      IF ATPOS>0 THEN
+       DOTPOS=CHARACTERSEARCH(SEGMENT(PARAMOVERRIDEEMAIL,ATPOS+1,LENGTH(PARAMOVERRIDEEMAIL)),".")
+      IF ATPOS=0 OR
+         DOTPOS=0 THEN
+       DO
+        PARAMVALIDATIONERROR=TRUE
+        PARAMVALIDATIONERRORCHR="Invalid email address specified for Conversations override."
+       END
+     END
   END
 
  IF PARAMVALIDATIONERROR=TRUE THEN
