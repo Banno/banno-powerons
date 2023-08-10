@@ -131,6 +131,7 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
         "memberAccountNumber": "1234567890S1234"
       }
     ],
+    "nsfMessage": "This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage",
     "feeDisclosure": [
       "1-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
       "2-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
@@ -168,6 +169,7 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
     - name: Share description
     - availableBalance: the available balance of the share
     - memberAccountNumber: the 10-digit account number, "S" or "L" for share or loan and the Share or Loan ID
+  - nsfMessage: CUSTOM PO only - Message displayed if electronicFundingAccount array is empty. Up to 70 chars.
   - feeDisclosure: custom fee disclosure
   - fee: fee parameters if a fee is being charged to create the new sub account
     - amount: the fee amount to be charged
