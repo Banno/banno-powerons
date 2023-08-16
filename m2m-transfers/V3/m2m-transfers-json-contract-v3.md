@@ -116,7 +116,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "labels": {
       "memberNameSubTitle": null,
       "idSubTitle": null
-    }
+    },
+    "shareAcctIdOptional": false
   }
 }
 ```
@@ -171,7 +172,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```jsonc
 {
   "results": {
-    "verified": true
+    "verified": true,
+    "recipientAccountId": "0010"  // account ID
   }
 }
 ```
