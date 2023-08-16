@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHANGE.ADDR.V1.POW
 **  Letterfile Name:    BANNO.CHANGE.ADDR.V1.CFG
 **
-**  Copyright 2021-2022 Jack Henry
+**  Copyright 2021-2023 Jack Henry
 **
 **  This Banno PowerOn allows the member to update their
 **  address (Street, Extra Address, City, State, Zipcode, member note).
@@ -26,7 +26,7 @@
 **                         Updated CFG file read error msg. Set param for note expiration days to 30
 **    Ver. 1.1.0  07/27/22 J. Carson - Added old address matching functionality to override 
 **                                     tracking 8 linking. Added confirmation email to be sent to member.
-**    Ver. 1.1.1  08/10/23 J. Carson - Added option of sending email to CU and adding address information 
+**    Ver. 1.2.0  08/16/23 J. Carson - Added option of sending email to CU and adding address information 
 **                                     to account note record if any error is encountered instead
 **                                     of sending request to conversations.
 *]
@@ -230,8 +230,8 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.1.1"
- LASTMODDATE='08/10/23'
+ PROGRAMVERSION="1.2.0"
+ LASTMODDATE='08/16/23'
  LASTMODTIME="10:00 ET"
  PROGRAMUPDATENOTE1="Added ability to override conversations with an email "
  PROGRAMUPDATENOTE2="to the CU and new address info in note record."
@@ -669,7 +669,7 @@ END [PROCEDURE]
 
 PROCEDURE POSTFMPROCESS
 [* Clears and sets warning codes upon successful FM. Sends
-** confirmation email tto member.
+** confirmation email to member.
 *]
  PARSEDTEXT(1)="Banno Successful Address Change"
  CALL CREATENOTERECORD
@@ -1462,25 +1462,31 @@ PROCEDURE OVERRIDECONVERSATIONS
 ** response code to 504 (successful address change) so the
 ** UX does not open a conversation in Banno People.
 *]
+ EMAILSENDERROR=""
  EMAILSTART(PARAMOVERRIDEEMAIL,PARAMOVERRIDEEMAIL,"Banno Address Change - Intervention Needed",EMAILSENDERROR)
- EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
- EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
- EMAILLINE("",EMAILSENDERROR)
- EMAILLINE("The following account attempted a Banno address change but there was an error, ",EMAILSENDERROR)
- EMAILLINE("manual intervention is needed :",EMAILSENDERROR)
- EMAILLINE("<br /><br />",EMAILSENDERROR)
- EMAILLINE("Account : xxxxxx"+SEGMENT(ACCOUNT:NUMBER,7,10)+" "+NAME:SHORTNAME,EMAILSENDERROR)
- EMAILLINE("<br />",EMAILSENDERROR)
- EMAILLINE("Error Detail : "+ERRORDETAIL(ERRORDETAILOFFSET),EMAILSENDERROR)
- EMAILLINE("<br /><br />",EMAILSENDERROR)
- EMAILLINE("New address information can be found in the account notes.",EMAILSENDERROR)
- EMAILLINE("<br />",EMAILSENDERROR)
- EMAILSEND(EMAILSENDERROR)
-
+ IF EMAILSENDERROR="" THEN
+  DO
+   EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
+   EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
+   EMAILLINE("",EMAILSENDERROR)
+   EMAILLINE("The following account attempted a Banno address change but there was an error, ",EMAILSENDERROR)
+   EMAILLINE("manual intervention is needed :",EMAILSENDERROR)
+   EMAILLINE("<br /><br />",EMAILSENDERROR)
+   EMAILLINE("Account : xxxxxx"+SEGMENT(ACCOUNT:NUMBER,7,10)+" "+NAME:SHORTNAME,EMAILSENDERROR)
+   EMAILLINE("<br />",EMAILSENDERROR)
+   EMAILLINE("Error Detail : "+ERRORDETAIL(ERRORDETAILOFFSET),EMAILSENDERROR)
+   EMAILLINE("<br /><br />",EMAILSENDERROR)
+   EMAILLINE("New address information can be found in the account notes.",EMAILSENDERROR)
+   EMAILLINE("<br />",EMAILSENDERROR)
+   EMAILSEND(EMAILSENDERROR)
+  END 
  CALL ADDADDRDETAILSTONOTE
 
  RESPONSECODE=504
- ERRORDETAIL(ERRORDETAILOFFSET)="Conversations override email sent to "+PARAMOVERRIDEEMAIL
+ IF EMAILSENDERROR<>"" THEN
+  ERRORDETAIL(ERRORDETAILOFFSET)="Override email error: "+SEGMENT(EMAILSENDERROR,1,60)
+ ELSE
+  ERRORDETAIL(ERRORDETAILOFFSET)="Conversations override email sent to "+PARAMOVERRIDEEMAIL
 END [PROCEDURE]
 
 PROCEDURE ADDADDRDETAILSTONOTE
@@ -1488,22 +1494,27 @@ PROCEDURE ADDADDRDETAILSTONOTE
 ** the new address information to the note record added to the
 ** members account.
 *]
- PARSEDTEXT(3)="New address details:"
- PARSEDTEXT(4)=UPPERCASE(NEWSTREET)
- IF NEWEXTRAADDR<>"" THEN
-  DO
-   PARSEDTEXT(5)=UPPERCASE(NEWEXTRAADDR)
-   PARSEDTEXT(6)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
+ IF NEWSTREET<>"" OR NEWEXTRAADDR<>"" OR
+    NEWCITY<>"" OR NEWSTATE<>"" OR 
+    NEWZIPCODE<>"" THEN
+  DO    
+   PARSEDTEXT(3)="New address details:"
+   PARSEDTEXT(4)=UPPERCASE(NEWSTREET)
+   IF NEWEXTRAADDR<>"" THEN
+    DO
+     PARSEDTEXT(5)=UPPERCASE(NEWEXTRAADDR)
+     PARSEDTEXT(6)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
+    END
+   ELSE IF NEWEXTRAADDR="" THEN
+    PARSEDTEXT(5)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
   END
- ELSE IF NEWEXTRAADDR="" THEN
-  PARSEDTEXT(5)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
 END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
 [* Read parameter settings from the configuration Letter file.
 **  IAT    PARAMINELIGIBLEACCTS  Ineligible Account Type(s) (in LISTEXPAND format)
 **  AW     PARAMWARNINGSACCT     Acct level warnings which exclude account (in LISTEXPAND format)
-**  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successfull address change
+**  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successful address change
 **  SW     PARAMSETWARNINGS      Account level warning to set upon successful address change
 **  PR     PARAMPORESTRICT       Should the program check for and restrict a PO box entry?
 **  DB     DEBUGMODE             Debug mode on or off
@@ -1591,7 +1602,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Send email flag
 *]
        ELSE IF PARAMNAME="SE" AND
-          PARAMVALUE<>"" THEN
+               PARAMVALUE<>"" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
          PARAMSENDEMAIL=TRUE
@@ -1645,10 +1656,10 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Override conversations
 *]
        ELSE IF PARAMNAME="OC" AND
-          PARAMVALUE<>"" THEN
+               PARAMVALUE<>"" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-         PARAMOVERRIDECONVS=TRUE
+          PARAMOVERRIDECONVS=TRUE
         END
 
 [* Override conversations email 
@@ -2088,7 +2099,7 @@ END [PROCEDURE]
 
 PROCEDURE PARSEDATALINE
 [* Parse through a line of data, looking for a pipe delimiter.
-** Seperate text at the delimiter storing each segment into
+** Separate text at the delimiter storing each segment into
 ** array elements
 ** PASS    DATALINE  Text to parse through
 ** PASS    DELIMITER Field delimiter used in DATALINE
