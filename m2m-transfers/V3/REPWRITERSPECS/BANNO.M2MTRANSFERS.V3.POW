@@ -545,7 +545,7 @@ PRINT TITLE=""
      NEWLINE
      PRINT "  "+Q+"results"+Q+": {"
      NEWLINE
-     PRINT "    "+Q+"verified"+Q+": true"
+     PRINT "    "+Q+"verified"+Q+": true,"
      NEWLINE
      PRINT "    "+Q+"recipientAccountId"+Q+": "+Q+TARGETSLID+Q
      NEWLINE
@@ -2300,11 +2300,10 @@ PROCEDURE READCONFIGFILESETTINGS
       DO
 [* Enforce Limits
 *]
-       IF PARAMNAME="EL" AND
-               PARAMVALUE<>"" THEN
+       IF PARAMNAME="EL" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-         PARAMENFORCELIMITS=TRUE
+          PARAMENFORCELIMITS=TRUE
         END
 [* Ineligible Account Type(s)
 *]
@@ -2343,11 +2342,10 @@ PROCEDURE READCONFIGFILESETTINGS
 
 [* Cross-Account Access
 *]
-       ELSE IF PARAMNAME="XA" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="XA" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-         PARAMCROSSACCTACCESS=TRUE
+          PARAMCROSSACCTACCESS=TRUE
         END
 [* Transfer From Type
 *]
@@ -2361,11 +2359,10 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 [* Allow manual transfer edits
 *]
-       ELSE IF PARAMNAME="AE" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="AE" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-         PARAMALLOWEDIT=TRUE
+          PARAMALLOWEDIT=TRUE
         END
 [* Validation name types
 *]
@@ -2377,8 +2374,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Allow transfers to certificates IF member elects to transfer to a
 ** specific ID
 *]
-       ELSE IF PARAMNAME="ACE" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="ACE" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
           DO
@@ -2389,8 +2385,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Allow transfers to club shares IF member elects to transfer to a
 ** specific ID
 *]
-       ELSE IF PARAMNAME="ACL" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="ACL" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
           DO
@@ -2400,8 +2395,7 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 [* Share ID optional on new member transfers 
 *]
-       ELSE IF PARAMNAME="SIDO" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="SIDO" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
           PARAMSIDOPTIONAL=TRUE
@@ -2436,16 +2430,14 @@ PROCEDURE READCONFIGFILESETTINGS
         END        
 [* Debug mode
 *]
-       ELSE IF PARAMNAME="DB" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="DB" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-         DEBUGMODE=DEBUGMODEON
+          DEBUGMODE=DEBUGMODEON
         END
 [* Memo mode
 *]
-       ELSE IF PARAMNAME="MM" AND
-               PARAMVALUE<>"" THEN
+       ELSE IF PARAMNAME="MM" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
          PARAMMEMOMODE=DEBUGMODEON
