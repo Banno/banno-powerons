@@ -52,10 +52,8 @@
 **   Ver. 3.1.0  04/19/2023 R. Robison - Added support for label soft text on
 **               the member name and id input.  These labels are for the sub-title
 **               text under the main labels.
-**   Ver. 3.2.0  08/15/2023 R. Robison - Make optional the selecting of a share ID
-**               when creating a new transfer.  If the share ID is not provided, first
-**               find the first open draft share.  If not found, find the first open
-**               savings account.
+**   Ver. 3.1.1  08/30/2023 R. Robison - Code refactor including framework for
+**               the optional share ID feature.
 **           
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -372,10 +370,10 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.2.0"
- LASTMODDATE               = '08/16/2023'
- LASTMODTIME               = "12:30 MT"
- PROGRAMUPDATENOTE1        = "added optional share selection feature"
+ PROGRAMVERSION            = "3.1.1"
+ LASTMODDATE               = '08/30/2023'
+ LASTMODTIME               = "10:30 MT"
+ PROGRAMUPDATENOTE1        = "some code refactor"
  PROGRAMUPDATENOTE2        = ""
  NTSLTYPE                  = NTSLTYPESHARELOAN
  NTCROSSACCTACCESS         = TRUE
@@ -772,15 +770,7 @@ PROCEDURE VALIDATETARGETACCOUNT
         UPPERCASE(TARGETACCTTYPE)="SHARE" AND
         TARGETSLID="" THEN
       DO
-       SLFOUND=FALSE
-       FINDSHARECODE=1
-       IF PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
-        CALL FINDBYSHARECODE
-       FINDSHARECODE=0 
-       IF SLFOUND=FALSE AND
-          PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
-        CALL FINDBYSHARECODE
-
+       CALL FINDBYACCTTYPESHARE
        IF SLFOUND=FALSE THEN
         VALIDATESTATUS=TARGETNOTFOUNDBYTYPE
       END    
@@ -835,6 +825,21 @@ PROCEDURE VALIDATETARGETACCOUNT
  CALL BNODEBUGMSGADD
 
 END [PROCEDURE]
+
+PROCEDURE FINDBYACCTTYPESHARE
+[*this procedure contains custom logic for finding the share account if the option share ID feature is enabled.
+*]
+ SLFOUND=FALSE
+[ 
+ FINDSHARECODE=1
+ IF PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
+  CALL FINDBYSHARECODE
+ FINDSHARECODE=0 
+ IF SLFOUND=FALSE AND
+    PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
+  CALL FINDBYSHARECODE
+]  
+END
 
 PROCEDURE FINDBYSHARECODE
 
@@ -1754,8 +1759,10 @@ PROCEDURE PRINTCURRENTSTATE
 [* End labels
 *]
 
- PRINT ","+Q+"shareAcctIdOptional"+Q+": "+TRUEFALSECHR(PARAMSIDOPTIONAL)
+[* The share ID optional feature is not currently supported in baseline PowerOn.
+[PRINT ","+Q+"shareAcctIdOptional"+Q+": "+TRUEFALSECHR(PARAMSIDOPTIONAL)
  NEWLINE
+*]
 
 [* End currentState
 *]
