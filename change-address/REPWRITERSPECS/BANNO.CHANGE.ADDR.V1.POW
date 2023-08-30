@@ -26,9 +26,10 @@
 **                         Updated CFG file read error msg. Set param for note expiration days to 30
 **    Ver. 1.1.0  07/27/22 J. Carson - Added old address matching functionality to override 
 **                                     tracking 8 linking. Added confirmation email to be sent to member.
-**    Ver. 1.2.0  08/22/23 J. Carson - Added option of sending email to CU and adding address information 
+**    Ver. 1.2.0  08/30/23 J. Carson - Added option of sending email to CU and adding address information 
 **                                     to account note record if any error is encountered instead
 **                                     of sending request to conversations.
+**                                   - Added validation to ensure street, city, state and zip are not blank.
 *]
 SYMCONNECT
 STATELESS
@@ -153,6 +154,7 @@ DEFINE
  PARSETEXTLENGTH           = NUMBER
  PARSETEXTRAW              = CHARACTER
  POBOXFOUND                = NUMBER
+ MISSINGDATA               = NUMBER
  POBOXINPUTFOUND           = NUMBER
  POBOXLIST                 = CHARACTER ARRAY(20)
  POBOXLISTCOUNTMAX         = NUMBER
@@ -233,10 +235,10 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.2.0"
- LASTMODDATE='08/22/23'
+ LASTMODDATE='08/30/23'
  LASTMODTIME="10:00 ET"
  PROGRAMUPDATENOTE1="Added ability to override conversations with an email "
- PROGRAMUPDATENOTE2="to the CU and new address info in note record."
+ PROGRAMUPDATENOTE2="to the CU and new address info in note record. Input validation."
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -1158,47 +1160,76 @@ PROCEDURE VALIDATERGDATA
 [* Check the member's new street address to see if it contains
 ** a PO Box address per the CU's configuration settings. If a
 ** PO Box address is found, set an error code and create a
-** note record on the member's account
+** note record on the member's account. Also validates NEWSTREET,
+** NEWCITY, NEWSTATE and NEWZIPCODE are completed.
 ** PASS    NEWSTREET
+** PASS    NEWCITY
+** PASS    NEWSTATE
+** PASS    NEWZIPCODE
 ** PASS    PARAMPORESTRICT Boolean flag: should the street be
 **         checked for a PO Box address
 ** RETURN  POBOXFOUND  Boolean flag
-** RETURN  RESPONSECODE  Error code 503 if PO Box found
+** RETURN  MISSINGDATA Boolean flag
+** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
+**                       is found.
 *]
- POBOXFOUND=FALSE
- IF PARAMPORESTRICT=TRUE THEN
-  DO
-   BNODEBUGMSG="Validating street ("+NEWSTREET+") for PO Box"
-   CALL BNODEBUGMSGADD
+ MISSINGDATA=FALSE
+ IF NEWSTREET="" OR
+    NEWCITY="" OR
+    NEWSTATE="" OR
+    NEWZIPCODE="" THEN
+  MISSINGDATA=TRUE
 
-   FOR TMPLOOP=1 TO POBOXLISTMAX
-    DO
-     TMPCHR=UPPERCASE(POBOXLIST(TMPLOOP))
-     IF TMPCHR<>"" THEN
-      DO
-       BNODEBUGMSG="Evaluating: '"+TMPCHR+"'"
-       CALL BNODEBUGMSGADD
-       IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 THEN
-        DO
-         POBOXFOUND=TRUE
-         TMPLOOP=POBOXLISTMAX
-        END
-      END
-    END
-  END
-
- IF POBOXFOUND=TRUE THEN
+ IF MISSINGDATA=TRUE THEN
   DO
    CALL JSONOPEN
    CALL PRINTPROGRAMINFO
    RESPONSECODE=503
-   ERROR503CHR="Attempt to enter PO Box as street addr."
-   PARSEDTEXT(1)="Attempt to enter PO Box as street addr."
+   ERROR503CHR="Missing data in required field"
+   PARSEDTEXT(1)="Missing data in required field."
 
    CALL ERRORHANDLER
    CALL CREATENOTERECORD
    @RGSTATE=STATEEND
    @RGDATATYPE=9
+  END
+ ELSE IF MISSINGDATA=FALSE THEN
+  DO
+   POBOXFOUND=FALSE
+   IF PARAMPORESTRICT=TRUE THEN
+    DO
+     BNODEBUGMSG="Validating street ("+NEWSTREET+") for PO Box"
+     CALL BNODEBUGMSGADD
+
+     FOR TMPLOOP=1 TO POBOXLISTMAX
+      DO
+       TMPCHR=UPPERCASE(POBOXLIST(TMPLOOP))
+       IF TMPCHR<>"" THEN
+        DO
+         BNODEBUGMSG="Evaluating: '"+TMPCHR+"'"
+         CALL BNODEBUGMSGADD
+         IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 THEN
+          DO
+           POBOXFOUND=TRUE
+           TMPLOOP=POBOXLISTMAX
+          END
+        END
+      END
+    END
+
+   IF POBOXFOUND=TRUE THEN
+    DO
+     CALL JSONOPEN
+     CALL PRINTPROGRAMINFO
+     RESPONSECODE=503
+     ERROR503CHR="Attempt to enter PO Box as street addr."
+     PARSEDTEXT(1)="Attempt to enter PO Box as street addr."
+
+     CALL ERRORHANDLER
+     CALL CREATENOTERECORD
+     @RGSTATE=STATEEND
+     @RGDATATYPE=9
+    END
   END
 END [PROCEDURE]
 
