@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHANGE.ADDR.V1.POW
 **  Letterfile Name:    BANNO.CHANGE.ADDR.V1.CFG
 **
-**  Copyright 2021-2022 Jack Henry
+**  Copyright 2021-2023 Jack Henry
 **
 **  This Banno PowerOn allows the member to update their
 **  address (Street, Extra Address, City, State, Zipcode, member note).
@@ -26,6 +26,10 @@
 **                         Updated CFG file read error msg. Set param for note expiration days to 30
 **    Ver. 1.1.0  07/27/22 J. Carson - Added old address matching functionality to override 
 **                                     tracking 8 linking. Added confirmation email to be sent to member.
+**    Ver. 1.2.0  08/30/23 J. Carson - Added option of sending email to CU and adding address information 
+**                                     to account note record if any error is encountered instead
+**                                     of sending request to conversations.
+**                                   - Added validation to ensure street, city, state and zip are not blank.
 *]
 SYMCONNECT
 STATELESS
@@ -140,12 +144,17 @@ DEFINE
  PARAMVALIDATIONERRORCHR   = CHARACTER
  PARAMVALUE                = CHARACTER
  PARAMWARNINGSACCT         = CHARACTER
+ PARAMOVERRIDECONVS        = NUMBER
+ PARAMOVERRIDEEMAIL        = CHARACTER
  PARSEDTEXT                = CHARACTER(40) ARRAY(50)
  PARSEDTEXTCOUNT           = NUMBER
  PARSEDTEXTSTART           = NUMBER
+ ADDRDETAILTEXT            = CHARACTER ARRAY(4)
+ ADDRDETAILMAX             = 4
  PARSETEXTLENGTH           = NUMBER
  PARSETEXTRAW              = CHARACTER
  POBOXFOUND                = NUMBER
+ MISSINGDATA               = NUMBER
  POBOXINPUTFOUND           = NUMBER
  POBOXLIST                 = CHARACTER ARRAY(20)
  POBOXLISTCOUNTMAX         = NUMBER
@@ -225,11 +234,11 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.1.0"
- LASTMODDATE='10/04/22'
+ PROGRAMVERSION="1.2.0"
+ LASTMODDATE='08/30/23'
  LASTMODTIME="10:00 ET"
- PROGRAMUPDATENOTE1="Added old address matching functionality to override "
- PROGRAMUPDATENOTE2="tracking 8 linking. Added member email confirmation."
+ PROGRAMUPDATENOTE1="Added ability to override conversations with an email "
+ PROGRAMUPDATENOTE2="to the CU and new address info in note record. Input validation."
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -664,7 +673,7 @@ END [PROCEDURE]
 
 PROCEDURE POSTFMPROCESS
 [* Clears and sets warning codes upon successful FM. Sends
-** confirmation email tto member.
+** confirmation email to member.
 *]
  PARSEDTEXT(1)="Banno Successful Address Change"
  CALL CREATENOTERECORD
@@ -693,18 +702,10 @@ PROCEDURE POSTFMPROCESS
     BNODEBUGMSG=FORMAT("WARNING #####9 SUCCESSFULLY SET",WARNINGTOSET)
    CALL BNODEBUGMSGADD
   END
-[ Upon next update deactivate the testing for this change
-  by replacing code below with: 
 
  IF PARAMSENDEMAIL=TRUE THEN
   CALL SENDEMAIL
-]
 
- IF (PARAMSENDEMAIL=TRUE AND
-    (PARAMTESTACCTS="" OR
-    (PARAMTESTACCTS<>"" AND
-     TESTUSER=TRUE))) THEN
-  CALL SENDEMAIL
 END [PROCEDURE]
 
 PROCEDURE GETNAMELOCS
@@ -1159,47 +1160,76 @@ PROCEDURE VALIDATERGDATA
 [* Check the member's new street address to see if it contains
 ** a PO Box address per the CU's configuration settings. If a
 ** PO Box address is found, set an error code and create a
-** note record on the member's account
+** note record on the member's account. Also validates NEWSTREET,
+** NEWCITY, NEWSTATE and NEWZIPCODE are completed.
 ** PASS    NEWSTREET
+** PASS    NEWCITY
+** PASS    NEWSTATE
+** PASS    NEWZIPCODE
 ** PASS    PARAMPORESTRICT Boolean flag: should the street be
 **         checked for a PO Box address
 ** RETURN  POBOXFOUND  Boolean flag
-** RETURN  RESPONSECODE  Error code 503 if PO Box found
+** RETURN  MISSINGDATA Boolean flag
+** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
+**                       is found.
 *]
- POBOXFOUND=FALSE
- IF PARAMPORESTRICT=TRUE THEN
-  DO
-   BNODEBUGMSG="Validating street ("+NEWSTREET+") for PO Box"
-   CALL BNODEBUGMSGADD
+ MISSINGDATA=FALSE
+ IF NEWSTREET="" OR
+    NEWCITY="" OR
+    NEWSTATE="" OR
+    NEWZIPCODE="" THEN
+  MISSINGDATA=TRUE
 
-   FOR TMPLOOP=1 TO POBOXLISTMAX
-    DO
-     TMPCHR=UPPERCASE(POBOXLIST(TMPLOOP))
-     IF TMPCHR<>"" THEN
-      DO
-       BNODEBUGMSG="Evaluating: '"+TMPCHR+"'"
-       CALL BNODEBUGMSGADD
-       IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 THEN
-        DO
-         POBOXFOUND=TRUE
-         TMPLOOP=POBOXLISTMAX
-        END
-      END
-    END
-  END
-
- IF POBOXFOUND=TRUE THEN
+ IF MISSINGDATA=TRUE THEN
   DO
    CALL JSONOPEN
    CALL PRINTPROGRAMINFO
    RESPONSECODE=503
-   ERROR503CHR="Attempt to enter PO Box as street addr."
-   PARSEDTEXT(1)="Attempt to enter PO Box as street addr."
+   ERROR503CHR="Missing data in required field"
+   PARSEDTEXT(1)="Missing data in required field."
 
    CALL ERRORHANDLER
    CALL CREATENOTERECORD
    @RGSTATE=STATEEND
    @RGDATATYPE=9
+  END
+ ELSE IF MISSINGDATA=FALSE THEN
+  DO
+   POBOXFOUND=FALSE
+   IF PARAMPORESTRICT=TRUE THEN
+    DO
+     BNODEBUGMSG="Validating street ("+NEWSTREET+") for PO Box"
+     CALL BNODEBUGMSGADD
+
+     FOR TMPLOOP=1 TO POBOXLISTMAX
+      DO
+       TMPCHR=UPPERCASE(POBOXLIST(TMPLOOP))
+       IF TMPCHR<>"" THEN
+        DO
+         BNODEBUGMSG="Evaluating: '"+TMPCHR+"'"
+         CALL BNODEBUGMSGADD
+         IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 THEN
+          DO
+           POBOXFOUND=TRUE
+           TMPLOOP=POBOXLISTMAX
+          END
+        END
+      END
+    END
+
+   IF POBOXFOUND=TRUE THEN
+    DO
+     CALL JSONOPEN
+     CALL PRINTPROGRAMINFO
+     RESPONSECODE=503
+     ERROR503CHR="Attempt to enter PO Box as street addr."
+     PARSEDTEXT(1)="Attempt to enter PO Box as street addr."
+
+     CALL ERRORHANDLER
+     CALL CREATENOTERECORD
+     @RGSTATE=STATEEND
+     @RGDATATYPE=9
+    END
   END
 END [PROCEDURE]
 
@@ -1320,6 +1350,10 @@ PROCEDURE CREATENOTERECORD
 [* Create a note record on the member's account
 ** PASS PARSEDTEXT()  Array of member's note
 *]
+
+ IF PARAMOVERRIDECONVS=TRUE THEN
+  CALL ADDADDRDETAILSNOTE
+
  FMPERFORM CREATE NOTE LOC BEFOREFIRST (0,0,NEWLOC,FMERROR)
   DO
    SET TEXT:1 TO PARSEDTEXT(1)
@@ -1436,6 +1470,10 @@ PROCEDURE ERRORHANDLER
   ELSE
    ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type 9999",ACCOUNT:TYPE)
 
+ IF PARAMOVERRIDECONVS=TRUE AND
+    RESPONSECODE<>504 THEN
+  CALL OVERRIDECONVERSATIONS
+   
  PRINT "    "+Q+"responseCode"+Q+": "+FORMAT(Q+"999"+Q,RESPONSECODE)+","
  NEWLINE
  PRINT "    "+Q+ERRORMSG+Q+": "+
@@ -1443,11 +1481,78 @@ PROCEDURE ERRORHANDLER
  NEWLINE
 END [PROCEDURE]
 
+PROCEDURE OVERRIDECONVERSATIONS
+[* If conversations override is enabled, this procedure
+** sends an email to the specified CU email address, adds
+** address information to the account note, and overrides
+** response code to 504 (successful address change) so the
+** UX does not open a conversation in Banno People.
+*]
+ EMAILSENDERROR=""
+ EMAILSTART(PARAMOVERRIDEEMAIL,PARAMOVERRIDEEMAIL,"Banno Address Change - Intervention Needed",EMAILSENDERROR)
+ IF EMAILSENDERROR="" THEN
+  DO
+   EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
+   EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
+   EMAILLINE("",EMAILSENDERROR)
+   EMAILLINE("The following account attempted a Banno address change but there was an error, ",EMAILSENDERROR)
+   EMAILLINE("manual intervention is needed :",EMAILSENDERROR)
+   EMAILLINE("<br /><br />",EMAILSENDERROR)
+   EMAILLINE("Account : xxxxxx"+SEGMENT(ACCOUNT:NUMBER,7,10)+" "+NAME:SHORTNAME,EMAILSENDERROR)
+   EMAILLINE("<br />",EMAILSENDERROR)
+   EMAILLINE("Error Detail : "+ERRORDETAIL(ERRORDETAILOFFSET),EMAILSENDERROR)
+   EMAILLINE("<br /><br />",EMAILSENDERROR)
+   EMAILLINE("New address information can be found in the account notes.",EMAILSENDERROR)
+   EMAILLINE("<br />",EMAILSENDERROR)
+   EMAILSEND(EMAILSENDERROR)
+  END 
+
+ RESPONSECODE=504
+ IF EMAILSENDERROR<>"" THEN
+  ERRORDETAIL(ERRORDETAILOFFSET)="Override email error: "+SEGMENT(EMAILSENDERROR,1,60)
+ ELSE
+  ERRORDETAIL(ERRORDETAILOFFSET)="Conversations override email sent to "+PARAMOVERRIDEEMAIL
+END [PROCEDURE]
+
+PROCEDURE ADDADDRDETAILSNOTE
+[* If conversations override is enabled, this procedure creates
+** a new account level note with the new address information.
+*]
+ FOR TMPLOOP=1 TO ADDRDETAILMAX
+  DO
+   ADDRDETAILTEXT(TMPLOOP)=""
+  END
+
+ IF NEWSTREET<>"" OR NEWEXTRAADDR<>"" OR
+    NEWCITY<>"" OR NEWSTATE<>"" OR 
+    NEWZIPCODE<>"" THEN
+  DO    
+   ADDRDETAILTEXT(1)="New address details:"
+   ADDRDETAILTEXT(2)=UPPERCASE(NEWSTREET)
+   IF NEWEXTRAADDR<>"" THEN
+    DO
+     ADDRDETAILTEXT(3)=UPPERCASE(NEWEXTRAADDR)
+     ADDRDETAILTEXT(4)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
+    END
+   ELSE IF NEWEXTRAADDR="" THEN
+    ADDRDETAILTEXT(3)=UPPERCASE(NEWCITY)+", "+UPPERCASE(NEWSTATE)+" "+UPPERCASE(NEWZIPCODE)
+  END
+
+  FMPERFORM CREATE NOTE LOC BEFOREFIRST (0,0,NEWLOC,FMERROR)
+   DO
+    SET TEXT:1 TO ADDRDETAILTEXT(1)
+    SET TEXT:2 TO ADDRDETAILTEXT(2)
+    SET TEXT:3 TO ADDRDETAILTEXT(3)
+    SET TEXT:4 TO ADDRDETAILTEXT(4)
+    SET EXPIRATIONDATE TO SYSTEMDATE+NOTEEXPIREDAYS
+   END
+END [PROCEDURE]
+
 PROCEDURE READCONFIGFILESETTINGS
 [* Read parameter settings from the configuration Letter file.
 **  IAT    PARAMINELIGIBLEACCTS  Ineligible Account Type(s) (in LISTEXPAND format)
 **  AW     PARAMWARNINGSACCT     Acct level warnings which exclude account (in LISTEXPAND format)
-**  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successfull address change
+**  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successful address change
 **  SW     PARAMSETWARNINGS      Account level warning to set upon successful address change
 **  PR     PARAMPORESTRICT       Should the program check for and restrict a PO box entry?
 **  DB     DEBUGMODE             Debug mode on or off
@@ -1479,6 +1584,8 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMEMAILSUBJECT="Address Update Notice"
  PARAMMATCHNAMELVL="NONE"
  PARAMMATCHNMTYPES="NONE"
+ PARAMOVERRIDECONVS=FALSE
+ PARAMOVERRIDEEMAIL=""
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -1533,7 +1640,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Send email flag
 *]
        ELSE IF PARAMNAME="SE" AND
-          PARAMVALUE<>"" THEN
+               PARAMVALUE<>"" THEN
         DO
          IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
          PARAMSENDEMAIL=TRUE
@@ -1583,6 +1690,21 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="TA" AND
                PARAMVALUE<>"" THEN
         PARAMTESTACCTS=PARAMVALUE         
+
+[* Override conversations
+*]
+       ELSE IF PARAMNAME="OC" AND
+               PARAMVALUE<>"" THEN
+        DO
+         IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
+          PARAMOVERRIDECONVS=TRUE
+        END
+
+[* Override conversations email 
+*]
+       ELSE IF PARAMNAME="OE" AND
+               PARAMVALUE<>"" THEN
+        PARAMOVERRIDEEMAIL=PARAMVALUE
 
 [* Debug mode
 *]
@@ -1651,6 +1773,10 @@ PROCEDURE READCONFIGFILESETTINGS
  BNODEBUGMSG="MT:"+PARAMMATCHNMTYPES
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="TA:"+PARAMTESTACCTS
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="OC:"+FORMAT("9",PARAMOVERRIDECONVS)
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="OE:"+PARAMOVERRIDEEMAIL
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="DB:"+FORMAT("9",DEBUGMODE)
  CALL BNODEBUGMSGADD
@@ -1741,17 +1867,16 @@ PROCEDURE READCONFIGFILESETTINGS
  IF CHARACTERSEARCH(PARAMTESTACCTS,ACCOUNT:NUMBER)>0 THEN
   TESTUSER=TRUE
  
-[ Upon next update deactivate the testing for this change
-  by replacing code below with: 
-
  IF PARAMMATCHNAMELVL<>"NONE" THEN
   PERFORMMATCHING=TRUE
-]
- IF (PARAMMATCHNAMELVL<>"NONE" AND
-    (PARAMTESTACCTS="" OR
-    (PARAMTESTACCTS<>"" AND
-     TESTUSER=TRUE))) THEN
-  PERFORMMATCHING=TRUE
+
+[* Upon next update, deactivate the testing for this change
+** by deleting the remainder of the procedure below: 
+*]
+ IF PARAMOVERRIDECONVS=TRUE AND
+    PARAMTESTACCTS<>"" AND
+    TESTUSER=FALSE THEN
+  PARAMOVERRIDECONVS=FALSE
 
 END [PROCEDURE]
 
@@ -1898,6 +2023,21 @@ PROCEDURE VALIDATECONFIG
         END
       END
     END
+   IF PARAMOVERRIDECONVS=TRUE AND
+      PARAMVALIDATIONERROR=FALSE THEN
+    DO
+      ATPOS=0
+      DOTPOS=0
+      ATPOS=CHARACTERSEARCH(PARAMOVERRIDEEMAIL,"@")
+      IF ATPOS>0 THEN
+       DOTPOS=CHARACTERSEARCH(SEGMENT(PARAMOVERRIDEEMAIL,ATPOS+1,LENGTH(PARAMOVERRIDEEMAIL)),".")
+      IF ATPOS=0 OR
+         DOTPOS=0 THEN
+       DO
+        PARAMVALIDATIONERROR=TRUE
+        PARAMVALIDATIONERRORCHR="Invalid email address specified for Conversations override."
+       END
+     END
   END
 
  IF PARAMVALIDATIONERROR=TRUE THEN
@@ -2005,7 +2145,7 @@ END [PROCEDURE]
 
 PROCEDURE PARSEDATALINE
 [* Parse through a line of data, looking for a pipe delimiter.
-** Seperate text at the delimiter storing each segment into
+** Separate text at the delimiter storing each segment into
 ** array elements
 ** PASS    DATALINE  Text to parse through
 ** PASS    DELIMITER Field delimiter used in DATALINE
@@ -2245,3 +2385,4 @@ PROCEDURE SENDEMAIL
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
