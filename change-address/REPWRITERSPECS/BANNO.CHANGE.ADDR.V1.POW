@@ -30,6 +30,8 @@
 **                                     to account note record if any error is encountered instead
 **                                     of sending request to conversations.
 **                                   - Added validation to ensure street, city, state and zip are not blank.
+**    Ver. 1.2.1  09/20/23 J. Carson - Increased size of member note from 110 characters to 130. Fixed issue 
+**                                     with truncating long member notes.
 *]
 SYMCONNECT
 STATELESS
@@ -234,11 +236,10 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.2.0"
- LASTMODDATE='08/30/23'
- LASTMODTIME="10:00 ET"
- PROGRAMUPDATENOTE1="Added ability to override conversations with an email "
- PROGRAMUPDATENOTE2="to the CU and new address info in note record. Input validation."
+ PROGRAMVERSION="1.2.1"
+ LASTMODDATE='09/20/23'
+ LASTMODTIME="09:00 ET"
+ PROGRAMUPDATENOTE1="Member note truncation and length fixes"
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -1062,7 +1063,7 @@ PROCEDURE PULLRGDATA
 
 [* member note
 *]
-   DATALINE=SEGMENT(@RGUSERCHR3,1,110)
+   DATALINE=SEGMENT(@RGUSERCHR3,1,130)
    IF DATALINE<>"" THEN
     DO
      TMPCHR=DATALINE
@@ -1075,7 +1076,7 @@ PROCEDURE PULLRGDATA
    PARSEDTEXTSTART=2
    PARSETEXTLENGTH=40
    CALL PARSETEXTFIELD
-   BNODEBUGMSG="RG3:"+SEGMENT(@RGUSERCHR3,1,110)
+   BNODEBUGMSG="RG3:"+SEGMENT(@RGUSERCHR3,1,130)
    CALL BNODEBUGMSGADD
    BNODEBUGMSG=FORMAT("TEXT LINES=9",PARSEDTEXTCOUNT)
    CALL BNODEBUGMSGADD
@@ -2256,7 +2257,7 @@ PROCEDURE PRINTPROGRAMINFO
 END [PROCEDURE]
 
 PROCEDURE PARSETEXTFIELD
-[* Parse through a single text variable with a max length of 110
+[* Parse through a single text variable with a max length of 130
 ** characters to create an array of the text where each element
 ** of the array is limited to a max number of characters. Procedure will create
 ** a segment break at the first space found prior to the max segment length. If
@@ -2290,6 +2291,7 @@ PROCEDURE PARSETEXTFIELD
    ELSE
     DO
      POS=40
+     FOUND=FALSE
      WHILE (FOUND=FALSE AND POS>0)
       DO
        IF SEGMENT(PARSETEXTRAW,POS,POS)=" " THEN
@@ -2385,4 +2387,3 @@ PROCEDURE SENDEMAIL
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
