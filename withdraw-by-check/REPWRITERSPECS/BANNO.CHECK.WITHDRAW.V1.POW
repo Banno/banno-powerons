@@ -17,6 +17,8 @@
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was
 **                           keeping blank lines from being recognized by the UX.
+**   Ver. 1.1.1  10/23/2023: T. Kainz - Added check to make sure CFG settings are validated
+**                           to have at least one valid Share or Loan type defined.
 **
 **  This Banno service PowerOn allows the user to request a
 **  withdrawal by check from an eligible share or loan
@@ -140,11 +142,11 @@ SETUP
  Q=CTRLCHR(34)
 
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='08/18/22'
- BNOLASTMODTIME="12:30 MT"
+ BNOLASTMODDATE='10/23/23'
+ BNOLASTMODTIME="17:30 MT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
- BNOPROGRAMVERSION="1.1.0"
+ BNOPROGRAMVERSION="1.1.1"
  BNOPRINTDEBUGINFODAYS=90
 
  SLIDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
@@ -747,6 +749,20 @@ PROCEDURE READCONFIGFILESETTINGS
     END
   END
 
+ IF PARAMVALIDSHARETYPES="NONE" AND
+    PARAMVALIDLOANTYPES="NONE" THEN
+  DO
+   READCONFIGERROR=TRUE
+   READCONFIGERRORMSG="CFG Letterfile Error: No Share/Loan types defined."
+  END
+
+ IF READCONFIGERROR=FALSE THEN
+  CALL CONFIGFILEPOSTPROCESS
+END [PROCEDURE]
+
+PROCEDURE CONFIGFILEPOSTPROCESS
+[* Do post-processing of config file settings
+*]
  LELISTINPUT=PARAMVALIDSHARETYPES
  CALL LISTEXPAND
  FOR TMPLOOP=0 TO MAXSLTYPES
