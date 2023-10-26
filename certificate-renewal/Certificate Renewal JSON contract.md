@@ -278,9 +278,40 @@ If any request is not successful for any number of reasons, or the desired actio
 {
   "errorCode": "XXX",
   "loggingErrorMessage": "[error code detail]"
-}
+} // used for Error Codes 500-502 and 504-506
 ```
 
+```json
+{ // used for Error Code 503
+  "errorCode": "503",
+  "loggingErrorMessage": "[error code detail]",
+    "currentState": {
+      "name": "My Wonderful CD",
+      "maturityDate": "01/01/21",
+      "minimumBalance": "12345.67",
+      "currentStatus": "Renew",
+      "renewName": "24 MONTH CERTIFICATE",
+      "renewTermPeriod": 24,
+      "renewTermFrequency": "Months",
+      "ineligibleIrsCode": false,
+      "transfers": [
+        {
+          "transferSLId": "0000800005S0002",
+          "transferName": "REGULAR CHECKING",
+          "transferAmount": "null",
+          "transferPercent": "50.000"
+        }
+      ],
+      "autoTransfers": [
+        {
+          "transferSLId": "0000800005S0002",
+          "transferName": "REGULAR CHECKING",
+          "transferAmount": "600.00"
+        }
+      ]
+    }
+}
+```
 ## Error Codes
 
 | errorCode | loggingErrorMessage                                             |
@@ -292,3 +323,4 @@ If any request is not successful for any number of reasons, or the desired actio
 | 504       | Processing Error                                                |
 | 505       | Cross account access attempt                                    |
 | 506       | Renew options not set for Share type                            |
+
