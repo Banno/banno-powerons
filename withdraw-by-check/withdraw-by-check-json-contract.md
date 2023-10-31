@@ -53,11 +53,7 @@ _program version 1.2.0 - 10/24/23_
       "50613",
       "ADDRESS 6"
     ],
-    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."],
-    "crossAcctErrorText": [
-      "You must be an account owner in order to withdraw by check.",
-      "Please contact the credit union at 800-370-1549 to withdrawal a check from this account."
-    ]
+    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
   }
 }
 ```
@@ -84,6 +80,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 {
   "errorCode": 999,
   "loggingErrorMessage": "error message detail"
+  "displayErrorMessage": ["display error message detail"]
 }
 ```
 
@@ -92,6 +89,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
+- displayErrorMessage: An array of up to 5 display lines.  If included, this message will display in place of the hard-coded UX display message.
 
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
@@ -169,6 +167,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
+- displayErrorMessage: An array of up to 5 display lines.  If included, this message will display in place of the hard-coded UX display message.
 - requested: The amount of the WD that was requested
 - minWdAmount: the minimum WD amount (from parameter settings)
 - maxWdAmount: the maximum WD amount (from parameter settings)
