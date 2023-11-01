@@ -17,6 +17,8 @@
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was
 **                           keeping blank lines from being recognized by the UX.
+**   Ver. 1.1.1  10/23/2023: T. Kainz - Added check to make sure CFG settings are validated
+**                           to have at least one valid Share or Loan type defined.
 **   Ver. 1.2.0  11/01/2023: R. Robison - Added support for displayErrorMessage soft text.
 **                           Refactor of error handling.
 **
@@ -865,13 +867,20 @@ PROCEDURE READCONFIGFILESETTINGS
     END
   END
 
- CALL CONFIGFILEPOSTPROCESS
+ IF PARAMVALIDSHARETYPES="NONE" AND
+    PARAMVALIDLOANTYPES="NONE" THEN
+  DO
+   READCONFIGERROR=TRUE
+   READCONFIGERRORMSG="CFG Letterfile Error: No Share/Loan types defined."
+  END
+
+ IF READCONFIGERROR=FALSE THEN
+  CALL CONFIGFILEPOSTPROCESS
 END [PROCEDURE]
 
 PROCEDURE CONFIGFILEPOSTPROCESS
 [* Do post-processing of config file settings
 *]
-
  LELISTINPUT=PARAMVALIDSHARETYPES
  CALL LISTEXPAND
  FOR TMPLOOP=0 TO MAXSLTYPES
