@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHECK.WITHDRAW.V1.POW
 **  Letterfile Name:    BANNO.CHECK.WITHDRAW.V1.CFG
 **
-**  Copyright 2020-2022 Jack Henry & Associates, Inc.
+**  Copyright 2020-2023 Jack Henry & Associates, Inc.
 **
 **  Modification History:
 **   Ver. 1.0.0  03/13/2020: T. Kainz - Original Programming
@@ -17,7 +17,8 @@
 **                           info and debug output to JSON output. Corrected loan available
 **                           amounts calculations. Corrected parameter file reading which was
 **                           keeping blank lines from being recognized by the UX.
-**   Ver. 1.2.0  10/31/2023: R. Robison - Added support for displayErrorMessage soft text
+**   Ver. 1.2.0  11/01/2023: R. Robison - Added support for displayErrorMessage soft text.
+**                           Refactor of error handling.
 **
 **  This Banno service PowerOn allows the user to request a
 **  withdrawal by check from an eligible share or loan
@@ -47,6 +48,11 @@ DEFINE
  STATEPERFORMWITHDRAW      = "PERFORMWITHDRAW"
  DATENULL                  = '--/--/--'
 
+ RGMEMBERNUM               = CHARACTER
+ RGSLTYPE                  = CHARACTER
+ RGSLID                    = CHARACTER
+ RGWDAMOUNT                = MONEY
+
  BNODEBUGMODE              = NUMBER
  LFNUMBER                  = NUMBER
  LFERROR                   = CHARACTER
@@ -72,11 +78,6 @@ DEFINE
 
  PARAMNAME                 = CHARACTER
  PARAMVALUE                = CHARACTER
- 
- RGMEMBERNUM               = CHARACTER
- RGSLTYPE                  = CHARACTER
- RGSLID                    = CHARACTER
- RGWDAMOUNT                = MONEY
 
  NAMEFOUND                 = NUMBER
  VALIDSHARETYPES           = NUMBER    ARRAY(9999)
@@ -114,7 +115,6 @@ DEFINE
  MAXCHRVALUE               = 255
  BACKSLASH                 = CHARACTER
  JSONBOOLEAN               = CHARACTER ARRAY(1)
-
  JSONPROPNAME              = CHARACTER
 
 [* Validate status codes
@@ -192,7 +192,7 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
 
- BNOLASTMODDATE='10/31/22'
+ BNOLASTMODDATE='11/01/23'
  BNOLASTMODTIME="14:30 MT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"

@@ -72,7 +72,6 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - owner: The primary member's long name (NAME:LONGNAME)
 - address: The system calculated mailing address (ACCOUNT:PAYEELINE[1-6])
 - disclaimerText: Custom terms and conditions as set up in the parameter settings Letter file.
-- crossAcctErrorText: Custom error text used when user attempts check wd from cross account.
 
 **When error condition is encountered:**
 
@@ -89,7 +88,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
-- displayErrorMessage: An array of up to 5 display lines.  If included, this message will display in place of the hard-coded UX display message.
+- displayErrorMessage: An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message.
 
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
@@ -102,6 +101,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |503|Target Share/Loan not found|
 |503|Share/Loan invalid type|
 |503|Share/Loan warning found|
+|505|Cross Account access attempt|
 
 ## PERFORMWITHDRAW state
 
@@ -167,10 +167,10 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
-- displayErrorMessage: An array of up to 5 display lines.  If included, this message will display in place of the hard-coded UX display message.
-- requested: The amount of the WD that was requested
-- minWdAmount: the minimum WD amount (from parameter settings)
-- maxWdAmount: the maximum WD amount (from parameter settings)
+- displayErrorMessage: An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message.
+- requested: The amount of the WD that was requested *--for Error Code 506 only-*
+- minWdAmount: the minimum WD amount (from parameter settings) *--for Error Code 506 only--*
+- maxWdAmount: the maximum WD amount (from parameter settings) *--for Error Code 506 only--*
 
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
@@ -187,7 +187,8 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |505|Cross Account access attempt|
 |506|Amount requested out of bounds|
 |507|Amount requested exceeds available/NSF
-|509|Unhandled Error (catch-all)|
+|508|Unhandled Error (catch-all)|
+|509|TRANPERFORM Other Error|
 
 ## Additional Information
 
