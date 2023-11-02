@@ -52,7 +52,7 @@
 **   Ver. 3.1.0  04/19/2023 R. Robison - Added support for label soft text on
 **               the member name and id input.  These labels are for the sub-title
 **               text under the main labels.
-**   Ver. 3.1.1  08/30/2023 R. Robison - Code refactor including framework for
+**   Ver. 3.2.0  11/02/2023 R. Robison - Code refactor including framework for
 **               the optional share ID feature.
 **           
 **
@@ -371,9 +371,9 @@ SETUP
  #INCLUDE "BNO.INTERACTIVE.INIT"
 
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.1.1"
- LASTMODDATE               = '08/30/2023'
- LASTMODTIME               = "10:30 MT"
+ PROGRAMVERSION            = "3.2.0"
+ LASTMODDATE               = '11/02/2023'
+ LASTMODTIME               = "17:00 MT"
  PROGRAMUPDATENOTE1        = "some code refactor"
  PROGRAMUPDATENOTE2        = ""
  NTSLTYPE                  = NTSLTYPESHARELOAN
