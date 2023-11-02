@@ -295,6 +295,7 @@ If any request is not successful for any number of reasons, or the desired actio
             "renewTermPeriod": 24,
             "renewTermFrequency": "Months",
             "ineligibleIrsCode": false,
+            "transfers": [
                 {
                     "transferSLId": "0000800005S0002",
                     "transferName": "REGULAR CHECKING",
