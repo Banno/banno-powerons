@@ -174,22 +174,23 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - maxWdAmount: the maximum WD amount (from parameter settings) _--for Error Code 506 only--_
 
 **Error Code detail:**
-|Error Code| Logging Error Message Detail|
-|-|-|
-|500|Error processing BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_
-|501|Target Share/Loan available balance<=$0.00
-|502|Invalid address|
-|503|Account not found|
-|503|Account warning found|
-|503|Target Share/Loan not found|
-|503|Share/Loan invalid type|
-|503|Share/Loan warning found|
-|504|Reg D error|
-|505|Cross Account access attempt|
-|506|Amount requested out of bounds|
-|507|Amount requested exceeds available/NSF
-|508|Unhandled Error (catch-all)|
-|509|TRANPERFORM Other Error|
+
+| Error Code | Logging Error Message Detail                                                     |
+| ---------- | -------------------------------------------------------------------------------- |
+| 500        | Error processing BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_ |
+| 501        | Target Share/Loan available balance<=$0.00                                       |
+| 502        | Invalid address                                                                  |
+| 503        | Account not found                                                                |
+| 503        | Account warning found                                                            |
+| 503        | Target Share/Loan not found                                                      |
+| 503        | Share/Loan invalid type                                                          |
+| 503        | Share/Loan warning found                                                         |
+| 504        | Reg D error                                                                      |
+| 505        | Cross Account access attempt                                                     |
+| 506        | Amount requested out of bounds                                                   |
+| 507        | Amount requested exceeds available/NSF                                           |
+| 508        | Unhandled Error (catch-all)                                                      |
+| 509        | TRANPERFORM Other Error                                                          |
 
 ## Additional Information
 
