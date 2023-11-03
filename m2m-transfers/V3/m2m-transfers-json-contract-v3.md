@@ -1,4 +1,4 @@
-#JSON contract for BANNO.M2MTRANSFERS.V3.POW
+# JSON contract for BANNO.M2MTRANSFERS.V3.POW
 
 ## GET PRELOADDATA STATE
 
@@ -116,7 +116,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
     "labels": {
       "memberNameSubTitle": null,
       "idSubTitle": null
-    }
+    },
+    "shareAcctIdOptional": false
   }
 }
 ```
@@ -171,7 +172,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
 ```jsonc
 {
   "results": {
-    "verified": true
+    "verified": true,
+    "recipientAccountId": "0010" // account ID
   }
 }
 ```
@@ -374,23 +376,35 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 
 ### Error Codes
 
-501 - Config file read / validation error
-502 - Invalid source account
-503 - Invalid recipient account
-504 - Insufficient information
-505 - Invalid input
-506 - Error creating/deleting recipient
-507 - Error creating/updating/deleting transfer
-508 - Undefined error
-509 - Member unverified
-510 - AccountId incorrect
+| errorCode | loggingErrorMessage                       |
+| --------- | ----------------------------------------- |
+| 501       | Config file read / validation error       |
+| 502       | Invalid source account                    |
+| 503       | Invalid recipient account                 |
+| 504       | Insufficient information                  |
+| 505       | Invalid input                             |
+| 506       | Error creating/deleting recipient         |
+| 507       | Error creating/updating/deleting transfer |
+| 508       | Undefined error                           |
+| 509       | Member unverified                         |
+| 510       | AccountId incorrect                       |
 
 ### Transfer Frequencies
 
-The following strings are all valid transfer frequencies:
-once, weekly, monthly, semiMonthly, biweekly, quarterly(?), yearly(?)
+*The following strings are all valid transfer frequencies:*
+- once
+- weekly
+- monthly
+- semiMonthly
+- biweekly
+- quarterly(?)
+- yearly(?)
 
 ### Account types
 
 The recipient member's account id is optional when creating a new transfer and when displaying saved recipients
-available account types are savings checking, loan
+
+*Available account types are:*
+- savings
+- checking
+- loan
