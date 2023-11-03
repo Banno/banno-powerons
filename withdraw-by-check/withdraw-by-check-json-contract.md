@@ -59,6 +59,7 @@ _program version 1.2.0 - 10/24/23_
 ```
 
 **Results detail:**
+
 Unless otherwise noted, all values will be passed as double-quote encapsulated character values
 
 - eligible: Is the member eligible for this service (boolean).
@@ -84,6 +85,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 ```
 
 **Error detail:**
+
 Unless otherwise noted, all values will be passed as double-quote encapsulated character values
 
 - errorCode: error code generated (numeric)
@@ -91,17 +93,18 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - displayErrorMessage: An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message.
 
 **Error Code detail:**
-|Error Code| Logging Error Message Detail|
-|---|---|
-|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_|
-|501|Target Share/Loan available balance<=$0.00|
-|502|Invalid address|
-|503|Account not found|
-|503|Account warning found|
-|503|Target Share/Loan not found|
-|503|Share/Loan invalid type|
-|503|Share/Loan warning found|
-|505|Cross Account access attempt|
+
+| Error Code | Logging Error Message Detail                                                             |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| 500        | Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_ |
+| 501        | Target Share/Loan available balance<=$0.00                                               |
+| 502        | Invalid address                                                                          |
+| 503        | Account not found                                                                        |
+| 503        | Account warning found                                                                    |
+| 503        | Target Share/Loan not found                                                              |
+| 503        | Share/Loan invalid type                                                                  |
+| 503        | Share/Loan warning found                                                                 |
+| 505        | Cross Account access attempt                                                             |
 
 ## PERFORMWITHDRAW state
 
