@@ -78,7 +78,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 ```json
 {
   "errorCode": 999,
-  "loggingErrorMessage": "error message detail"
+  "loggingErrorMessage": "error message detail",
   "displayErrorMessage": ["display error message detail"]
 }
 ```
@@ -92,9 +92,9 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
-|-|-|
-|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_
-|501|Target Share/Loan available balance<=$0.00
+|---|---|
+|500|Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_|
+|501|Target Share/Loan available balance<=$0.00|
 |502|Invalid address|
 |503|Account not found|
 |503|Account warning found|
@@ -157,6 +157,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 {
   "errorCode": 999,
   "loggingErrorMessage": "error message detail",
+  "displayErrorMessage": ["display error message detail"],
   "requested": "123456.00",
   "minWdAmount": "123456.00",
   "maxWdAmount": "123456.00"
@@ -168,9 +169,9 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
 - displayErrorMessage: An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message.
-- requested: The amount of the WD that was requested *--for Error Code 506 only-*
-- minWdAmount: the minimum WD amount (from parameter settings) *--for Error Code 506 only--*
-- maxWdAmount: the maximum WD amount (from parameter settings) *--for Error Code 506 only--*
+- requested: The amount of the WD that was requested _--for Error Code 506 only-_
+- minWdAmount: the minimum WD amount (from parameter settings) _--for Error Code 506 only--_
+- maxWdAmount: the maximum WD amount (from parameter settings) _--for Error Code 506 only--_
 
 **Error Code detail:**
 |Error Code| Logging Error Message Detail|
