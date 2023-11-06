@@ -61,7 +61,10 @@
 **              2. Corrected rate calc issue where 10th balance range in table was not being read.
 **  Ver. 1.2.2  05/01/23 JuCarson
 **              1. Corrected rate calc for rate selection of 0 (fixed) to get rate from first balance
-**                 range slot in dividend type definitions. 
+**                 range slot in dividend type definitions.
+**  Ver. 1.3.0  11/05/23 RRobison
+**              Added minimumFundingAmount to the accountTypes array in the PRELOADDATA state.
+**              This allows the UX to display the minimum funding/opening balance on the share select screen.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -558,11 +561,11 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.2.2"
- LASTMODDATE='05/01/23'
- LASTMODTIME="11:00 ET"
- PROGRAMUPDATENOTE1="Corrected issue with fixed"
- PROGRAMUPDATENOTE2="dividend calculations."
+ PROGRAMVERSION="1.3.0"
+ LASTMODDATE='11/05/23'
+ LASTMODTIME="20:00 MT"
+ PROGRAMUPDATENOTE1="Adding minimumFundingAmount to json"
+ PROGRAMUPDATENOTE2=""
  CONFIGPROGRAMMINDATE='10/20/22'
 
  BNODEBUGMODE=BNODEBUGMODEOFF
