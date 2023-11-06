@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CDRENEW.V1.POW
 **  Letterfile Name:    BANNO.CDRENEW.V1.CFG
 **
-**  Copyright 2020-2022 Jack Henry and Associates
+**  Copyright 2020-2023 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to update their
 **  Certificate maturity action.
@@ -37,7 +37,7 @@
 **  500: Generic Error
 **  501: Configuration file error (error opening, reading or processing)
 **  502: Invalid account or share (based on account type/share warning)
-**  503: Maturity selection previously made - contact CU
+**  503: Maturity selection previously made
 **  504: Processing Error
 **  505: Cross account access attempt
 **  506: Renew options not set for Share type
@@ -67,6 +67,10 @@
 **    Ver. 1.3.2  09/19/22 RRobison - Banno
 **                Added renewTermPeriod, renewTermFrequency and renewName fields so UX
 **                can better display renewal terms.
+**    Ver. 1.4.0  11/02/23 TKainz - Banno
+**                Added parameters for setting maturity options descriptors.
+**                Added call to currentState to send JSON current state info
+**                of targeted certificate when a 503 error occurs.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -189,7 +193,6 @@ DEFINE
  FMUPDATEERRORTRACKING     = NUMBER
  VALIDPARAMS               = NUMBER
  VALIDACCOUNT              = NUMBER
- CROSSACCOUNTFLAG          = NUMBER
 
  INDENTMAX                 = 9
  INDENT                    = CHARACTER ARRAY(9)
@@ -238,7 +241,7 @@ DEFINE
  SRENEWTERMPERIOD          = NUMBER
  SRENEWTERMFREQUENCY       = CHARACTER
  SRENEWNAME                = CHARACTER
-  
+
  SLTRANSFERLISTTOACCT      = CHARACTER ARRAY(99)
  SLTRANSFERLISTTONAME      = CHARACTER ARRAY(99)
  SLTRANSFERLISTTOAVAILBAL  = MONEY ARRAY(99)
@@ -332,11 +335,11 @@ DEFINE
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='09/19/22'
+ BNOLASTMODDATE='11/02/23'
  BNOLASTMODTIME="17:00 MT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
- BNOPROGRAMVERSION="1.3.2"
+ BNOPROGRAMVERSION="1.4.0"
  BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
@@ -355,9 +358,9 @@ SETUP
  TERMFREQSINGULARCHR(0)    = "Month"
  TERMFREQSINGULARCHR(1)    = "Day"
  VALIDCHRINPUT1            = "32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- USEROPTIONSCHR(1)         = "Increase certificate balance"
+ USEROPTIONSCHR(1)         = "Increase balance and renew certificate"
  USEROPTIONSCHR(2)         = "Change certificate term"
- USEROPTIONSCHR(3)         = "Transfer certificate balance"
+ USEROPTIONSCHR(3)         = "Transfer balance and close certificate"
  USEROPTIONSCHR(4)         = "Renew certificate"
  USEROPTIONSCHR(5)         = "Disburse funds by check"
  USEROPTIONSCHR(6)         = "Suspend certificate"
@@ -393,6 +396,10 @@ PRINT TITLE="BANNO.CDRENEW.V1.POW"
 
    IF ERRORCODE=0 THEN
     CALL VALIDATEACCOUNT
+
+   IF ERRORCODE=503 OR
+      ERRORCODE=505 THEN
+    CALL GETSHAREDETAILS
 
    IF ERRORCODE=0 THEN
     DO
@@ -494,16 +501,30 @@ PRINT TITLE="BANNO.CDRENEW.V1.POW"
 END [PRINT]
 
 PROCEDURE GETSHAREDETAILS
-
+[* Get details pertaining to the targeted share
+**
+**  PASS    TARGETACCOUNT             Target member number
+**  PASS    TARGETSHAREID             Target Share ID (maturing CD)
+**  RETURN  SNAME                     Target Share description
+**  RETURN  SMATURITYDATE             Target Share maturity date
+**  RETURN  SMINIMUMBALANCE           Target Share minimum balance
+**  RETURN  SCURRENTSTATUS            Current renewal status
+**  RETURN  SRENEWTERMPERIOD          Share's new term period
+**  RETURN  SRENEWNAME                Share's new name based upon new term period
+**  RETURN  SRENEWTERMFREQUENCY       Share's new term frequency (when changing terms)
+**  RETURN  TRANSFERLISTCOUNT         Current number of target share transfers
+**  RETURN  TRANSFERLISTCHR(A)        Share transfer list in AAAAAAAAAA[S,L]SLID format
+**  RETURN  TRANSFERLISTNAME(A)       Share transfer list name (nickname,description)
+**  RETURN  TRANSFERLISTPERCENTCHR(A) Share transfer list transfer percent (formatted)
+**  RETURN  TRANSFERLISTAMTCHR(A)     Share transfer list transfer amount (formatted)
+**  RETURN  AUTOTRANSFERLISTCHR(A)    Share auto transfer type 3 list in AAAAAAAAAA[S,L]SLID format
+**  RETURN  AUTOTRANSFERLISTNAME(A)   Share auto transfer type 3 list name (nickname,description)
+**  RETURN  AUTOTRANSFERLISTAMTCHR(A) Share auto transfer type 3 list transfer amount (formatted)
+*]
  BNODEBUGMSG="IN GETSHAREDETAILS:"+
              "TARGETACCOUNT="+TARGETACCOUNT+
              "  TARGETSHAREID="+TARGETSHAREID
  CALL BNODEBUGMSGADD
-
- IF TARGETACCOUNT<>ACCOUNT:NUMBER THEN
-  CROSSACCOUNTFLAG=TRUE
- ELSE
-  CROSSACCOUNTFLAG=FALSE
 
  TRANSFERLISTCOUNT=0
  FOR ACCOUNT TARGETACCOUNT
@@ -541,7 +562,7 @@ PROCEDURE GETSHAREDETAILS
 
      IF SRENEWTERMPERIOD=1 THEN
       SRENEWTERMFREQUENCY=TERMFREQSINGULARCHR(TMPTERMFREQ)
-     ELSE 
+     ELSE
       SRENEWTERMFREQUENCY=TERMFREQCHR(TMPTERMFREQ)
 
      FOR EACH SHARE TRANSFER WITH ((SHARE TRANSFER:EXPIRATIONDATE=DATENULL OR
@@ -855,6 +876,39 @@ PROCEDURE READCONFIGFILESETTINGS
           END
         END
 
+[* Custom renew options descriptors
+*]
+       ELSE IF PARAMNAME="MO1" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(1)=PARAMVALUE
+        END
+       ELSE IF PARAMNAME="MO2" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(2)=PARAMVALUE
+        END
+       ELSE IF PARAMNAME="MO3" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(3)=PARAMVALUE
+        END
+       ELSE IF PARAMNAME="MO4" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(4)=PARAMVALUE
+        END
+       ELSE IF PARAMNAME="MO5" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(5)=PARAMVALUE
+        END
+       ELSE IF PARAMNAME="MO6" AND
+               PARAMVALUE<>"" THEN
+        DO
+         USEROPTIONSCHR(6)=PARAMVALUE
+        END
+
 [* Debug mode override
 *]
        ELSE IF PARAMNAME="DB" THEN
@@ -965,7 +1019,6 @@ PROCEDURE READCONFIGFILESETTINGS
    BNODEBUGMSG="PARAMELIGIBLEIRSCODES="+PARAMELIGIBLEIRSCODES
    CALL BNODEBUGMSGADD
 
-
    FOR TMPLOOP=1 TO PARAMPAYEETERMLINES
     DO
      BNODEBUGMSG=PARAMPAYEETERMS(TMPLOOP)
@@ -991,7 +1044,6 @@ PROCEDURE READCONFIGFILESETTINGS
      BNODEBUGMSG=PARAMINELIGXACCOUNTMSG(TMPLOOP)
      CALL BNODEBUGMSGADD
     END
-
   END
 END [PROCEDURE]
 
@@ -1283,6 +1335,44 @@ PROCEDURE ERRORHANDLER
  NEWLINE
  PRINT INDENT(1)+Q+ERRORMSG+Q+": "+Q+ERRORDETAIL(ERRORDETAILOFFSET)+Q
 
+ IF ERRORCODE=503 OR
+    ERRORCODE=505 THEN
+  DO
+   PRINT ","
+   NEWLINE
+   PRINT INDENT(1)+Q+"results"+Q+": {"
+   NEWLINE
+
+   CALL PRINTCURRENTSTATE
+
+   IF ERRORCODE=505 THEN
+    DO
+[* Display ineligible cross account message
+*]
+     PRINT ","
+     NEWLINE
+     PRINT INDENT(2)+Q+"ineligibleCrossAccountMessage"+Q+": ["
+
+     FOR TERMSLOOP=1 TO PARAMINELIGXACCOUNTMSGLINES
+      DO
+       NEWLINE
+       PRINT INDENT(4)+Q
+       IF TERMSLOOP>1 AND
+          PARAMINELIGXACCOUNTMSG(TERMSLOOP)<>"" AND
+          PARAMINELIGXACCOUNTMSG(TERMSLOOP-1)<>"" THEN
+
+        PRINT " "
+       PRINT PARAMINELIGXACCOUNTMSG(TERMSLOOP)+Q
+       IF TERMSLOOP<PARAMINELIGXACCOUNTMSGLINES THEN
+        PRINT ","
+      END
+     NEWLINE
+     PRINT INDENT(3)+"]"
+     NEWLINE
+    END [IF ERRORCODE=505]
+   PRINT "}"
+  END
+ NEWLINE
 END [PROCEDURE]
 
 PROCEDURE JSONOPEN
@@ -1319,91 +1409,97 @@ PROCEDURE VALIDATEACCOUNT
 **  RETURN  USEROPTIONSMAXUSED            Highest Option number avail for cert
 *]
  INVALIDACCTTYPEFOUND=FALSE
- IF INVALIDACCTYPES(ACCOUNT:TYPE)=TRUE THEN
-  INVALIDACCTTYPEFOUND=TRUE
 
- USEROPTIONSMAXUSED=0
-
- FOR ACCOUNT TARGETACCOUNT
+ IF TARGETACCOUNT<>ACCOUNT:NUMBER THEN
+  ERRORCODE=505
+ ELSE
   DO
-   WARNINGFOUND=FALSE
-   FOR TMPLOOP=1 TO MAXWARNINGTYPES
-    DO
-     IF WARNINGSACCT(TMPLOOP)=TRUE AND
-        ANYWARNING(ACCOUNT,TMPLOOP) THEN
-      DO
-       WARNINGFOUND=TMPLOOP
-       TMPLOOP=MAXWARNINGTYPES
-      END
-    END
+   IF INVALIDACCTYPES(ACCOUNT:TYPE)=TRUE THEN
+    INVALIDACCTTYPEFOUND=TRUE
 
-   IF WARNINGFOUND=FALSE THEN
+   USEROPTIONSMAXUSED=0
+
+   FOR ACCOUNT TARGETACCOUNT
     DO
-     FOR EACH SHARE WITH (SHARE:ID=TARGETSHAREID)
+     WARNINGFOUND=FALSE
+     FOR TMPLOOP=1 TO MAXWARNINGTYPES
       DO
+       IF WARNINGSACCT(TMPLOOP)=TRUE AND
+          ANYWARNING(ACCOUNT,TMPLOOP) THEN
+        DO
+         WARNINGFOUND=TMPLOOP
+         TMPLOOP=MAXWARNINGTYPES
+        END
+      END
+
+     IF WARNINGFOUND=FALSE THEN
+      DO
+       FOR EACH SHARE WITH (SHARE:ID=TARGETSHAREID)
+        DO
 [* TEK-04/25/22. Get share type and then determine options available for
 ** the share type and the highest option possible (to facilitate
 ** JSON output)
 *]
-       TARGETSHARETYPE=SHARE:TYPE
-       BNODEBUGMSG=FORMAT("TARGET SHARE TYPE = 9999",TARGETSHARETYPE)
-       CALL BNODEBUGMSGADD
-       TARGETIRSCODE=SHARE:IRSCODE
-       BNODEBUGMSG=FORMAT("TARGET SHARE IRSCODE = 99",TARGETIRSCODE)
-       CALL BNODEBUGMSGADD
+         TARGETSHARETYPE=SHARE:TYPE
+         BNODEBUGMSG=FORMAT("TARGET SHARE TYPE = 9999",TARGETSHARETYPE)
+         CALL BNODEBUGMSGADD
+         TARGETIRSCODE=SHARE:IRSCODE
+         BNODEBUGMSG=FORMAT("TARGET SHARE IRSCODE = 99",TARGETIRSCODE)
+         CALL BNODEBUGMSGADD
 
-       FOR TMPLOOP=1 TO USEROPTIONSMAX
-        DO
-         IF PARAMSHARETYPESBYOPTION(TMPLOOP,TARGETSHARETYPE)=TRUE THEN
+         FOR TMPLOOP=1 TO USEROPTIONSMAX
           DO
-           USEROPTIONSAVAILABLE(TMPLOOP)=TRUE
-           USEROPTIONSMAXUSED=TMPLOOP
-          END
-        END
-       IF USEROPTIONSMAXUSED=0 THEN
-        ERRORCODE=506
-
-       IF ERRORCODE=0 THEN
-        DO
-         SHARENOTEFOUND=FALSE
-         TMPCHR="Banno Maturity Option Selected"
-         IF PARAMLIMITCHANGES=TRUE THEN
-          DO
-           FOR EACH SHARE NOTE WITH ((SHARE NOTE:EXPIRATIONDATE='--/--/--' OR
-                                      SHARE NOTE:EXPIRATIONDATE>SYSTEMDATE) AND
-                                      SHARE NOTE:TEXT:1=TMPCHR)
+           IF PARAMSHARETYPESBYOPTION(TMPLOOP,TARGETSHARETYPE)=TRUE THEN
             DO
-             SHARENOTEFOUND=TRUE
-             ERRORCODE=503
+             USEROPTIONSAVAILABLE(TMPLOOP)=TRUE
+             USEROPTIONSMAXUSED=TMPLOOP
             END
           END
-        END
+         IF USEROPTIONSMAXUSED=0 THEN
+          ERRORCODE=506
 
-       IF ERRORCODE=0 THEN
-        DO
-         IF ELIGIBLEIRSCODES(TARGETIRSCODE)=FALSE THEN
-          INELIGIBLEIRSCODE=TRUE
-        END
-
-       IF ERRORCODE=0 THEN
-        DO
-         FOR TMPLOOP=1 TO MAXWARNINGTYPES
+         IF ERRORCODE=0 THEN
           DO
-           IF WARNINGSSHARE(TMPLOOP)=TRUE AND
-              ANYWARNING(SHARE,TMPLOOP) THEN
+           SHARENOTEFOUND=FALSE
+           TMPCHR="Banno Maturity Option Selected"
+           IF PARAMLIMITCHANGES=TRUE THEN
             DO
-             WARNINGFOUND=TMPLOOP
-             TMPLOOP=MAXWARNINGTYPES
+             FOR EACH SHARE NOTE WITH ((SHARE NOTE:EXPIRATIONDATE='--/--/--' OR
+                                        SHARE NOTE:EXPIRATIONDATE>SYSTEMDATE) AND
+                                        SHARE NOTE:TEXT:1=TMPCHR)
+              DO
+               SHARENOTEFOUND=TRUE
+               ERRORCODE=503
+              END
+            END
+          END
+
+         IF ERRORCODE=0 THEN
+          DO
+           IF ELIGIBLEIRSCODES(TARGETIRSCODE)=FALSE THEN
+            INELIGIBLEIRSCODE=TRUE
+          END
+
+         IF ERRORCODE=0 THEN
+          DO
+           FOR TMPLOOP=1 TO MAXWARNINGTYPES
+            DO
+             IF WARNINGSSHARE(TMPLOOP)=TRUE AND
+                ANYWARNING(SHARE,TMPLOOP) THEN
+              DO
+               WARNINGFOUND=TMPLOOP
+               TMPLOOP=MAXWARNINGTYPES
+              END
             END
           END
         END
       END
     END
-  END
 
- IF INVALIDACCTTYPEFOUND=TRUE OR
-    WARNINGFOUND<>FALSE THEN
-  ERRORCODE=502
+   IF INVALIDACCTTYPEFOUND=TRUE OR
+      WARNINGFOUND<>FALSE THEN
+    ERRORCODE=502
+  END [TARGETACCOUNT<>ACCOUNT:NUMBER]
 
  BNODEBUGMSG="VALID OPTIONS:"
  FOR TMPLOOP=1 TO USEROPTIONSMAX
@@ -1413,7 +1509,6 @@ PROCEDURE VALIDATEACCOUNT
   END
  BNODEBUGMSG=BNODEBUGMSG+FORMAT("   MAXUSED: 99",USEROPTIONSMAXUSED)
  CALL BNODEBUGMSGADD
-
 END [PROCEDURE]
 
 PROCEDURE CHECKFORMEMOMODE
@@ -1485,135 +1580,12 @@ PROCEDURE RETURNJSON1
    NEWLINE
   END
 
-[* This is a special case were we return an error code but still want to return the results
-** So the UX can display maturity date details.
-*]
- IF CROSSACCOUNTFLAG=TRUE THEN
-  DO
-   PRINT INDENT(1)+Q+"errorCode"+Q+": "+FORMAT(Q+"999"+Q,505)+","
-   NEWLINE
-   PRINT INDENT(1)+Q+"loggingErrorMessage"+Q+": "+Q+"Cross account access attempt"+Q+","
-   NEWLINE
-  END
-
  PRINT INDENT(1)+Q+"results"+Q+": {"
  NEWLINE
- PRINT INDENT(2)+Q+"currentState"+Q+": {"
- NEWLINE
- PRINT INDENT(3)+Q+"name"+Q+": "+Q+SNAME+Q+","
- NEWLINE
- PRINT INDENT(3)+Q+"maturityDate"+Q+": "+Q+FORMAT("99/99/99",SMATURITYDATE)+Q+","
- NEWLINE
- TMPCHR=FORMAT("########9.99",SMINIMUMBALANCE)
- CALL NLS
- PRINT INDENT(3)+Q+"minimumBalance"+Q+": "+Q+TMPCHR+Q+","
- NEWLINE
- PRINT INDENT(3)+Q+"currentStatus"+Q+": "+Q+SCURRENTSTATUS+Q+","
- NEWLINE
- PRINT INDENT(3)+Q+"renewName"+Q+": "+Q+SRENEWNAME+Q+","
- NEWLINE
- PRINT INDENT(3)+Q+"renewTermPeriod"+Q+": "
- PRINT SRENEWTERMPERIOD
+
+ CALL PRINTCURRENTSTATE
+
  PRINT ","
- NEWLINE
- PRINT INDENT(3)+Q+"renewTermFrequency"+Q+": "+Q+SRENEWTERMFREQUENCY+Q+","
- NEWLINE
- PRINT INDENT(3)+Q+"ineligibleIrsCode"+Q+": "
- IF INELIGIBLEIRSCODE=TRUE THEN
-  PRINT "true"
- ELSE
-  PRINT "false"
- PRINT ","
- NEWLINE
-
-
- PRINT  INDENT(3)+Q+"transfers"+Q+":["
- IF TRANSFERLISTCOUNT>0 THEN
-  DO
-   PRINT "{"
-   NEWLINE
-
-   FOR TMPLOOP=1 TO TRANSFERLISTCOUNT
-    DO
-
-     IF TMPLOOP>1 THEN
-      DO
-       PRINT INDENT(4)+"{"
-       NEWLINE
-      END
-     PRINT INDENT(4)+Q+"transferSLId"+Q+": "+Q+TRANSFERLISTCHR(TMPLOOP)+Q+","
-     NEWLINE
-     PRINT INDENT(4)+Q+"transferName"+Q+": "+Q+TRANSFERLISTNAME(TMPLOOP)+Q+","
-     NEWLINE
-     PRINT INDENT(4)+Q+"transferAmount"+Q+": "+Q+TRANSFERLISTAMTCHR(TMPLOOP)+Q+","
-     NEWLINE
-     PRINT INDENT(4)+Q+"transferPercent"+Q+": "+Q+TRANSFERLISTPERCENTCHR(TMPLOOP)+Q
-     NEWLINE
-     PRINT INDENT(4)+"}"
-     IF TMPLOOP<TRANSFERLISTCOUNT THEN
-      PRINT ","
-     NEWLINE
-    END
-   IF TMPLOOP<TRANSFERLISTCOUNT THEN
-    DO
-     PRINT INDENT(4)+"}"
-     PRINT ","
-    END
-   ELSE
-    DO
-     PRINT INDENT(3)+"],"
-    END
-   NEWLINE
-  END
- ELSE
-  DO
-   PRINT "],"
-   NEWLINE
-  END
-
- PRINT  INDENT(3)+Q+"autoTransfers"+Q+":["
- IF AUTOTRANSFERLISTCOUNT>0 THEN
-  DO
-   PRINT "{"
-   NEWLINE
-
-   FOR TMPLOOP=1 TO AUTOTRANSFERLISTCOUNT
-    DO
-
-     IF TMPLOOP>1 THEN
-      DO
-       PRINT INDENT(4)+"{"
-       NEWLINE
-      END
-     PRINT INDENT(4)+Q+"transferSLId"+Q+": "+Q+AUTOTRANSFERLISTCHR(TMPLOOP)+Q+","
-     NEWLINE
-     PRINT INDENT(4)+Q+"transferName"+Q+": "+Q+AUTOTRANSFERLISTNAME(TMPLOOP)+Q+","
-     NEWLINE
-     PRINT INDENT(4)+Q+"transferAmount"+Q+": "+Q+AUTOTRANSFERLISTAMTCHR(TMPLOOP)+Q
-     NEWLINE
-     PRINT INDENT(4)+"}"
-     IF TMPLOOP<AUTOTRANSFERLISTCOUNT THEN
-      PRINT ","
-     NEWLINE
-    END
-   IF TMPLOOP<AUTOTRANSFERLISTCOUNT THEN
-    DO
-     PRINT INDENT(4)+"}"
-     PRINT ","
-    END
-   ELSE
-    DO
-     PRINT INDENT(3)+"]"
-    END
-   NEWLINE
-  END
- ELSE
-  DO
-   PRINT "]"
-   NEWLINE
-  END
-
- PRINT INDENT(3)+"},"
  NEWLINE
 
 [* Display the user option list
@@ -1860,32 +1832,131 @@ PROCEDURE RETURNJSON1
     PRINT ","
   END
  NEWLINE
- PRINT INDENT(3)+"],"
- NEWLINE
-
- [* Display ineligible cross account message
-*]
- PRINT INDENT(2)+Q+"ineligibleCrossAccountMessage"+Q+": ["
-
- FOR TERMSLOOP=1 TO PARAMINELIGXACCOUNTMSGLINES
-  DO
-   NEWLINE
-   PRINT INDENT(4)+Q
-   IF TERMSLOOP>1 AND
-      PARAMINELIGXACCOUNTMSG(TERMSLOOP)<>"" AND
-      PARAMINELIGXACCOUNTMSG(TERMSLOOP-1)<>"" THEN
-
-    PRINT " "
-   PRINT PARAMINELIGXACCOUNTMSG(TERMSLOOP)+Q
-   IF TERMSLOOP<PARAMINELIGXACCOUNTMSGLINES THEN
-    PRINT ","
-  END
- NEWLINE
  PRINT INDENT(3)+"]"
  NEWLINE
-
  PRINT INDENT(1)+"}"
  NEWLINE
+END [PROCEDURE]
+
+PROCEDURE PRINTCURRENTSTATE
+ PRINT INDENT(2)+Q+"currentState"+Q+": {"
+ NEWLINE
+ PRINT INDENT(3)+Q+"name"+Q+": "+Q+SNAME+Q+","
+ NEWLINE
+ PRINT INDENT(3)+Q+"maturityDate"+Q+": "+Q+FORMAT("99/99/99",SMATURITYDATE)+Q+","
+ NEWLINE
+ TMPCHR=FORMAT("########9.99",SMINIMUMBALANCE)
+ CALL NLS
+ PRINT INDENT(3)+Q+"minimumBalance"+Q+": "+Q+TMPCHR+Q+","
+ NEWLINE
+ PRINT INDENT(3)+Q+"currentStatus"+Q+": "+Q+SCURRENTSTATUS+Q+","
+ NEWLINE
+ PRINT INDENT(3)+Q+"renewName"+Q+": "+Q+SRENEWNAME+Q+","
+ NEWLINE
+ PRINT INDENT(3)+Q+"renewTermPeriod"+Q+": "
+ PRINT SRENEWTERMPERIOD
+ PRINT ","
+ NEWLINE
+ PRINT INDENT(3)+Q+"renewTermFrequency"+Q+": "+Q+SRENEWTERMFREQUENCY+Q+","
+ NEWLINE
+ PRINT INDENT(3)+Q+"ineligibleIrsCode"+Q+": "
+ IF INELIGIBLEIRSCODE=TRUE THEN
+  PRINT "true"
+ ELSE
+  PRINT "false"
+ PRINT ","
+ NEWLINE
+
+
+ PRINT  INDENT(3)+Q+"transfers"+Q+":["
+ IF TRANSFERLISTCOUNT>0 THEN
+  DO
+   PRINT "{"
+   NEWLINE
+
+   FOR TMPLOOP=1 TO TRANSFERLISTCOUNT
+    DO
+
+     IF TMPLOOP>1 THEN
+      DO
+       PRINT INDENT(4)+"{"
+       NEWLINE
+      END
+     PRINT INDENT(4)+Q+"transferSLId"+Q+": "+Q+TRANSFERLISTCHR(TMPLOOP)+Q+","
+     NEWLINE
+     PRINT INDENT(4)+Q+"transferName"+Q+": "+Q+TRANSFERLISTNAME(TMPLOOP)+Q+","
+     NEWLINE
+     PRINT INDENT(4)+Q+"transferAmount"+Q+": "+Q+TRANSFERLISTAMTCHR(TMPLOOP)+Q+","
+     NEWLINE
+     PRINT INDENT(4)+Q+"transferPercent"+Q+": "+Q+TRANSFERLISTPERCENTCHR(TMPLOOP)+Q
+     NEWLINE
+     PRINT INDENT(4)+"}"
+     IF TMPLOOP<TRANSFERLISTCOUNT THEN
+      PRINT ","
+     NEWLINE
+    END
+   IF TMPLOOP<TRANSFERLISTCOUNT THEN
+    DO
+     PRINT INDENT(4)+"}"
+     PRINT ","
+    END
+   ELSE
+    DO
+     PRINT INDENT(3)+"],"
+    END
+   NEWLINE
+  END
+ ELSE
+  DO
+   PRINT "],"
+   NEWLINE
+  END
+
+ PRINT  INDENT(3)+Q+"autoTransfers"+Q+":["
+ IF AUTOTRANSFERLISTCOUNT>0 THEN
+  DO
+   PRINT "{"
+   NEWLINE
+
+   FOR TMPLOOP=1 TO AUTOTRANSFERLISTCOUNT
+    DO
+
+     IF TMPLOOP>1 THEN
+      DO
+       PRINT INDENT(4)+"{"
+       NEWLINE
+      END
+     PRINT INDENT(4)+Q+"transferSLId"+Q+": "+Q+AUTOTRANSFERLISTCHR(TMPLOOP)+Q+","
+     NEWLINE
+     PRINT INDENT(4)+Q+"transferName"+Q+": "+Q+AUTOTRANSFERLISTNAME(TMPLOOP)+Q+","
+     NEWLINE
+     PRINT INDENT(4)+Q+"transferAmount"+Q+": "+Q+AUTOTRANSFERLISTAMTCHR(TMPLOOP)+Q
+     NEWLINE
+     PRINT INDENT(4)+"}"
+     IF TMPLOOP<AUTOTRANSFERLISTCOUNT THEN
+      PRINT ","
+     NEWLINE
+    END
+   IF TMPLOOP<AUTOTRANSFERLISTCOUNT THEN
+    DO
+     PRINT INDENT(4)+"}"
+     PRINT ","
+    END
+   ELSE
+    DO
+     PRINT INDENT(3)+"]"
+    END
+   NEWLINE
+  END
+ ELSE
+  DO
+   PRINT "]"
+   NEWLINE
+  END
+
+ PRINT INDENT(3)+"}"
+ NEWLINE
+
 END [PROCEDURE]
 
 PROCEDURE BUILDSHARETRANSFERTOLIST
@@ -2361,3 +2432,4 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
