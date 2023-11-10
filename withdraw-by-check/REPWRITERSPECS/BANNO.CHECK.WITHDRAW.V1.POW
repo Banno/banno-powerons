@@ -19,7 +19,7 @@
 **                           keeping blank lines from being recognized by the UX.
 **   Ver. 1.1.1  10/23/2023: T. Kainz - Added check to make sure CFG settings are validated
 **                           to have at least one valid Share or Loan type defined.
-**   Ver. 1.2.0  11/01/2023: R. Robison - Added support for displayErrorMessage soft text.
+**   Ver. 1.2.0  11/10/2023: R. Robison - Added support for displayErrorMessage soft text.
 **                           Refactor of error handling.
 **
 **  This Banno service PowerOn allows the user to request a
@@ -205,8 +205,8 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
 
- BNOLASTMODDATE='11/01/23'
- BNOLASTMODTIME="14:30 MT"
+ BNOLASTMODDATE='11/10/23'
+ BNOLASTMODTIME="08:00 MT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
  BNOPROGRAMVERSION="1.2.0"
