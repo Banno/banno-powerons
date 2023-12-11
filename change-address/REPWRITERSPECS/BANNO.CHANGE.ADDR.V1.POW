@@ -32,6 +32,9 @@
 **                                   - Added validation to ensure street, city, state and zip are not blank.
 **    Ver. 1.2.1  09/20/23 J. Carson - Increased size of member note from 110 characters to 130. Fixed issue 
 **                                     with truncating long member notes.
+**    Ver. 1.2.2  12/11/23 J. Carson - Added member's input address to account level note when host is in 
+**                                     memo mode. 
+**
 *]
 SYMCONNECT
 STATELESS
@@ -225,7 +228,6 @@ DEFINE
 
 SETUP
  Q=CTRLCHR(34)
- SYSTEMMEMOMODE=SYSMEMOMODE
  DATALINEFIELDMAX=5
  NOTEEXPIREDAYS=30
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
@@ -236,10 +238,10 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.2.1"
- LASTMODDATE='09/20/23'
+ PROGRAMVERSION="1.2.2"
+ LASTMODDATE='12/13/23'
  LASTMODTIME="09:00 ET"
- PROGRAMUPDATENOTE1="Member note truncation and length fixes"
+ PROGRAMUPDATENOTE1="Updated account level note for memo mode"
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -253,10 +255,10 @@ PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
   CALL READCONFIGFILESETTINGS
 
  IF RESPONSECODE=0 THEN
-  CALL CHECKFORMEMOMODE
+  CALL PULLRGDATA
 
  IF RESPONSECODE=0 THEN
-  CALL PULLRGDATA
+  CALL CHECKFORMEMOMODE
 
  IF RESPONSECODE=0 THEN
   CALL VALIDATERGDATA
@@ -2387,3 +2389,4 @@ PROCEDURE SENDEMAIL
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
