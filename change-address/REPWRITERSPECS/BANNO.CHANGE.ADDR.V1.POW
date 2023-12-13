@@ -32,8 +32,8 @@
 **                                   - Added validation to ensure street, city, state and zip are not blank.
 **    Ver. 1.2.1  09/20/23 J. Carson - Increased size of member note from 110 characters to 130. Fixed issue 
 **                                     with truncating long member notes.
-**    Ver. 1.2.2  12/11/23 J. Carson - Added member's input address to account level note when host is in 
-**                                     memo mode. 
+**    Ver. 1.2.2  12/13/23 J. Carson - Added member's input address to account level note when host is in 
+**                                     memo mode or a config file error occurs. 
 **
 *]
 SYMCONNECT
@@ -240,8 +240,8 @@ SETUP
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.2.2"
  LASTMODDATE='12/13/23'
- LASTMODTIME="09:00 ET"
- PROGRAMUPDATENOTE1="Updated account level note for memo mode"
+ LASTMODTIME="13:30 ET"
+ PROGRAMUPDATENOTE1="Updated account level note various errors"
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -251,11 +251,10 @@ END [SETUP]
 PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
  CALL INITIALIZEDATA
 
- IF RESPONSECODE=0 THEN
-  CALL READCONFIGFILESETTINGS
+ CALL PULLRGDATA
 
  IF RESPONSECODE=0 THEN
-  CALL PULLRGDATA
+  CALL READCONFIGFILESETTINGS
 
  IF RESPONSECODE=0 THEN
   CALL CHECKFORMEMOMODE
