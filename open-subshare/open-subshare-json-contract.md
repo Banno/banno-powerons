@@ -40,6 +40,7 @@ Returns member's eligibility and categories of shares, their related share types
             "name": "7 Month certificate",
             "term": "7 months",
             "minBalance": "1000.00",
+            "minimumFundingAmount": "1050.00",
             "interestRates": [
               {
                 "rate": "0.000",
@@ -59,6 +60,7 @@ Returns member's eligibility and categories of shares, their related share types
             "name": "7 Month certificate",
             "term": "7 months",
             "minBalance": "1000.00",
+            "minimumFundingAmount": "2000.00",
             "interestRates": [{ "rate": "1.250" }]
           }
         ]
@@ -81,6 +83,7 @@ Returns member's eligibility and categories of shares, their related share types
     - name: default share type name
     - term: share term
     - minBalance: minimum opening balance required for this share type
+    - minimumFundingAmount: The minimum opening funding amount
     - interestRates: one or more interest rate values applicable for this share type
       - rate: interest rate
       - minBalance: min balance associated to this interest rate
