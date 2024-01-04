@@ -376,18 +376,42 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 
 ### Error Codes
 
-| errorCode | loggingErrorMessage                       |
-| --------- | ----------------------------------------- |
-| 501       | Config file read / validation error       |
-| 502       | Invalid source account                    |
-| 503       | Invalid recipient account                 |
-| 504       | Insufficient information                  |
-| 505       | Invalid input                             |
-| 506       | Error creating/deleting recipient         |
-| 507       | Error creating/updating/deleting transfer |
-| 508       | Undefined error                           |
-| 509       | Member unverified                         |
-| 510       | AccountId incorrect                       |
+*See Logging Error Message section for additional details
+
+| Error Code | Logging Error Message                                                       | Notes |
+| -----------|------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Program running in memo mode ||
+| 501        | Config file error: [configuration file name] open error - [system generated letter file read error message] | This error represents issues with the configuration letter file setup |
+|            | Config file error: [configuration file name] read error - [system generated letter file read error message] ||
+|            | Config file error: 3-Error Reading Letterfile [configuration file name]: [system generated letter file read error message] ||
+|            | Config file error: Invalid Parameter in CFG file ||
+| 502        | Invalid Source Account: Pref Access type 3 not found ||
+|            | Invalid Source Account: Acct Warning 1234 ||
+|            | Invalid Source Account: No eligible transfer from shares/loans ||
+|            | Invalid Source Account: Acct Type 1234 ||
+| 503        | Invalid Recipient Account ||
+| 504        | Insufficient Information: Cannot calc member limits. ||
+| 505        | Invalid Input ||
+| 506        | Error Processing Recipient Record | Error creating/deleting recipient |
+| 507        | Error Processing Transfer Record | Error creating/updating/deleting transfer |
+|            | Error Processing Transfer Record: Target s/l xfer Loc 1234567 not found ||
+|            | Error Processing Transfer Record: Target ID not found or invalid ||
+| 508        | Undefined Error ||
+| 509        | Member verification failed | Member unverified |
+|            | Member verification failed: Member account not found ||
+|            | Member verification failed: Account Closed - 99/99/99 ||
+|            | Member verification failed: Name verification failed ||
+|            | Member verification failed: Must be a different member account number ||
+|            | Member verification failed: S/L closed or charged-off - 99/99/99 ||
+|            | Member verification failed: S/L ID not found ||
+|            | Member verification failed: No valid share or loan found ||
+|            | Member verification failed: S/L missing service code ||
+|            | Member verification failed: Invalid S/L type ||
+|            | Member verification failed: Invalid share code ||
+|            | Member verification failed: Loan has $0.00 payoff ||
+|            | Member verification failed: Invalid IRS code ||
+| 510        | Account ID incorrect ||
+| 511        | Request exceeds limits ||
 
 ### Transfer Frequencies
 

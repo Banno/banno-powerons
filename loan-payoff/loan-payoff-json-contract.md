@@ -87,6 +87,23 @@ Any and all errors should be conveyed via the following structure:
 
 ```json
 {
-  "loggingErrorMessage": "if error processing, something to log"
+  "clientErrorMessage":"if error processing, a user friendly error message (unused currently)",
+  "loggingErrorMessage":"if error processing, something to log"
 }
 ```
+### Response Messages & Corresponding Logging Error Messages
+
+*See Logging Error Message section for additional details
+
+| Client Error Message                                                                 | Logging Error Message                                                       | Notes |
+| ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| We're sorry we've encountered an error. Please contact your credit union. | Duplicate loan type in CFG (BLT 1234) | This error represents issues with the configuration letter file setup |
+|| Duplicate loan type in CFG (VLT 1234) ||
+|| Duplicate loan type in CFG (SLT 1234) ||
+|| Error Opening Letterfile [config file name]: [system generated letter file read error message] ||
+| We're sorry we've encountered an error. Please contact your credit union. | Ineligible Loan Type | This type of error is for an ineligible loan |
+|| Payoff Days more than Maximum allowed ||
+|| Account Warning Found ||
+|| Loan Warning Found ||
+| We're sorry we've encountered an error. Please contact your credit union. | Loan Projection Error: [system generated PowerOn function LOANPROJECTCALC error message] | This type of error is a non-configuration file error |
+|| Fee Specfile Error: [Banno loan payoff fees PowerOn generated error message] ||
