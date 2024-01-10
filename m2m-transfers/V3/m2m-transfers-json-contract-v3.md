@@ -381,11 +381,11 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 | Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
 | ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
 | 500        | Program running in memo mode |||
-| 501        | Config file error | : [configuration file name] open error - [system generated letter file read error message] | This set of errors represents issues with the configuration letter file setup |
+| 501        | Config file error | : [configuration file name] open error - [system generated letter file read error message] ||
 |            || : [configuration file name] read error - [system generated letter file read error message] ||
 |            || : Error Reading Letterfile [configuration file name]: [system generated letter file read error message] ||
 |            || : Invalid Parameter in CFG file ||
-| 502        | Invalid Source Account | : Pref Access type 3 not found | This set of errors represents issues with the source account |
+| 502        | Invalid Source Account | : Pref Access type 3 not found ||
 |            || : Acct Warning 1234 ||
 |            || : No eligible transfer from shares/loans ||
 |            || : Acct Type 1234 ||

@@ -89,11 +89,11 @@ Any and all errors should be conveyed via the following structure:
 | No loan types found in CFG Letter file | This set of errors represents issues with the configuration letter file setup |
 | Invalid loan tracking type: 1234 ||
 | Invalid sub source code: 123 ||
-| Invalid other action: 123 | Configuration error when OA(other action) CFG file setting is not 0 (share fee comment) or 1 (loan fee comment) |
-| Test mode on but no test account(s) defined | Configuration error when TNC(test newest changes) CFG file setting is TRUE, but TML(test member list) is blank |
+| Invalid other action: 123 | Configuration error when OA (other action) CFG file setting is not 0 (share fee comment) or 1 (loan fee comment) |
+| Test mode on but no test account(s) defined | Configuration error when TNC (test newest changes) CFG file setting is TRUE, but TML (test member list) is blank |
 | Invalid start/end date(s) ||
 | Error Opening Letterfile [config file name]: [system generated letter file read error message] ||
-| Invalid loan id: [loan id] | This set of errors are non-configuration file errors |
+| Invalid loan id: [loan id] | This set of errors is for skip payment processing errors |
 | Attempt to skip a payment on an ineligible loan: [loan id] ||
 | Invalid fee share id: [share id] ||
 | Loan Record Update Failed. Error: [file maintenance system error message] ||

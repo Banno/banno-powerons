@@ -105,5 +105,5 @@ Any and all errors should be conveyed via the following structure:
 | Payoff Days more than Maximum allowed ||
 | Account Warning Found ||
 | Loan Warning Found ||
-| Loan Projection Error: [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for non-configuration file errors |
+| Loan Projection Error: [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for loan payoff processing errors |
 | Fee Specfile Error: [Banno loan payoff fees PowerOn generated error message] ||
