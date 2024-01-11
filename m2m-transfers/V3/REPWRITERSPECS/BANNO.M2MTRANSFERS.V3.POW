@@ -1531,7 +1531,7 @@ PROCEDURE PRINTCURRENTSTATE
    PRINT INDENT(BASEINDENT+4)+Q+"available"+Q+": "+Q+NLTSCHR+Q+","
    NEWLINE
    PRINT INDENT(BASEINDENT+4)+Q+"accountOwnerName"+Q+": "+Q+
-         BNOSHAREXACCTPRIMARYNAME(SLLOOP)+Q+","
+         BNOLOANXACCTPRIMARYNAME(SLLOOP)+Q+","
    NEWLINE
    PRINT INDENT(BASEINDENT+4)+Q+"crossAccount"+Q+": "+
          BNOTRUEFALSECHR(CROSSACCTFLAG)
@@ -1971,7 +1971,6 @@ PROCEDURE BUILDSHARELOANLIST
 ** funds from
 ** 3.2.1 - Updated procedures being called
 *]
- CALL BNOSETUSERHBENABLE
  CALL BNOBUILDSHARELOANLISTINIT
 
  BNOSLTYPE=PARAMNTSLTYPE
@@ -2406,8 +2405,6 @@ PROCEDURE READCONFIGFILESETTINGS
           PARAMIDLENTEST=TESTIDLENGTH4
         END
 [* Default Transaction Comment
-** 3.2.1 - Limit default comment to 19 characters to avoid possibility
-** of a longer comment causing the transaction attempt to error out.
 *]
        ELSE IF PARAMNAME="TC" THEN
         DO
@@ -2742,7 +2739,7 @@ PROCEDURE ERRORHANDLER
 
  IF ERRORDETAILOFFSET=4 THEN
   DO
-   ERRORDETAIL(4)=ERRORDETAIL(4)+"Cannot calc member limits."
+   ERRORDETAIL(4)=ERRORDETAIL(4)+": Cannot calc member limits."
   END
 
  IF ERRORDETAILOFFSET=7 THEN
