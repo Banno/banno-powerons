@@ -333,7 +333,8 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 ```
 ### Error Codes
 
-*See Modifier section for additional details
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
 
 | Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
 | ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
@@ -350,12 +351,11 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
 | 504        | Invalid Source Account | Cannot calc member limits. ||
 | 505        | Invalid Input |||
 | 506        | Error Processing Recipient Record || Error creating/deleting recipient |
-| 507        | Error Processing Transfer Record || This set of errors is for creating/updating/deleting transfers |
+| 507        | Error Processing Transfer Record | No Modifier. Error Code 507 does not always provide a Modifier. | This set of errors is for creating/updating/deleting transfers |
 |            || Target s/l xfer Loc 1234567 not found ||
 |            || : Target ID not found or invalid ||
 | 508        | Undefined Error |||
-| 509        | Member verification failed || This set of errors is for member unverified |
-|            || : Account Closed - 99/99/99 ||
+| 509        | Member verification failed | : Account Closed - 99/99/99 | This set of errors is for member unverified |
 |            || : Name verification failed ||
 |            || : No valid share or loan found ||
 |            || : Target S/L not found ||

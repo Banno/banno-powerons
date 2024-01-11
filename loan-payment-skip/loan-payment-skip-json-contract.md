@@ -82,7 +82,8 @@ Any and all errors should be conveyed via the following structure:
 ```
 ### Response Messages & Corresponding Logging Error Messages
 
-*All Errors beging with 'We're sorry we've encountered an error. Please contact your credit union.' followed by a Logging Error Message.
+*All Errors begin with 'We're sorry we've encountered an error. Please contact your credit union.' followed by the Logging Error Message.
+ That is the part of the error message that is displayed to the end user.
 
 | Logging Error Message                                                                | Additional Notes As Needed |
 |------------------------------------------------------------------------------------- |-----------------------------------------------|
