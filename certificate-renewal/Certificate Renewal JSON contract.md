@@ -316,13 +316,18 @@ If any request is not successful for any number of reasons, or the desired actio
 ```
 ## Error Codes
 
-| errorCode | loggingErrorMessage                                             |
-| --------- | --------------------------------------------------------------- |
-| 500       | Generic Error                                                   |
-| 501       | Configuration file error (error opening, reading or processing) |
-| 502       | Invalid account or share (based on account type/share warning)  |
-| 503       | Maturity selection previously made - contact CU                 |
-| 504       | Processing Error                                                |
-| 505       | Cross account access attempt                                    |
-| 506       | Renew options not set for Share type                            |
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
 
+| Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Undefined Error || Generic Error |
+| 501        | Config file error | No Modifier. Error Code 501 does not always provide a Modifier. ||
+|            || : [system generated letter file read error message] ||
+|            || : Invalid Parameter in CFG file ||
+| 502        | Invalid account or share | : Acct or Share Warning 123 ||
+|            || : Acct Type 1234 ||
+| 503        | Maturity selection previously made |||
+| 504        | Error processing request | : [file maintenance system error message] | This error is for CD renew processing errors. |
+| 505        | Cross account access attempt |||
+| 506        | Renew options not set for Share type | : 1234 ||

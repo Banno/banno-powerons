@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CDRENEW.V1.POW
 **  Letterfile Name:    BANNO.CDRENEW.V1.CFG
 **
-**  Copyright 2020-2023 Jack Henry and Associates
+**  Copyright 2020-2024 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to update their
 **  Certificate maturity action.
@@ -71,6 +71,8 @@
 **                Added parameters for setting maturity options descriptors.
 **                Added call to currentState to send JSON current state info
 **                of targeted certificate when a 503 error occurs.
+**    Ver. 1.4.1  01/16/24 JKeenan - Banno
+**                Corrected letter file read error
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -335,11 +337,11 @@ DEFINE
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='11/02/23'
- BNOLASTMODTIME="17:00 MT"
+ BNOLASTMODDATE='01/16/24'
+ BNOLASTMODTIME="12:00 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
- BNOPROGRAMVERSION="1.4.0"
+ BNOPROGRAMVERSION="1.4.1"
  BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
@@ -1315,7 +1317,7 @@ PROCEDURE ERRORHANDLER
 
  IF ERRORDETAILOFFSET=1 THEN
   IF READCONFIGERROR=TRUE THEN
-   ERRORDETAIL(1)=ERRORDETAIL(1)+": "+FMERROR
+   ERRORDETAIL(1)=ERRORDETAIL(1)+": "+LFERROR
   ELSE IF PARAMVALIDATIONERROR=TRUE THEN
    ERRORDETAIL(1)=ERRORDETAIL(1)+": Invalid Parameter in CFG file"
 
