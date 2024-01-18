@@ -173,16 +173,25 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 
 ## Error Codes
 
-| Error Code | Logging Error Message                                     |
-| ---------- | --------------------------------------------------------- |
-| 501        | Config file read error: _[read error]_                    |
-| 502        | Config file validation error: _[validation error detail]_ |
-| 503        | No eligible shares                                        |
-| 504        | Ineligible account type                                   |
-| 505        | Account warning found                                     |
-| 506        | Error attempting to update share tracking record          |
-| 507        | Error updating source code and auth & fee fields          |
-| 508        | Error updating share overdraft tolerance amount           |
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
+
+| Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Program running in memo mode |||
+| 501        | Error reading from config file | :Error Opening Letterfile [configuration file name]: [system generated letter file read error message] ||
+|            || :Error Reading Letterfile [configuration file name]: [system generated letter file read error message] ||
+| 502        | Config file validation error | :Invalid tracking type||
+|            || :Invalid source code for SCT in CFG | In the CFG for SCT (source code 1 value if opt-in = true) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
+|            || :Invalid source code for SCF in CFG | In the CFG for SCF (source code 1 value if opt-in = false) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
+|            || :Invalid auth/fee option for AFT in CFG | In the CFG for AFT (Auth & fee 1 value if opt-in = true) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
+|            || :Invalid auth/fee option for AFF in CFG | In the CFG for AFF (Auth & fee 1 value if opt-in = false) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
+| 503        | No eligible shares. |||
+| 504        | Ineligible Acct Type 1234 found |||
+| 505        | Account warning 123 exists |||
+| 506        | Error attempting to update share tracking | : [file maintenance system error message] ||
+| 507        | Error updating source code & auth/fee fields | : [file maintenance system error message] ||
+| 508        | Error updating share overdraft tolerance amount | : [file maintenance system error message] ||
 
 - Individual error codes are for ease of researching issues.
 - All error codes except for '503' will be returned to the UX as '500'
