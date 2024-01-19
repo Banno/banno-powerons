@@ -182,10 +182,10 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 | 501        | Error reading from config file | :Error Opening Letterfile [configuration file name]: [system generated letter file read error message] ||
 |            || :Error Reading Letterfile [configuration file name]: [system generated letter file read error message] ||
 | 502        | Config file validation error | :Invalid tracking type||
-|            || :Invalid source code for SCT in CFG | In the CFG for SCT (source code 1 value if opt-in = true) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
-|            || :Invalid source code for SCF in CFG | In the CFG for SCF (source code 1 value if opt-in = false) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
-|            || :Invalid auth/fee option for AFT in CFG | In the CFG for AFT (Auth & fee 1 value if opt-in = true) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
-|            || :Invalid auth/fee option for AFF in CFG | In the CFG for AFF (Auth & fee 1 value if opt-in = false) there is an invalid value. Remove the value from the CFG not listed as valid in CFG comments. |
+|            || :Invalid source code for SCT in CFG | In the CFG for SCT (source code 1 value if opt-in = true) there is an invalid value. See CFG comments for valid values. |
+|            || :Invalid source code for SCF in CFG | In the CFG for SCF (source code 1 value if opt-in = false) there is an invalid value. See CFG comments for valid values. |
+|            || :Invalid auth/fee option for AFT in CFG | In the CFG for AFT (Auth & fee 1 value if opt-in = true) there is an invalid value. See CFG comments for valid values. |
+|            || :Invalid auth/fee option for AFF in CFG | In the CFG for AFF (Auth & fee 1 value if opt-in = false) there is an invalid value. See CFG comments for valid values. |
 | 503        | No eligible shares. |||
 | 504        | Ineligible Acct Type 1234 found |||
 | 505        | Account warning 123 exists |||
