@@ -94,17 +94,22 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 **Error Code detail:**
 
-| Error Code | Logging Error Message Detail                                                             |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| 500        | Error Opening Letterfile BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_ |
-| 501        | Target Share/Loan available balance<=$0.00                                               |
-| 502        | Invalid address                                                                          |
-| 503        | Account not found                                                                        |
-| 503        | Account warning found                                                                    |
-| 503        | Target Share/Loan not found                                                              |
-| 503        | Share/Loan invalid type                                                                  |
-| 503        | Share/Loan warning found                                                                 |
-| 505        | Cross Account access attempt                                                             |
+| Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Error Opening Letterfile [configuration file name] | : [system generated letter file read error message] ||
+|            | Error Reading Letterfile [configuration file name] | : [system generated letter file read error message] ||
+|            | CFG Letterfile Error | : No Share/Loan types defined. ||
+| 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
+| 502        | Invalid Address |||
+| 503        | Account Not Found |||
+|            | Account Warning Found |||
+|            | Share Not Found |||
+|            | Loan Not Found |||
+|            | Invalid Share Type |||
+|            | Invalid Loan Type |||
+|            | Share Warning Found |||
+|            | Loan Warning Found |||
+| 505        | Cross Account WD Attempted |||
 
 ## PERFORMWITHDRAW state
 
@@ -178,22 +183,31 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 **Error Code detail:**
 
-| Error Code | Logging Error Message Detail                                                     |
-| ---------- | -------------------------------------------------------------------------------- |
-| 500        | Error processing BANNO.CHECK.WITHDRAW.V1.CFG: _[system generated error message]_ |
-| 501        | Target Share/Loan available balance<=$0.00                                       |
-| 502        | Invalid address                                                                  |
-| 503        | Account not found                                                                |
-| 503        | Account warning found                                                            |
-| 503        | Target Share/Loan not found                                                      |
-| 503        | Share/Loan invalid type                                                          |
-| 503        | Share/Loan warning found                                                         |
-| 504        | Reg D error                                                                      |
-| 505        | Cross Account access attempt                                                     |
-| 506        | Amount requested out of bounds                                                   |
-| 507        | Amount requested exceeds available/NSF                                           |
-| 508        | Unhandled Error (catch-all)                                                      |
-| 509        | TRANPERFORM Other Error                                                          |
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
+
+| Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Error Opening Letterfile [configuration file name] | : [system generated letter file read error message] ||
+|            | Error Reading Letterfile [configuration file name] | : [system generated letter file read error message] ||
+|            | CFG Letterfile Error | : No Share/Loan types defined. ||
+| 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
+| 502        | Invalid Address |||
+| 503        | Account Not Found |||
+|            | Account Warning Found |||
+|            | Share Not Found |||
+|            | Loan Not Found |||
+|            | Invalid Share Type |||
+|            | Invalid Loan Type |||
+|            | Share Warning Found |||
+|            | Loan Warning Found |||
+| 504        | TRANPERFORM Error | : [transaction posting system error message. contains phrase "REG D"] | Reg D Limit |
+| 505        | Cross Account WD Attempted |||
+| 506        | Amount requested out of bounds |||
+| 507        | Amount req.  ###,##9.99  exceeds avail.  ###,##9.99 |||
+|            | TRANPERFORM Error | : NSF | Insufficient Funds |
+| 508        | Unhandled Error || (catch-all) |
+| 509        | TRANPERFORM Error | : [transaction posting system error message] | other transaction posting system error |
 
 ## Additional Information
 
