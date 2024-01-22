@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.ODTOPTIN.V1.POW
 **  Letterfile Name:    BANNO.ODTOPTIN.V1.CFG
 **
-**  Copyright 2020-2023 Jack Henry and Associates
+**  Copyright 2020-2024 Jack Henry and Associates
 **
 **  This Banno service PowerOn allows the user to Opt-In or Opt-out
 **  of the Reg-E overdraft service
@@ -27,6 +27,8 @@
 **    Ver. 1.1.1  08/09/23 T. Kainz - Corrected faulty JSON when debug mode is turned on
 **                         Added additional debug output to facilitate troubleshooting.
 **                         Corrected S/L type calc/reference.
+**    Ver. 1.1.2  01/22/24 J. Keenan - Improved JSon error message detail for
+**                         configuration file validation error.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -189,9 +191,9 @@ END [DEFINE]
 
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
- PROGRAMVERSION="1.1.1"
- LASTMODDATE='08/04/23'
- LASTMODTIME="12:30 MT"
+ PROGRAMVERSION="1.1.2"
+ LASTMODDATE='01/22/24'
+ LASTMODTIME="12:00 PT"
 
  Q=CTRLCHR(34)
  BACKSLASH=CTRLCHR(92)
@@ -965,7 +967,7 @@ PROCEDURE VALIDATEPARAMS
      IF CHARACTERSEARCH(VALIDSOURCECODELIST,TMPCHR)=0 THEN
       DO
        PARAMVALIDATIONERROR=TRUE
-       PARAMVALIDATIONERRORCHR="Invalid source code"
+       PARAMVALIDATIONERRORCHR="Invalid source code for SCT in CFG"
        TMPLOOP=LENGTH(PARAMSC1TRUE)
       END
     END
@@ -981,7 +983,7 @@ PROCEDURE VALIDATEPARAMS
      IF CHARACTERSEARCH(VALIDSOURCECODELIST,TMPCHR)=0 THEN
       DO
        PARAMVALIDATIONERROR=TRUE
-       PARAMVALIDATIONERRORCHR="Invalid tracking type"
+       PARAMVALIDATIONERRORCHR="Invalid source code for SCF in CFG"
        TMPLOOP=LENGTH(PARAMSC1FALSE)
       END
     END
@@ -991,17 +993,19 @@ PROCEDURE VALIDATEPARAMS
     PARAMUPDATEANDF=TRUE AND
    (PARAMAF1TRUE<0 OR
     PARAMAF1TRUE>7) THEN
-  PARAMVALIDATIONERROR=TRUE
+  DO
+   PARAMVALIDATIONERROR=TRUE
+   PARAMVALIDATIONERRORCHR="Invalid auth/fee option for AFT in CFG"
+  END
 
  IF PARAMVALIDATIONERROR=FALSE AND
     PARAMUPDATEANDF=TRUE AND
    (PARAMAF1FALSE<0 OR
     PARAMAF1FALSE>7) THEN
-  PARAMVALIDATIONERROR=TRUE
-
- IF PARAMSHARETRACKING<30 OR
-    PARAMSHARETRACKING>99 THEN
-  PARAMVALIDATIONERROR=TRUE
+  DO
+   PARAMVALIDATIONERROR=TRUE
+   PARAMVALIDATIONERRORCHR="Invalid auth/fee option for AFF in CFG"
+  END
 
  IF PARAMVALIDATIONERROR=TRUE THEN
   DO
@@ -1209,13 +1213,13 @@ PROCEDURE ERRORHANDLER
 *]
  ERRORMSG="loggingErrorMessage"
  ERRORDETAIL(0)="Program running in memo mode"
- ERRORDETAIL(1)="Error reading from config file:"+LFERROR
- ERRORDETAIL(2)="Config file validation error"
+ ERRORDETAIL(1)=READCONFIGERRORMSG
+ ERRORDETAIL(2)="Config file validation error: "+PARAMVALIDATIONERRORCHR
  ERRORDETAIL(3)="No eligible shares."
  ERRORDETAIL(4)=FORMAT("Ineligible Acct Type 9999 found",ACCOUNT:TYPE)
  ERRORDETAIL(5)=FORMAT("Account warning 999 exists",SLAWARNINGFOUND)
  ERRORDETAIL(6)="Error attempting to update share tracking: "+FMERROR
- ERRORDETAIL(7)="Error updating sourcecode & auth/fee fields: "+FMERROR
+ ERRORDETAIL(7)="Error updating source code & auth/fee fields: "+FMERROR
  ERRORDETAIL(8)="Error updating share overdraft tolerance amount: "+FMERROR
 
  ERRORDETAILOFFSET=ERRORCODE-500
