@@ -27,7 +27,7 @@
 **    Ver. 1.1.1  08/09/23 T. Kainz - Corrected faulty JSON when debug mode is turned on
 **                         Added additional debug output to facilitate troubleshooting.
 **                         Corrected S/L type calc/reference.
-**    Ver. 1.1.2  01/18/24 J. Keenan - Improved JSon error message detail for
+**    Ver. 1.1.2  01/22/24 J. Keenan - Improved JSon error message detail for
 **                         configuration file validation error.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -192,7 +192,7 @@ END [DEFINE]
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
  PROGRAMVERSION="1.1.2"
- LASTMODDATE='01/18/24'
+ LASTMODDATE='01/22/24'
  LASTMODTIME="12:00 PT"
 
  Q=CTRLCHR(34)
