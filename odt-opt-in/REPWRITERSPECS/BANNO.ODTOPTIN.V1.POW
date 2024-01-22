@@ -1213,7 +1213,7 @@ PROCEDURE ERRORHANDLER
 *]
  ERRORMSG="loggingErrorMessage"
  ERRORDETAIL(0)="Program running in memo mode"
- ERRORDETAIL(1)="Error reading from config file: "+READCONFIGERRORMSG
+ ERRORDETAIL(1)=READCONFIGERRORMSG
  ERRORDETAIL(2)="Config file validation error: "+PARAMVALIDATIONERRORCHR
  ERRORDETAIL(3)="No eligible shares."
  ERRORDETAIL(4)=FORMAT("Ineligible Acct Type 9999 found",ACCOUNT:TYPE)
