@@ -101,7 +101,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |            | CFG Letterfile Error | : No Share/Loan types defined. ||
 | 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
 | 502        | Invalid Address |||
-| 503        | Account Not Found |||
+| 503        | Account Not Found || Error Code 503 is used for account find/validate errors |
 |            | Account Warning Found |||
 |            | Share Not Found |||
 |            | Loan Not Found |||
@@ -193,7 +193,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |            | CFG Letterfile Error | : No Share/Loan types defined. ||
 | 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
 | 502        | Invalid Address |||
-| 503        | Account Not Found |||
+| 503        | Account Not Found || Error Code 503 is used for account find/validate errors |
 |            | Account Warning Found |||
 |            | Share Not Found |||
 |            | Loan Not Found |||
@@ -211,6 +211,6 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 
 ## Additional Information
 
-- The UX input values "userChrList[1-5]" and 'userNumList[1-5] are referenced by the PowerOn as @RGUSERCHAR[1-5]" and @RGUSERNUM[1-5]. Eg: TARGETACCOUNT=@RGUSERCHR1.
+- The UX input values userChrList[1-5] and userNumList[1-5] are referenced by the PowerOn as @RGUSERCHAR[1-5] and @RGUSERNUM[1-5]. Eg: TARGETACCOUNT=@RGUSERCHR1.
 - Additional JSON is included in the PowerOn output as debug and program/system information.
   - The additional debug information will only be included for the first 90 days after the latest program version date.
