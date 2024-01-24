@@ -42,6 +42,12 @@ The "scenario message detail" will be a different message based upon the logic s
     "loggingErrorMessage": "logging error message detail*"
 }
 ```
+## Error Codes
+
+| Error Code | Logging Error Message                                                                 |
+| ---------- | ------------------------------------------------------------------------------------- |
+| 500        | Program running in memo mode |
+| 501        | No eligible name types defined |
 
 ## LINKTRACKING state
 ### PowerOn Input
