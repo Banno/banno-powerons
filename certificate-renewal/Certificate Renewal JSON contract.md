@@ -161,46 +161,46 @@
 
 - **_currentState:_**
 
-  - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
-  - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
-  - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
-  - 4-**currentStatus**: The current maturity option set for the targeted certificate/club.
-  - 5-**renewName**: New share name/description for a certificate/club renewal.
-  - 6-**renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
-  - 7-**renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
-  - 8-**transfers**: List of existing maturity tranfers.  Funds will be transferred to these shares/loans at maturity.
-    - 1-**transferSLID**: If the current maturity option includes transferring funds out of the CD, this will be the current 10-digit account number and share/loan ID.
-    - 2-**transferName**: If the current maturity option includes transferring funds out of the CD, this will be the current name of the share/loan.
-    - 3-**transferAmount**: If the current maturity option includes transferring funds out of the CD, this will be the current amount to be transferred.
-    - 4-**transferPercent**: If the current maturity option includes transferring funds out of the CD, this will be the current percent to be transferred.
-  - 9-**autoTransfers**: List of existing auto tranfers.  If the current maturity option includes transferring into the CD, funds will be transferred from these shares at maturity.
-    - 1-**transferSLID**: The current 10-digit account number and share ID of the from share.
-    - 2-**transferName**: The current name of the from share.
-    - 3-**transferAmount**: The current transfer amount.
-  - 10-**ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
+  - **name**: Share nickname of targeted certificate/club share. If no nickname, share description.
+  - **maturityDate**: The current maturity date of the targeted certificate/club.
+  - **minimumBalance**: The current minimum balance requirement of targeted certificate/club.
+  - **currentStatus**: The current maturity option set for the targeted certificate/club.
+  - **renewName**: New share name/description for a certificate/club renewal.
+  - **renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
+  - **renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
+  - **transfers**: List of existing maturity tranfers.  Funds will be transferred to these shares/loans at maturity.
+    - **transferSLID**: If the current maturity option includes transferring funds out of the CD, this will be the current 10-digit account number and share/loan ID.
+    - **transferName**: If the current maturity option includes transferring funds out of the CD, this will be the current name of the share/loan.
+    - **transferAmount**: If the current maturity option includes transferring funds out of the CD, this will be the current amount to be transferred.
+    - **transferPercent**: If the current maturity option includes transferring funds out of the CD, this will be the current percent to be transferred.
+  - **autoTransfers**: List of existing auto tranfers.  If the current maturity option includes transferring into the CD, funds will be transferred from these shares at maturity.
+    - **transferSLID**: The current 10-digit account number and share ID of the from share.
+    - **transferName**: The current name of the from share.
+    - **transferAmount**: The current transfer amount.
+  - **ineligibleIrsCode**: Set to true if the associated share IRS Code is ineligible for renewal.
 
 - **_options_**: comma-delimited list of available options to member (1 thru 6). Options listed will be based upon the allowable options configured by the CU.
 
-  - 1-**Increase certificate balance**: Add additional funds to the certificate and renew.
-  - 2-**Change certificate term**: Roll funds over into a new certificate type (requires CU contact).
-  - 3-**Transfer certificate balance**:
+  - **Increase certificate balance**: Add additional funds to the certificate and renew.
+  - **Change certificate term**: Roll funds over into a new certificate type (requires CU contact).
+  - **Transfer certificate balance**:
     - Full amount - all funds will be transferred out and certificate closed
     - Partial amount - limited to min balance requirement. Certificate will be renewed
-  - 4-**Renew**: Renew certificate to current terms.
-  - 5-**Disburse funds by check**: Withdraw balance by check, close certificate.
-  - 6-**Suspend**: Suspend certificate activity - funds retained in share.
+  - **Renew**: Renew certificate to current terms.
+  - **Disburse funds by check**: Withdraw balance by check, close certificate.
+  - **Suspend**: Suspend certificate activity - funds retained in share.
 
 - **_transferFrom_**: A list of shares eligible as a source for transferring funds into the certificate upon maturity (transfer occurs the day before maturity.)
 
-  - 1-**shareLoanId**: 4-character share or loan ID
-  - 2-**shareLoanName**: share nickname if available otherwise the share description
-  - 3-**shareLoanBal**: the current share available balance
+  - **shareLoanId**: 4-character share or loan ID
+  - **shareLoanName**: share nickname if available otherwise the share description
+  - **shareLoanBal**: the current share available balance
 
 - **_transferTo_**: A list of shares eligible for transferring certificate balance into upon maturity.
 
-  - 1-**shareLoanId**: 4-character share or loan ID
-  - 2-**shareLoanName**: share nickname if available otherwise the share description
-  - 3-**shareLoanBal**: the current share available balance
+  - **shareLoanId**: 4-character share or loan ID
+  - **shareLoanName**: share nickname if available otherwise the share description
+  - **shareLoanBal**: the current share available balance
 
 - **_payeeAddress_**: Comma-delimited member payee address lines representing the address the check will be mailed to should the member elect the 'Disburse funds by check' option. This is a system
   calculated value containing from 1 to 6 Payee lines. "null" indicates an invalid address.
@@ -260,15 +260,15 @@
 ```
 
 - **_updatedState_**
-  - 1-**name**: Share nickname of targeted certificate/club share. If no nickname, share description.
-  - 2-**maturityDate**: The current maturity date of the targeted certificate/club.
-  - 3-**minimumBalance**: The current minimum balance requirement of targeted certificate/club.
-  - 4-**currentStatus**: The new maturity option set for the targeted certificate/club.
-  - 5-**renewName**: New share name/description for a certificate/club renewal.
-  - 6-**renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
-  - 7-**renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
-  - 8-**transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
-  - 9-**transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
+  - **name**: Share nickname of targeted certificate/club share. If no nickname, share description.
+  - **maturityDate**: The current maturity date of the targeted certificate/club.
+  - **minimumBalance**: The current minimum balance requirement of targeted certificate/club.
+  - **currentStatus**: The new maturity option set for the targeted certificate/club.
+  - **renewName**: New share name/description for a certificate/club renewal.
+  - **renewTermPeriod**: The new term period (number of days or months) for the certificate/club renewal.
+  - **renewTermFrequency**: The new term frequency (days or months) for the certificate/club renewal.
+  - **transferSLId**: If the current maturity option includes transferring funds into or out of the CD, this will be the current 10-digit account number and share/loan ID.
+  - **transferAmount**: If the current maturity option includes transferring funds into or out of the CD, this will be the current amount to be transferred.
 
 ## Unsuccessful Response:
 
@@ -316,13 +316,18 @@ If any request is not successful for any number of reasons, or the desired actio
 ```
 ## Error Codes
 
-| errorCode | loggingErrorMessage                                             |
-| --------- | --------------------------------------------------------------- |
-| 500       | Generic Error                                                   |
-| 501       | Configuration file error (error opening, reading or processing) |
-| 502       | Invalid account or share (based on account type/share warning)  |
-| 503       | Maturity selection previously made - contact CU                 |
-| 504       | Processing Error                                                |
-| 505       | Cross account access attempt                                    |
-| 506       | Renew options not set for Share type                            |
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
 
+| Error Code | Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ---------- | ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| 500        | Program running in memo mode |||
+| 501        | Config file error | No Modifier. Error Code 501 does not always provide a Modifier. ||
+|            || : [system generated letter file read error message] ||
+|            || : Invalid Parameter in CFG file ||
+| 502        | Invalid account or share | : Acct or Share Warning [3-digit warning code] ||
+|            || : Acct Type [4-digit account type] ||
+| 503        | Maturity selection previously made |||
+| 504        | Error processing request | : [file maintenance system error message] | This error is for CD renew processing errors. |
+| 505        | Cross account access attempt |||
+| 506        | Renew options not set for Share type | : [4-digit share type] ||
