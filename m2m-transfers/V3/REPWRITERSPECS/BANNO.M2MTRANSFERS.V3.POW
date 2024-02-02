@@ -383,7 +383,7 @@ SETUP
 
  SLIDLEN                   = GETDATANUMBER(GETPARAMIDLENGTH)
 
-[*the followowing freq references are defined twice because there are some differences
+[*the following freq references are defined twice because there are some differences
 ** between Episys and Banno in the frequency type declarations.
 *]
  TRANSFERFREQCHR(TRANFREQSTD,0)="demand"
