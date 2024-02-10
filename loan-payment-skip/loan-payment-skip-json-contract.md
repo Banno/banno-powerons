@@ -57,7 +57,7 @@ When the client wishes to submit the skip payment request, it will send:
   "powerOnFileName": "BANNO.LOANPAYMENT.SKIP.V1.POW",
   "userChrList": [
     { "id": 1, "value": "4CharLoanId, 4CharLoanId..." },
-    { "id": 2, "value": "selectedFeeId" } // 2 or 4-digit share id or "toLoan"
+    { "id": 2, "value": "selectedFeeId" } // 2 or 4-digit share id or "loan"
   ],
   "userNumList": [],
   "rgSession": 1
