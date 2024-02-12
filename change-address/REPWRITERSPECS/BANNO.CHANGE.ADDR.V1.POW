@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHANGE.ADDR.V1.POW
 **  Letterfile Name:    BANNO.CHANGE.ADDR.V1.CFG
 **
-**  Copyright 2021-2023 Jack Henry
+**  Copyright 2021-2024 Jack Henry
 **
 **  This Banno PowerOn allows the member to update their
 **  address (Street, Extra Address, City, State, Zipcode, member note).
@@ -34,6 +34,9 @@
 **                                     with truncating long member notes.
 **    Ver. 1.2.2  12/13/23 J. Carson - Added member's input address to account level note when host is in 
 **                                     memo mode or a config file error occurs. 
+**    Ver. 1.2.3  02/12/24 J. Keenan - Modified the Address Change PowerOn to strip special characters, 
+**                                     specified in the configuration file, from Address Line 1 and Address Line 2  
+**                                     before updating the name record in Symitar. 
 **
 *]
 SYMCONNECT
@@ -66,6 +69,9 @@ DEFINE
  BNODEBUGMSG               = CHARACTER
  BNODEBUGMSGLIST           = CHARACTER ARRAY(99)
  CHRVAL                    = NUMBER
+ CHRVALPREV                = NUMBER
+ CHRVALNEXT                = NUMBER
+ CHRVALNEXTNEXT            = NUMBER
  CURRBANNOID               = CHARACTER
  DATAFIELDCOUNT            = NUMBER
  DATALINE                  = CHARACTER
@@ -145,6 +151,7 @@ DEFINE
  PARAMPORESTRICT           = NUMBER
  PARAMSETWARNING           = CHARACTER
  PARAMSETWARNINGEXPIRATION = DATE
+ PARAMUNALLOWEDCHARS       = CHARACTER
  PARAMVALIDATIONERROR      = NUMBER
  PARAMVALIDATIONERRORCHR   = CHARACTER
  PARAMVALUE                = CHARACTER
@@ -180,6 +187,7 @@ DEFINE
  TMPTEXTLOOP               = NUMBER
  TRACKINGFOUND             = NUMBER
  TRUEFALSECHR              = CHARACTER ARRAY(1)
+ UNALLOWEDCHARS            = NUMBER ARRAY(999)
  VALIDACCOUNT              = NUMBER
  VALIDCHRINPUT1            = CHARACTER
  VALIDCHARS                = NUMBER ARRAY(999)
@@ -238,10 +246,11 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.2.2"
- LASTMODDATE='12/13/23'
- LASTMODTIME="13:30 ET"
- PROGRAMUPDATENOTE1="Updated account level note various errors"
+ PROGRAMVERSION="1.2.3"
+ LASTMODDATE='2/12/24'
+ LASTMODTIME="7:30 PT"
+ PROGRAMUPDATENOTE1="Modified to strip special characters"
+ PROGRAMUPDATENOTE2="from Address Line 1 and 2 before updating name rec"
  PRINTRGINFODAYS=60
  DEBUGMODEDAYS=90
  PARAMEMAILTYPECHR(EMAILTYPETEXT)="TEXT"
@@ -1158,22 +1167,70 @@ PROCEDURE CLEANUPTEXT
  TMPCHR=TMPTEXT
 END [PROCEDURE]
 
+PROCEDURE REMOVEUNALLOWEDCHARSTEXT
+[* Check character string and remove from user input before it FM updates 
+** Address Line 1 (NAME:STREET) and Address Line 2 (NAME:EXTRAADDRESS) 
+** in Name records. The code also removes the space after 
+** individual special characters if that character has a space before and 
+** after it and is not at the beginning or end of the address line. 
+** For example, 'Unit = 6' would become 'Unit 6' if Ascii character 61, 
+** '=', were not allowed.
+**  PASS       TMPCHR   String to test
+**  RETURN     TMPCHR   Updated string
+*]
+ TMPTEXT=""
+
+ IF TMPCHR<>"" THEN
+  DO
+   FOR TMPTEXTLOOP=1 TO LENGTH(TMPCHR)
+    DO
+     [ Initialize variables for evaluating space before & after unallowed char ]
+     CHRVALPREV=-1
+     CHRVALNEXT=-1
+     CHRVALNEXTNEXT=-1
+     CHRVAL=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP))
+     IF TMPTEXTLOOP-1>0 THEN
+      CHRVALPREV=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP-1,TMPTEXTLOOP-1))
+     IF TMPTEXTLOOP+1<=LENGTH(TMPCHR)THEN
+      CHRVALNEXT=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP+1,TMPTEXTLOOP+1))
+     IF TMPTEXTLOOP+2<=LENGTH(TMPCHR) THEN
+      CHRVALNEXTNEXT=CHRVALUE(SEGMENT(TMPCHR,TMPTEXTLOOP+2,TMPTEXTLOOP+2))
+
+     IF  UNALLOWEDCHARS(CHRVAL)=FALSE THEN [ Put allowed characters in TMPTEXT ]
+      TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+     ELSE IF CHRVALPREV=32 AND CHRVALNEXT=32 AND 
+             TMPTEXTLOOP+2<=LENGTH(TMPCHR) AND UNALLOWEDCHARS(CHRVALNEXTNEXT)=FALSE THEN 
+      DO [ remove special char and 2nd space if there is a space before & after unallowed char ]
+       TMPTEXTLOOP=TMPTEXTLOOP+2
+       TMPTEXT=TMPTEXT+SEGMENT(TMPCHR,TMPTEXTLOOP,TMPTEXTLOOP)
+      END
+    END
+  END
+ TMPCHR=TMPTEXT
+ CALL NLTS [ Remove leading and trailing spaces from TMPCHR ]
+END [PROCEDURE]
+
 PROCEDURE VALIDATERGDATA
 [* Check the member's new street address to see if it contains
 ** a PO Box address per the CU's configuration settings. If a
 ** PO Box address is found, set an error code and create a
 ** note record on the member's account. Also validates NEWSTREET,
-** NEWCITY, NEWSTATE and NEWZIPCODE are completed.
+** NEWCITY, NEWSTATE and NEWZIPCODE are completed. Also, removes 
+** any unallowed special characters from NEWSTREET and NEWEXTRAADDR.
 ** PASS    NEWSTREET
 ** PASS    NEWCITY
 ** PASS    NEWSTATE
 ** PASS    NEWZIPCODE
 ** PASS    PARAMPORESTRICT Boolean flag: should the street be
 **         checked for a PO Box address
-** RETURN  POBOXFOUND  Boolean flag
-** RETURN  MISSINGDATA Boolean flag
+** RETURN  POBOXFOUND    Boolean flag
+** RETURN  MISSINGDATA   Boolean flag
 ** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
 **                       is found.
+** RETURN NEWSTREET      Returns NEWSTREET with any unallowed 
+**                       special characters removed.
+** RETURN NEWEXTRAADDR   Returns NEWEXTRAADDR with any unallowed 
+**                       special characters removed.
 *]
  MISSINGDATA=FALSE
  IF NEWSTREET="" OR
@@ -1231,6 +1288,57 @@ PROCEDURE VALIDATERGDATA
      CALL CREATENOTERECORD
      @RGSTATE=STATEEND
      @RGDATATYPE=9
+    END
+   ELSE [ Remove any unallowed special characters from NEWSTREET and NEWEXTRAADDR ]
+    DO
+     IF NEWSTREET<>"" THEN
+      DO
+       TMPCHR=NEWSTREET
+[* Upon next update deactivate the testing for this change
+** remove the following code below: 
+**    IF (PARAMTESTACCTS="" OR
+**       (PARAMTESTACCTS<>"" AND
+**        TESTUSER=TRUE)) THEN
+*]
+      IF (PARAMTESTACCTS="" OR
+         (PARAMTESTACCTS<>"" AND
+          TESTUSER=TRUE)) THEN
+       CALL REMOVEUNALLOWEDCHARSTEXT
+       NEWSTREET=TMPCHR
+      END
+     IF NEWEXTRAADDR<>"" THEN
+      DO
+       TMPCHR=NEWEXTRAADDR
+[* Upon next update deactivate the testing for this change
+** remove the following code below: 
+**    IF (PARAMTESTACCTS="" OR
+**       (PARAMTESTACCTS<>"" AND
+**        TESTUSER=TRUE)) THEN
+*]      IF (PARAMTESTACCTS="" OR
+         (PARAMTESTACCTS<>"" AND
+          TESTUSER=TRUE)) THEN
+       CALL REMOVEUNALLOWEDCHARSTEXT
+       NEWEXTRAADDR=TMPCHR
+      END
+[*     Upon next update, deactivate the testing for this change
+**     by deleting the following code: 
+**  IF PARAMUNALLOWEDCHARS<>"" AND
+**     PARAMTESTACCTS<>"" AND
+**     TESTUSER=FALSE THEN [ Temp code when using test accts & not a test account, as Unallowed Chars disabled earlier program for non-test accts ]
+**   BNODEBUGMSG="NEWSTREET and NEWEXTRAADDR Note: Unallowed Characters not removed for this non-test account:"
+**  ELSE
+*]
+    IF PARAMUNALLOWEDCHARS<>"" AND
+       PARAMTESTACCTS<>"" AND
+       TESTUSER=FALSE THEN [ Temp code when using test accts & not a test account, as Unallowed Chars disabled earlier program for non-test accts ] 
+     BNODEBUGMSG="NEWSTREET and NEWEXTRAADDR Note: Unallowed Characters not removed for this non-test account:"
+    ELSE
+     BNODEBUGMSG="NEWSTREET and NEWEXTRAADDR after Unallowed Characters removed:"
+     CALL BNODEBUGMSGADD
+     BNODEBUGMSG="STREET:"+NEWSTREET
+     CALL BNODEBUGMSGADD
+     BNODEBUGMSG="XADDR:"+NEWEXTRAADDR
+     CALL BNODEBUGMSGADD
     END
   END
 END [PROCEDURE]
@@ -1323,6 +1431,7 @@ PROCEDURE INITIALIZEDATA
 
  TESTUSER=FALSE
  PERFORMMATCHING=FALSE
+ PARAMUNALLOWEDCHARS="NONE"
 END [PROCEDURE]
 
 PROCEDURE CHECKFORMEMOMODE
@@ -1557,6 +1666,7 @@ PROCEDURE READCONFIGFILESETTINGS
 **  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successful address change
 **  SW     PARAMSETWARNINGS      Account level warning to set upon successful address change
 **  PR     PARAMPORESTRICT       Should the program check for and restrict a PO box entry?
+**  IAT    PARAMUNALLOWEDCHARS   Unallowed Special Character(s) for address line 1 & 2 (in LISTEXPAND format)
 **  DB     DEBUGMODE             Debug mode on or off
 **
 ** PASS    CONFIGFILENAME   Configuration Letter file name
@@ -1567,6 +1677,7 @@ PROCEDURE READCONFIGFILESETTINGS
 ** RETURN  PARAMSETWARNINGEXPIRATION  Calculated warning expiration date for WARNINGTOSET
 ** RETURN  PARAMPORESTRICT  Boolean flag: test for PO Box address?
 ** RETURN  POBOXLIST()  Array of PO Box Text strings tp test for
+** RETURN  UNALLOWEDCHARS()  Array of unallowed special characters
 ** RETURN  DEBUGMODE  Boolean: Debug mode on or off
 *]
  INVALIDCONFIGPARAMS=FALSE
@@ -1586,6 +1697,7 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMEMAILSUBJECT="Address Update Notice"
  PARAMMATCHNAMELVL="NONE"
  PARAMMATCHNMTYPES="NONE"
+ PARAMUNALLOWEDCHARS="NONE"
  PARAMOVERRIDECONVS=FALSE
  PARAMOVERRIDEEMAIL=""
 
@@ -1615,6 +1727,7 @@ PROCEDURE READCONFIGFILESETTINGS
        IF PARAMNAME="IAT" AND
           PARAMVALUE<>"" THEN
         PARAMINELIGIBLEACCTS=PARAMVALUE
+
 [* Account warnings restricting access
 *]
        ELSE IF PARAMNAME="AW" AND
@@ -1692,6 +1805,12 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="TA" AND
                PARAMVALUE<>"" THEN
         PARAMTESTACCTS=PARAMVALUE         
+
+[* Unallowed Special Character(s)
+*]
+       ELSE IF PARAMNAME="USC" AND
+               PARAMVALUE<>"" THEN
+        PARAMUNALLOWEDCHARS=PARAMVALUE
 
 [* Override conversations
 *]
@@ -1775,6 +1894,8 @@ PROCEDURE READCONFIGFILESETTINGS
  BNODEBUGMSG="MT:"+PARAMMATCHNMTYPES
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="TA:"+PARAMTESTACCTS
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="USC:"+PARAMUNALLOWEDCHARS
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="OC:"+FORMAT("9",PARAMOVERRIDECONVS)
  CALL BNODEBUGMSGADD
@@ -1864,6 +1985,7 @@ PROCEDURE READCONFIGFILESETTINGS
    IF CHARACTERSEARCH(PARAMMATCHNAMELVL,"EXTERNAL")>0 OR
       MATCHALLNAMES=TRUE THEN
     MATCHEXTERNALNAMES=TRUE
+
   END
 
  IF CHARACTERSEARCH(PARAMTESTACCTS,ACCOUNT:NUMBER)>0 THEN
@@ -1871,14 +1993,6 @@ PROCEDURE READCONFIGFILESETTINGS
  
  IF PARAMMATCHNAMELVL<>"NONE" THEN
   PERFORMMATCHING=TRUE
-
-[* Upon next update, deactivate the testing for this change
-** by deleting the remainder of the procedure below: 
-*]
- IF PARAMOVERRIDECONVS=TRUE AND
-    PARAMTESTACCTS<>"" AND
-    TESTUSER=FALSE THEN
-  PARAMOVERRIDECONVS=FALSE
 
 END [PROCEDURE]
 
@@ -1999,6 +2113,34 @@ PROCEDURE VALIDATECONFIG
        PARAMVALIDATIONERRORCHR="Invalid test account found. Must be 10 digits long."
       END
     END
+[* Test unallowed special character input
+*]
+   IF PARAMUNALLOWEDCHARS<>"" THEN
+    DO
+     TESTCHR=PARAMUNALLOWEDCHARS
+     CALL VALIDATERANGEINPUT
+     IF VALIDRANGEINPUT=FALSE THEN
+      DO
+       PARAMVALIDATIONERROR=TRUE
+       PARAMVALIDATIONERRORCHR="Invalid Unallowed Special Characters Setup"
+      END
+     ELSE [ Loading UNALLOWEDCHARS Array early to prevent 32 "Space" from being unallowed ]
+      DO
+       LELISTINPUT=PARAMUNALLOWEDCHARS
+       IF LELISTINPUT="" THEN
+        LELISTINPUT="NONE"
+       CALL LISTEXPAND
+       FOR TMPLOOP=0 TO MAXCHRVALUE
+        DO
+         UNALLOWEDCHARS(TMPLOOP)=LELIST(TMPLOOP)
+        END
+       IF UNALLOWEDCHARS(32)=TRUE THEN [ Prevent 32 "Space" from being unallowed ]
+        DO
+           PARAMVALIDATIONERROR=TRUE
+           PARAMVALIDATIONERRORCHR="Invalid Unallowed Special Characters Setup : 32 (Space not allowed)"
+        END
+      END [ ELSE ]
+    END [ PARAMUNALLOWEDCHARS<>"" ]
 [* If email is enabled, check for email detail lines and valid email address, if specified.
 *]
    IF PARAMSENDEMAIL=TRUE AND

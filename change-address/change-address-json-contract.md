@@ -36,6 +36,8 @@
 |            | PO Box Types Setup Incomplete |||
 |            | No name types set for name level matching |||
 |            | Invalid test account found. Must be 10 digits long. |||
+|            | Invalid Unallowed Special Characters Setup |||
+|            | Invalid Unallowed Special Characters Setup : | 32 (Space not allowed) ||
 |            | No email detail lines specified for member email. |||
 |            | Invalid 'from' email address specified for member email. |||
 |            | Invalid email address specified for Conversations override. |||
