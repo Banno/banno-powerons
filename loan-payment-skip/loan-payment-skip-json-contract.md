@@ -88,15 +88,21 @@ Any and all errors should be conveyed via the following structure:
 
 ```json
 {
-  "clientErrorMessage": "if error processing, a user friendly error message (unused currently)",
+  "clientErrorMessage": "if error processing, a user friendly error message",
   "loggingErrorMessage": "if error processing, something to log"
 }
 ```
 
-### Response Messages & Corresponding Logging Error Messages
+### Client Error Message
+_Returned in the `clientErrorMessage` json property_
 
-**All Errors begin with 'We're sorry we've encountered an error. Please contact your credit union.' followed by the Logging Error Message.
-That is the part of the error message that is displayed to the end user.**
+This is the error text that is presented to the end user.  Currently the PowerOn code returns the following `clientErrorMessage` for all errors: 
+```
+We're sorry we've encountered an error. Please contact your credit union.
+```
+
+### Logging Error Messages
+_Returned in the `loggingErrorMessage` json property_
 
 | Logging Error Message                                              | Additional Notes (As Needed)                                                                                     |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
@@ -112,4 +118,5 @@ That is the part of the error message that is displayed to the end user.**
 | Invalid fee share id: [share id]                                   |                                                                                                                  |
 | Loan Record Update Failed. Error: [file maint system error]        |                                                                                                                  |
 | Tracking Record Create Failed. Error: [file maint system error]    |                                                                                                                  |
-| Skip Pay Fee Post Failed. Error: [tran posting system error]       |                                                                                                                  |
+| Share Skip Pay Fee Post Failed. Error: [tran posting system error]       |                                                                                                                  |
+| Loan Skip Pay Fee Post Failed. Error: [tran posting system error]       |                                                                                                                  |
