@@ -1,0 +1,751 @@
+[* Copyright 2024 Jack Henry and Associates
+**
+**  PowerOn Name: BANNO.M2MTRANSFERS.RPT.BATCH
+**
+**  --------------------------------------------------------------------
+**  Program Summary:
+**  --------------------------------------------------------------------
+**  This batch program looks through FM history and transaction history
+**  to generate a report of immediate and/or future dated one-time
+**  and recurring transfers created through the member's use of the Banno
+**  home banking program 'BANNO.M2MTRANSFERS.V3.POW'. The related
+**  configuration Letter file ('BANNO.M2MTRANSFERS.V3.CFG') contains a
+**  number of settings, a couple of which are also used by this program: 
+**    'TRANSACTION DESCRIPTION/COMMENT DEFAULT' (as TC:) 
+**       This setting must have a non-blank value and represents the
+**       share/loan comment this program is targeting. In lieu of this
+**       setting containing a value, this program's prompt 'Enter
+**       transaction comment to target' must contain a non-blank
+**       value.
+**    'CROSS ACCOUNT ACCESS' (as XA:)
+**       This setting is used to determine which accounts will be
+**       searched through looking for the target transactions/transfers.
+**
+**  --------------------------------------------------------------------
+**  Program Prompts:
+**  --------------------------------------------------------------------
+**   SymXchange User Number:
+**     The user number assigned to the SymXchange instance originating
+**     the targeted transactions and Share/Loan transfer records. The
+**     targeted user number should be between 0800 and 0899.
+**       DEFAULT: 0800     
+**
+**   Enter transaction comment to target:
+**     This is the transaction comment attached to the targeted
+**     transactions which will be included in this report. If this value
+**     is left blank, then the value of the "TC:" parameter setting
+**     in the 'BANNO.M2MTRANSFERS.V3.CFG' Letter file will be used.
+**       DEFAULT: Left blank. The value from the 'TC:' setting in
+**       the noted Letter file will be used. If both the Letter file
+**       value and this prompt are blank, program run will be terminated
+**       as there must be a transaction comment to target.
+**
+**   Reporting start date [SYSTEMDATE]
+**     The starting date for the report. Only transactions and Share/Loan
+**     transfer records created on or after this date will be included
+**     in this report.
+**       DEFAULT: System date.
+**
+**   Reporting end date [SYSTEMDATE]
+**     The ending date for the report. Only transactions and Share/Loan
+**     transfer records created on or before this date will be included
+**     in this report.
+**       DEFAULT: System date.
+**
+**  --------------------------------------------------------------------
+**  Reports Produced:
+**  --------------------------------------------------------------------
+**   Banno M2M Transfer Report: 
+**     Detail report listing any qualifying immediate or future dated
+**     Share/Loan transfers.
+**
+**  --------------------------------------------------------------------
+**  Additional Info:
+**  --------------------------------------------------------------------
+**    The transaction posting date and the share transfer FM history
+**    posting date are used to qualify the transactions/Share transfer
+**    records.
+**
+**  --------------------------------------------------------------------
+**  Modification History
+**  --------------------------------------------------------------------
+**    Ver. 1.0.0 02/27/24  TKainz - Original Programming
+*]
+
+TARGET=ACCOUNT
+
+DEFINE
+ #INCLUDE "RD.GETDATA.DEF"
+ FALSE                        = 0
+ TRUE                         = 1
+ DATENULL                     = '--/--/--'
+ TRANSOURCELOAN               = 1
+ TRANSOURCESHARE              = 0
+
+[* FOR PROCEDURE PARSEDATALINE ]
+ BNODATALINEFIELDMAX          = 9
+ BNODATALINEFIELD             = CHARACTER ARRAY(9)
+ BNODATAFIELDCOUNT            = NUMBER
+ BNODELIMITER                 = NUMBER
+ BNODELIMNONE                 = 0
+ BNODELIMCOMMA                = 44
+ BNODELIMSPACE                = 32
+ BNODATALINEINPUT             = CHARACTER
+ BNOTMPLOOP                   = NUMBER
+ BNOPOS                       = NUMBER
+ BNOTEXT                      = CHARACTER
+ BNOTRUEFALSECHR              = CHARACTER ARRAY(1)
+ CFGFILEERROR                 = CHARACTER
+ CFGFILELINE                  = CHARACTER
+ CFGFILENAME                  = CHARACTER
+ CFGFILENUMBER                = NUMBER
+ FIRSTPAGE                    = NUMBER
+ FMHDAY1                      = NUMBER
+ FMHDAY2                      = NUMBER
+ FMHEFFECTIVEDATE             = DATE
+ FMHEXPIREDATE                = DATE
+ FMHFROMACCOUNT               = CHARACTER
+ FMHFROMID                    = CHARACTER
+ FMHFROMIDTYPE                = NUMBER
+ FMHNEWLOC                    = NUMBER
+ FMHNEXTXFERDATE              = DATE
+ FMHTOACCOUNT                 = CHARACTER
+ FMHTOID                      = CHARACTER(4)
+ FMHTOIDTYPE                  = NUMBER
+ FMHXFERAMOUNT                = MONEY
+ FMHXFERFREQ                  = NUMBER
+ FMHXFERTYPE                  = NUMBER
+ FREQUENCIESCHR               = CHARACTER ARRAY(14)
+ IDTYPESCHR                   = CHARACTER ARRAY(4)
+ NEWLOCFOUND                  = NUMBER
+ TARGETCOMMENT                = CHARACTER
+ TARGETENDDATE                = DATE
+ TARGETSEQUENCE               = NUMBER
+ TARGETSTARTDATE              = DATE
+ TARGETSYMXUSER               = NUMBER
+ TCCOMMENT                    = CHARACTER ARRAY(9)
+ TCCOUNT                      = NUMBER
+ TCCOUNTMAX                   = 9
+ TCID                         = CHARACTER ARRAY(9)
+ TCIDTYPE                     = NUMBER ARRAY(9)
+ TCSTMTDESCR                  = CHARACTER ARRAY(9)
+ TESTACCOUNTS                 = CHARACTER
+ TMPLOOP                      = NUMBER
+ TOACCOUNT                    = CHARACTER
+ TOSLID                       = CHARACTER
+ TOSLIDTYPE                   = CHARACTER
+ TOTRANAMOUNT                 = MONEY
+ TRANSOURCE                   = NUMBER
+ TRANSOURCECHR                = CHARACTER ARRAY(1)
+ TRANSOURCEID                 = CHARACTER(4)
+ XACCTACCESS                  = NUMBER
+ XFERTYPEFOUND                = NUMBER
+ XFERDAY1FOUND                = NUMBER
+ XFERDAY2FOUND                = NUMBER
+END [DEFINE]
+
+SETUP
+[* To run this program against a set of test members ONLY, enter up to 12,
+** 10-digit member numbers, each separated by a comma, in the TESTACCOUNTS
+** variable below. I.E: TESTACCOUNTS="0000012345,0000334567,0000004256"
+*]
+ TESTACCOUNTS=""
+
+ CALL INITIALIZATIONS
+ CALL PROGRAMPROMPTS
+ CALL FETCHLETTERFILEPARAMS
+END [SETUP]
+
+SELECT
+[* If M2M cross-account access is turned on then look through all accounts
+** where the account activity date is on or after the reporting start date
+** otherwise, narrow the focus down to only those accounts with an HB user
+** who has last logged into home banking on or after the reporting start date.
+*]
+ (
+  (
+   TESTACCOUNTS="" OR
+   (
+    TESTACCOUNTS<>"" AND
+    CHARACTERSEARCH(TESTACCOUNTS,ACCOUNT:NUMBER)>0
+   )
+  ) AND
+  (
+   ACCOUNT:CLOSEDATE=DATENULL OR
+   ACCOUNT:CLOSEDATE>TARGETSTARTDATE) AND
+   (
+    (
+     XACCTACCESS=FALSE AND
+     ANY PREFERENCE WITH (PREFERENCE:HBUSERNAME<>"" AND
+                          PREFERENCE:HBLASTLOGONDATE>=TARGETSTARTDATE)
+    ) OR 
+    (
+     XACCTACCESS=TRUE AND
+     ACCOUNT:ACTIVITYDATE>=TARGETSTARTDATE
+    )
+   )
+ )
+END [SELECT]
+
+PRINT TITLE="Banno M2M Transfers Report"
+ CALL MAINREPORTHEADER
+ CALL GETSHARETRANSFERRECS
+ CALL GETTRANSACTIONS
+END [PRINT]
+
+PROCEDURE PROGRAMPROMPTS
+[* Prompts used by this program. The default for each prompt is shown
+** in brackets.
+*]
+ TARGETSYMXUSER=CODEREAD("",
+                         "Enter the target SymXchange user number",
+                         "which must be in the range of 800-899",
+                         "SymXchange User Number [800]")
+
+ TARGETCOMMENT=CHARACTERREAD("",
+                             "Enter transaction comment to match. If left",
+                             "blank then 'TC' parameter value",
+                             "from BANNO.M2MTRANSFERS.V3.CFG Letter",
+                             "file will be used",
+                             "Enter transaction comment to target []")
+
+ TARGETSTARTDATE=DATEREAD("",
+                          "Reporting start date [SYSTEMDATE]")
+ IF TARGETSTARTDATE=DATENULL THEN
+  TARGETSTARTDATE=SYSTEMDATE
+
+ TARGETENDDATE=DATEREAD("",
+                        "Reporting end date [SYSTEMDATE]")
+ IF TARGETENDDATE=DATENULL THEN
+  TARGETENDDATE=SYSTEMDATE
+
+ IF TARGETSYMXUSER<800 OR
+    TARGETSYMXUSER>899 THEN
+  DO
+   PRINT FORMAT("Invalid SymXchange user number:999 - TERMINATING PROGRAM RUN.",TARGETSYMXUSER)
+   NEWLINE
+   TERMINATE
+  END
+ ELSE IF TARGETENDDATE<TARGETSTARTDATE OR
+         TARGETSTARTDATE>SYSTEMDATE THEN
+  DO
+   PRINT "Invalid start/end date(s) - TERMINATING PROGRAM RUN."
+   NEWLINE
+   TERMINATE
+  END
+END [PROCEDURE]
+
+PROCEDURE FETCHLETTERFILEPARAMS
+[* Open Letter file BANNO.M2MTRANSFERS.V3.CFG to retrieve needed
+** parameter settings: 
+** 'TC:' (tran comment to search for)
+** 'XA:' (cross accounts allowed flag
+*]
+ XACCTACCESS=FALSE
+
+ FILEOPEN("LETTER",CFGFILENAME,"READ",CFGFILENUMBER,CFGFILEERROR)
+ IF CFGFILEERROR="" THEN
+  DO
+   WHILE (CFGFILEERROR="" AND
+          TARGETCOMMENT="")
+    DO
+     FILEREADLINE(CFGFILENUMBER,CFGFILELINE,CFGFILEERROR)
+     IF CFGFILEERROR="" THEN
+      DO
+       IF TARGETCOMMENT="" AND
+          UPPERCASE(SEGMENT(CFGFILELINE,1,3))="TC:" THEN
+        DO
+         BNOTEXT=SEGMENT(CFGFILELINE,4,LENGTH(CFGFILELINE))
+         IF LENGTH(BNOTEXT)>0 THEN
+          CALL BNONLTS
+         TARGETCOMMENT=BNOTEXT
+        END          
+       IF UPPERCASE(SEGMENT(CFGFILELINE,1,3))="XA:" THEN
+        DO
+         BNOTEXT=SEGMENT(CFGFILELINE,4,LENGTH(CFGFILELINE))
+         IF LENGTH(BNOTEXT)>0 THEN
+          CALL BNONLTS
+         IF CHARACTERSEARCH("YESTRUEON",UPPERCASE(BNOTEXT))>0 THEN
+          XACCTACCESS=TRUE
+        END  
+      END [IF CFGFILEERROR=""...]
+     ELSE IF CFGFILEERROR<>"EOF" THEN
+      DO
+       PRINT "Error reading Letter file '"+CFGFILENAME+"': "+CFGFILEERROR
+       NEWLINE
+       PRINT "TERMINATING"
+       NEWLINE
+       TERMINATE
+      END
+    END [WHILE CFGFILEERROR=""]
+  END [IF CFGFILEERROR=""]
+ ELSE
+  DO
+   PRINT "Letter file '"+CFGFILENAME+"' open error:"+CFGFILEERROR
+   NEWLINE
+   PRINT "TERMINATING"
+   NEWLINE
+   TERMINATE
+  END
+
+[* Print parameters for this run to the Batch Output report
+*]
+ PRINT FORMAT("TARGETSYMXUSER:9999",TARGETSYMXUSER)
+ NEWLINE
+ PRINT FORMAT("TARGETSTARTDATE:99/99/99",TARGETSTARTDATE)
+ NEWLINE
+ PRINT FORMAT("TARGETENDDATE:99/99/99",TARGETENDDATE)
+ NEWLINE
+ PRINT "TARGETCOMMENT:'"+TARGETCOMMENT+"'"
+ NEWLINE
+ PRINT "XACCTACCESS: "+BNOTRUEFALSECHR(XACCTACCESS)
+ NEWLINE
+ NEWLINE
+
+ IF TARGETCOMMENT="" THEN
+  DO
+   PRINT "Target Comment not determined - TERMINATING PROGRAM RUN."
+   NEWLINE
+   TERMINATE
+  END
+END [PROCEDURE]
+
+PROCEDURE GETTRANSACTIONS
+[* Target SymX transactions (by user number)
+** Load a transaction sequence:
+**   A transaction followed by one or more comments
+** Test the transaction:
+**   Either the second comment after the transaction will have the
+**   TARGETCOMMENT as part of the transaction comment field, OR
+**   the TARGETCOMMENT will be part of the transaction
+**   statement description 1 field.
+*]
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL OR
+                      SHARE:CLOSEDATE>=TARGETSTARTDATE)
+  DO
+   TRANSOURCE=TRANSOURCESHARE
+   TRANSOURCEID=SHARE:ID
+   FOR EACH SHARE TRANSACTION WITH (SHARE TRANSACTION:ACCOUNTNUMBER=ACCOUNT:NUMBER AND
+                                    SHARE TRANSACTION:POSTDATE>=TARGETSTARTDATE AND
+                                   (SHARE TRANSACTION:POSTDATE<=TARGETENDDATE OR
+                                    TARGETENDDATE=DATENULL) AND
+                                    SHARE TRANSACTION:VOIDCODE=0 AND
+                                    SHARE TRANSACTION:USERNUMBER=TARGETSYMXUSER)
+    DO
+     IF SHARE TRANSACTION:COMMENTCODE=1 THEN
+      DO
+       IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
+        DO
+         TCCOUNT=TCCOUNT+1
+         TCCOMMENT(TCCOUNT)=SHARE TRANSACTION:COMMENT
+         TCIDTYPE(TCCOUNT)=SHARE TRANSACTION:IDTYPE
+         TCID(TCCOUNT)=SHARE TRANSACTION:ID
+         TCSTMTDESCR(TCCOUNT)=SHARE TRANSACTION:STMTDESC:1
+        END
+      END
+     ELSE [transaction segment is not a comment - validate & process]
+      DO
+       IF TCCOUNT=1 THEN [transaction with statement description]
+        DO
+         IF CHARACTERSEARCH(SHARE TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
+          DO [valid target transaction - add to report]
+           BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+           CALL BNONLTS
+           BNODELIMITER=BNODELIMSPACE
+           BNODATALINEINPUT=BNOTEXT
+           CALL PARSEDATALINE
+           TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+           TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+           TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+           TOTRANAMOUNT=SHARE TRANSACTION:TRANAMOUNT
+           CALL PRINTTRANTOREPORT
+           CALL CLEARTRANVARS
+          END
+        END [IF TCCOUNT=1 THEN...]
+       ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
+        DO
+         IF CHARACTERSEARCH(TCCOMMENT(TCCOUNT-1),TARGETCOMMENT)>0 THEN
+          DO
+           BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+           CALL BNONLTS
+           BNODELIMITER=BNODELIMSPACE
+           BNODATALINEINPUT=BNOTEXT
+           CALL PARSEDATALINE
+
+           TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+           TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+           TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+           TOTRANAMOUNT=SHARE TRANSACTION:TRANAMOUNT
+           CALL PRINTTRANTOREPORT
+           CALL CLEARTRANVARS
+          END [ELSE IF TCCOUNT=2 THEN...]
+        END [IF TCCOUNT=2]
+      END [SHARE TRANSACTION:COMMENTCODE<>1]
+    END [FOR EACH SHARE TRANSACTION WITH...]
+  END [FOR EACH SHARE]
+
+ FOR EACH LOAN
+  DO
+   TRANSOURCE=TRANSOURCELOAN
+   TRANSOURCEID=LOAN:ID
+   FOR EACH LOAN TRANSACTION WITH (LOAN TRANSACTION:ACCOUNTNUMBER=ACCOUNT:NUMBER AND
+                                    LOAN TRANSACTION:POSTDATE>=TARGETSTARTDATE AND
+                                   (LOAN TRANSACTION:POSTDATE<=TARGETENDDATE OR
+                                    TARGETENDDATE=DATENULL) AND
+                                    LOAN TRANSACTION:VOIDCODE=0 AND
+                                    LOAN TRANSACTION:USERNUMBER=TARGETSYMXUSER)
+    DO
+     IF LOAN TRANSACTION:COMMENTCODE=1 THEN
+      DO
+       IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
+        DO
+         TCCOUNT=TCCOUNT+1
+         TCCOMMENT(TCCOUNT)=LOAN TRANSACTION:COMMENT
+         TCIDTYPE(TCCOUNT)=LOAN TRANSACTION:IDTYPE
+         TCID(TCCOUNT)=LOAN TRANSACTION:ID
+         TCSTMTDESCR(TCCOUNT)=LOAN TRANSACTION:STMTDESC:1
+        END
+      END
+     ELSE [transaction is not a comment - validate & process]
+      DO
+       IF TCCOUNT=1 THEN [transaction with statement description]
+        DO
+         IF CHARACTERSEARCH(LOAN TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
+          DO [valid target transaction - add to report]
+           BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+           CALL BNONLTS
+           BNODELIMITER=BNODELIMSPACE
+           BNODATALINEINPUT=BNOTEXT
+           CALL PARSEDATALINE
+           TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+           TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+           TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+           TOTRANAMOUNT=LOAN TRANSACTION:TRANAMOUNT
+           CALL PRINTTRANTOREPORT
+           CALL CLEARTRANVARS
+          END
+        END [IF TCCOUNT=1 THEN...]
+       ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
+        DO
+         IF CHARACTERSEARCH(TCCOMMENT(TCCOUNT-1),TARGETCOMMENT)>0 THEN
+          DO
+           BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+           CALL BNONLTS
+           BNODELIMITER=BNODELIMSPACE
+           BNODATALINEINPUT=BNOTEXT
+           CALL PARSEDATALINE
+
+           TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+           TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+           TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+           TOTRANAMOUNT=LOAN TRANSACTION:TRANAMOUNT
+           CALL PRINTTRANTOREPORT
+           CALL CLEARTRANVARS
+          END [ELSE IF TCCOUNT=2 THEN...]
+        END [IF TCCOUNT=2]
+      END [LOAN TRANSACTION:COMMENTCODE<>1]
+    END [FOR EACH LOAN TRANSACTION WITH...]
+  END [FOR EACH LOAN]
+END [PROCEDURE]
+
+PROCEDURE PRINTTRANTOREPORT
+[* Print the detail for an immediate transfer (from tran history)
+*]
+ COL=001 ACCOUNT:NUMBER
+ COL=013 TRANSOURCECHR(TRANSOURCE)
+ COL=020 TRANSOURCEID
+ COL=026 TOACCOUNT
+ COL=038 TOSLIDTYPE
+ COL=045 TOSLID
+ COL=061 RIGHT TOTRANAMOUNT
+ COL=064 "IMMEDIATE"
+ NEWLINE
+END
+
+PROCEDURE CLEARTRANVARS
+[* Clear the variables storing transactional detail
+*]
+ TCCOUNT=0
+ FOR TMPLOOP=1 TO TCCOUNT
+  DO
+   TCCOMMENT(TMPLOOP)=""
+   TCSTMTDESCR(TMPLOOP)=""
+   TCIDTYPE(TMPLOOP)=0
+   TCID(TMPLOOP)=""
+  END
+ TOACCOUNT=""
+ TOSLIDTYPE=""
+ TOSLID=""
+ TOTRANAMOUNT=$0.00
+END [PROCEDURE]
+
+PROCEDURE GETSHARETRANSFERRECS
+[* Look through FM history for Share transfer records created within the
+** desired date range and by the desired user number
+*]
+ CALL CLEARFIELDS
+
+ FOR EACH FMHISTORY WITH (FMHISTORY:POSTDATE>=TARGETSTARTDATE AND
+                          FMHISTORY:POSTDATE<=TARGETENDDATE)
+  DO
+   IF FMHISTORY:FMTYPE=0 AND
+      FMHISTORY:RECORDTYPE=8 AND [SHARE TRANSFER RECORD]
+      FMHISTORY:USERNUMBER=TARGETSYMXUSER AND
+      CHARACTERSEARCH(UPPERCASE(FMHISTORY:FIELDNAME),"NEW LOCATOR")>0 THEN
+    DO
+     NEWLOCFOUND=TRUE
+     TARGETSEQUENCE=FMHISTORY:SEQUENCENUMBER
+     FMHFROMACCOUNT=FMHISTORY:ACCOUNTNUMBER
+     FMHFROMIDTYPE=FMHISTORY:IDTYPE
+     FMHFROMID=FMHISTORY:ID
+     FMHNEWLOC=FMHISTORY:NEWNUMBER
+    END
+   ELSE
+    DO
+     IF NEWLOCFOUND=TRUE AND
+        FMHISTORY:SEQUENCENUMBER=TARGETSEQUENCE THEN
+      DO
+       IF FMHISTORY:FIELDNUMBER=14 THEN
+        FMHNEWLOC=FMHISTORY:NEWNUMBER
+       ELSE IF FMHISTORY:FIELDNUMBER=13 AND
+               XFERDAY2FOUND=FALSE THEN
+        DO
+         FMHDAY2=FMHISTORY:NEWNUMBER
+         XFERDAY2FOUND=TRUE
+        END
+       ELSE IF FMHISTORY:FIELDNUMBER=12 AND	
+               XFERDAY1FOUND=FALSE THEN
+        DO
+         FMHDAY1=FMHISTORY:NEWNUMBER
+         XFERDAY1FOUND=TRUE
+        END
+       ELSE IF FMHISTORY:FIELDNUMBER=11 THEN
+        FMHXFERFREQ=FMHISTORY:NEWNUMBER
+       ELSE IF FMHISTORY:FIELDNUMBER=10 THEN
+        FMHNEXTXFERDATE=FMHISTORY:NEWDATE
+       ELSE IF FMHISTORY:FIELDNUMBER=08 THEN
+        FMHEXPIREDATE=FMHISTORY:NEWDATE
+       ELSE IF FMHISTORY:FIELDNUMBER=07 THEN
+        FMHEFFECTIVEDATE=FMHISTORY:NEWDATE
+       ELSE IF FMHISTORY:FIELDNUMBER=05 THEN
+        FMHXFERAMOUNT=FMHISTORY:NEWMONEY
+       ELSE IF FMHISTORY:FIELDNUMBER=04 THEN
+        FMHTOID=FMHISTORY:NEWCHARACTER
+       ELSE IF FMHISTORY:FIELDNUMBER=03 THEN
+        FMHTOIDTYPE=FMHISTORY:NEWNUMBER
+       ELSE IF FMHISTORY:FIELDNUMBER=02 THEN
+        FMHTOACCOUNT=FMHISTORY:NEWCHARACTER
+       ELSE IF FMHISTORY:FIELDNUMBER=01 AND
+               XFERTYPEFOUND=FALSE THEN
+        DO
+         FMHXFERTYPE=FMHISTORY:NEWNUMBER
+         XFERTYPEFOUND=TRUE
+        END
+      END
+     ELSE
+      DO
+       IF NEWLOCFOUND=TRUE THEN
+        DO
+         IF FMHXFERTYPE=3 THEN
+          DO
+           COL=001 FMHFROMACCOUNT
+           COL=013 IDTYPESCHR(FMHFROMIDTYPE)
+           COL=020 FMHFROMID
+           COL=026 FMHTOACCOUNT
+           COL=038 IDTYPESCHR(FMHTOIDTYPE)
+           COL=045 FMHTOID
+           COL=061 RIGHT FMHXFERAMOUNT
+           COL=064 FREQUENCIESCHR(FMHXFERFREQ)
+           IF FMHDAY1>0 THEN
+            COL=085 FORMAT("99",FMHDAY1)
+           IF FMHDAY2>0 THEN
+            COL=089 FORMAT("99",FMHDAY2)
+           COL=100 RIGHT FMHEFFECTIVEDATE
+           COL=110 RIGHT FMHNEXTXFERDATE
+           COL=120 RIGHT FMHEXPIREDATE
+           BNOTEXT=FORMAT("###,###,###",FMHNEWLOC)
+           CALL BNONLS
+           COL=132 RIGHT BNOTEXT
+           NEWLINE
+          END
+         NEWLOCFOUND=FALSE
+         TARGETSEQUENCE=0
+         CALL CLEARFIELDS
+        END
+      END
+    END
+  END UNTIL FMHISTORY:POSTDATE<TARGETSTARTDATE
+END [PROCEDURE]
+
+PROCEDURE INITIALIZATIONS
+[* Variable and array initializations
+*]
+ CFGFILENAME="BANNO.M2MTRANSFERS.V3.CFG"
+
+ FREQUENCIESCHR(0)="Demand"
+ FREQUENCIESCHR(1)="Annual"
+ FREQUENCIESCHR(2)="Semiannual"
+ FREQUENCIESCHR(3)="Quarterly"
+ FREQUENCIESCHR(4)="Monthly"
+ FREQUENCIESCHR(5)="Semimonthly"
+ FREQUENCIESCHR(6)="Biweekly Skip First"
+ FREQUENCIESCHR(7)="Biweekly Skip Last"
+ FREQUENCIESCHR(8)="Biweekly"
+ FREQUENCIESCHR(9)="Weekly"
+ FREQUENCIESCHR(10)="Immediate"
+ FREQUENCIESCHR(11)="Weekly Skip First"
+ FREQUENCIESCHR(12)="Weekly Skip Last"
+ FREQUENCIESCHR(13)="Bimonthly"
+
+ IDTYPESCHR(0)="Share"
+ IDTYPESCHR(1)="Loan"
+ IDTYPESCHR(2)="EFT"
+ IDTYPESCHR(3)="Ext Loan"
+
+ TRANSOURCECHR(TRANSOURCESHARE)="Share"
+ TRANSOURCECHR(TRANSOURCELOAN)="Loan"
+ BNOTRUEFALSECHR(TRUE)="true"
+ BNOTRUEFALSECHR(FALSE)="false"
+ 
+ FIRSTPAGE=TRUE
+END [PROCEDURE]
+
+PROCEDURE CLEARFIELDS
+[* Clear the record fields for the next transaction or
+** transfer record
+*]
+ FMHDAY1=0
+ FMHDAY2=0
+ FMHXFERFREQ=0
+ FMHNEXTXFERDATE=DATENULL
+ FMHEXPIREDATE=DATENULL
+ FMHEFFECTIVEDATE=DATENULL
+ FMHXFERAMOUNT=$0.00
+ FMHTOID=""
+ FMHTOIDTYPE=0
+ FMHTOACCOUNT=""
+ FMHXFERTYPE=0
+ FMHNEWLOC=0
+ FMHFROMACCOUNT=""
+ FMHFROMIDTYPE=0
+ FMHFROMID=""
+ XFERTYPEFOUND=FALSE
+ XFERDAY1FOUND=FALSE
+ XFERDAY2FOUND=FALSE
+ NEWLOCFOUND=FALSE
+END [PROCEDURE]
+
+PROCEDURE MAINREPORTHEADER
+[* Print main report header. The first page includes the settings (prompts)
+** the report is based off of.
+*]
+ HEADERS
+  IF FIRSTPAGE=TRUE THEN
+   DO
+    COL=001 "Reporting online banking transactions with a transaction comment of '"+
+             TARGETCOMMENT+"' and Share transfers"
+    NEWLINE
+    COL=001 FORMAT("occurring on or after 99/99/99 ",TARGETSTARTDATE)+
+            FORMAT("and on or before 99/99/99 ",TARGETENDDATE)+
+            FORMAT("by user 9999",TARGETSYMXUSER)+" ("+
+            GETDATACHAR(GETUSERNAME,TARGETSYMXUSER)+")"
+    NEWLINE
+    COL=001 REPEATCHR("=",132)
+    NEWLINE
+    FIRSTPAGE=FALSE
+   END
+  COL=001 "TRANSFER FROM----------|"
+  COL=026 "TRANSFER TO------------|"
+  COL=051 "TRANSFER DETAIL"
+  NEWLINE
+  COL=001 "ACCOUNT"
+  COL=013 "S/L"
+  COL=020 "ID"
+  COL=026 "ACCOUNT"
+  COL=038 "S/L"
+  COL=045 "ID"
+  COL=061 RIGHT "TRAN AMOUNT"
+  COL=064 "FRQ"
+  COL=085 "D1"
+  COL=089 "D2"
+  COL=093 "EFF"
+  COL=103 "NEXT"
+  COL=113 "EXP"
+  COL=132 RIGHT "Xfer Rec Loc"
+  NEWLINE
+  COL=001 REPEATCHR("-",132)
+  NEWLINE
+ END
+END [PROCEDURE]
+
+PROCEDURE BNONLTS
+[* Remove leading and trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ CALL BNONTS
+ CALL BNONLS
+END [PROCEDURE]
+
+PROCEDURE BNONLS
+[* Remove leading spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF LENGTH(BNOTEXT)=0 THEN
+  BNOTEXT=""
+ ELSE
+  DO
+   WHILE (LENGTH(BNOTEXT)>0 AND
+          SEGMENT(BNOTEXT,1,1)=" ")
+    DO
+     BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNONTS
+[* Remove trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  BNOTEXT=SEGMENT(BNOTEXT,1,LENGTH(BNOTEXT))
+END [PROCEDURE]
+
+PROCEDURE PARSEDATALINE
+[* Parse through a line of delimited data and store individual fields into an array
+**
+**  PASS    BNODELIMITER       Character delimiter to be used. valid values are:
+**                             BNODELIMQUOTE, BNODELIMCR, BNODELIMLF, BNODELIMCOMMA,
+**                             BNODELIMTAB, BNODELIMPIPE, BNODELIMCARET or the ascii
+**                             numeric value of the delimiter.
+**  PASS    BNODATALINEINPUT   Line of data to be parsed.
+**  RETURN  BNODATALINEFIELD   Array of data elements from the parsed BNODATALINEINPUT
+**  RETURN  BNODATAFIELDCOUNT  Number of elements in the BNODATALINEFIELD array
+*]
+
+ FOR BNOTMPLOOP=0 TO BNODATALINEFIELDMAX
+  DO
+   BNODATALINEFIELD(BNOTMPLOOP)=""
+  END
+ BNODATAFIELDCOUNT=0
+ IF BNODELIMITER=BNODELIMNONE THEN
+  BNODELIMITER=BNODELIMCOMMA
+ WHILE BNODATALINEINPUT<>""
+  DO
+   BNOPOS=CHARACTERSEARCH(BNODATALINEINPUT,CTRLCHR(BNODELIMITER))
+   BNODATAFIELDCOUNT=BNODATAFIELDCOUNT+1
+   IF BNOPOS=0 THEN
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=BNODATALINEINPUT
+     BNODATALINEINPUT=""
+    END
+   ELSE
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=SEGMENT(BNODATALINEINPUT,1,BNOPOS-1)
+     BNODATALINEINPUT=SEGMENT(BNODATALINEINPUT,BNOPOS+1,LENGTH(BNODATALINEINPUT))
+    END
+  END
+END [PROCEDURE]
+
