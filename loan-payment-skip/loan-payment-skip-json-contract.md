@@ -20,7 +20,6 @@ To which the poweron should respond with:
   "availableStartDate": "8/29/2019",
   "availableEndDate": "12/29/2019",
   "feePerPaymentSkip": "35.00",
-  "feeLoanApplyOption": false,
   "terms": ["strings ", "with ", "spaces."],
   "availableLoans": [
     {
@@ -28,7 +27,8 @@ To which the poweron should respond with:
       "paymentAmount": "136.50",
       "accountId": "1234",
       "originalPaymentDueDate": "8/30/2019",
-      "newPaymentDueDate": "9/30/2019"
+      "newPaymentDueDate": "9/30/2019",
+      "feeLoanOption": false
     }
   ],
   "ineligibleLoans": [
