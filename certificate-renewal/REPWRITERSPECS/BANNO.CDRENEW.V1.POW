@@ -717,7 +717,7 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Read parameter settings from the configuration Letter file.
 **  OPTION[6,9999] PARAMSHARETYPESBYOPTION Maturity options available by SHARE TYPE for the member to select from
 **  LC             PARAMLIMITCHANGES       Limit changes to one per share (TRUE/FALSE)
-**  ET             PARAMDELETEXFERS        Delete share transfer records instead of expiring them (TRUE/FALSE)
+**  ET             PARAMDELETEXFERS        Delete share transfer records type 2 instead of expiring them (TRUE/FALSE)
 **  IAT            PARAMINELIGIBLEACCTS    Ineligible Account Type(s) (in LISTEXPAND format)
 **  AW             PARAMWARNINGSACCT       Acct level warnings which exclude account (in LISTEXPAND format)
 **  SW             PARAMWARNINGSSHARE      Share level warning which excludes the share (in LISTEXPAND format)
