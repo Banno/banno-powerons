@@ -1,6 +1,6 @@
 [* Copyright 2024 Jack Henry and Associates
 **
-**  PowerOn Name: BANNO.M2MTRANSFERS.RPT.BATCH 
+**  PowerOn Name: BANNO.M2MTRANSFERS.RPT.BATCH
 **
 **  --------------------------------------------------------------------
 **  Program Summary:
@@ -10,8 +10,8 @@
 **  and recurring transfers created through the member's use of the Banno
 **  home banking program 'BANNO.M2MTRANSFERS.V3.POW'. The related
 **  configuration Letter file ('BANNO.M2MTRANSFERS.V3.CFG') contains a
-**  number of settings, a couple of which are also used by this program: 
-**    'TRANSACTION DESCRIPTION/COMMENT DEFAULT' (as TC:) 
+**  number of settings, a couple of which are also used by this program:
+**    'TRANSACTION DESCRIPTION/COMMENT DEFAULT' (as TC:)
 **       This setting must have a non-blank value and represents the
 **       share/loan comment this program is targeting. In lieu of this
 **       setting containing a value, this program's prompt 'Enter
@@ -28,7 +28,7 @@
 **     The user number assigned to the SymXchange instance originating
 **     the targeted transactions and Share/Loan transfer records. The
 **     targeted user number should be between 0800 and 0899.
-**       DEFAULT: 0800     
+**       DEFAULT: 0800
 **
 **   Enter transaction comment to target:
 **     This is the transaction comment attached to the targeted
@@ -55,7 +55,7 @@
 **  --------------------------------------------------------------------
 **  Reports Produced:
 **  --------------------------------------------------------------------
-**   Banno M2M Transfer Report: 
+**   Banno M2M Transfer Report:
 **     Detail report listing any qualifying immediate or future dated
 **     Share/Loan transfers.
 **
@@ -69,7 +69,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **  --------------------------------------------------------------------
-**    Ver. 1.0.0 03/12/24  TKainz - Original Programming
+**    Ver. 1.0.0 03/26/24  TKainz - Original Programming
 *]
 
 TARGET=ACCOUNT
@@ -181,7 +181,7 @@ SELECT
      XACCTACCESS=FALSE AND
      ANY PREFERENCE WITH (PREFERENCE:HBUSERNAME<>"" AND
                           PREFERENCE:HBLASTLOGONDATE>=TARGETSTARTDATE)
-    ) OR 
+    ) OR
     (
      XACCTACCESS=TRUE AND
      ACCOUNT:ACTIVITYDATE>=TARGETSTARTDATE
@@ -211,7 +211,12 @@ PROCEDURE PROGRAMPROMPTS
                              "from BANNO.M2MTRANSFERS.V3.CFG Letter",
                              "file will be used",
                              "Enter transaction comment to target []")
-
+ IF TARGETCOMMENT<>"" THEN
+  DO
+   BNOTEXT=TARGETCOMMENT
+   CALL BNONLTS
+   TARGETCOMMENT=BNOTEXT
+  END
  TARGETSTARTDATE=DATEREAD("",
                           "Reporting start date [SYSTEMDATE]")
  IF TARGETSTARTDATE=DATENULL THEN
@@ -240,7 +245,7 @@ END [PROCEDURE]
 
 PROCEDURE FETCHLETTERFILEPARAMS
 [* Open Letter file BANNO.M2MTRANSFERS.V3.CFG to retrieve needed
-** parameter settings: 
+** parameter settings:
 ** 'TC:' (tran comment to search for)
 ** 'XA:' (cross accounts allowed flag
 *]
@@ -261,7 +266,7 @@ PROCEDURE FETCHLETTERFILEPARAMS
          IF LENGTH(BNOTEXT)>0 THEN
           CALL BNONLTS
          TARGETCOMMENT=BNOTEXT
-        END          
+        END
        IF UPPERCASE(SEGMENT(CFGFILELINE,1,3))="XA:" THEN
         DO
          BNOTEXT=SEGMENT(CFGFILELINE,4,LENGTH(CFGFILELINE))
@@ -269,7 +274,7 @@ PROCEDURE FETCHLETTERFILEPARAMS
           CALL BNONLTS
          IF CHARACTERSEARCH("YESTRUEON",UPPERCASE(BNOTEXT))>0 THEN
           XACCTACCESS=TRUE
-        END  
+        END
       END [IF CFGFILEERROR=""...]
      ELSE IF CFGFILEERROR<>"EOF" THEN
       DO
@@ -356,7 +361,7 @@ PROCEDURE GETTRANSACTIONS
           DO
            IF CHARACTERSEARCH(SHARE TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
             DO [valid target transaction - add to report]
-             BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+             BNOTEXT=SEGMENT(TCCOMMENT(1),4,LENGTH(TCCOMMENT(1)))
              CALL BNONLTS
              BNODELIMITER=BNODELIMSPACE
              BNODATALINEINPUT=BNOTEXT
@@ -372,9 +377,9 @@ PROCEDURE GETTRANSACTIONS
           END [IF TCCOUNT=1 THEN...]
          ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
           DO
-           IF CHARACTERSEARCH(TCCOMMENT(TCCOUNT-1),TARGETCOMMENT)>0 THEN
+           IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0 THEN
             DO
-             BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+             BNOTEXT=SEGMENT(TCCOMMENT(2),4,LENGTH(TCCOMMENT(2)))
              CALL BNONLTS
              BNODELIMITER=BNODELIMSPACE
              BNODATALINEINPUT=BNOTEXT
@@ -392,7 +397,7 @@ PROCEDURE GETTRANSACTIONS
         END [IF SHARE TRANSACTION:ACTIONCODE<>"W"]
       END [SHARE TRANSACTION:COMMENTCODE<>1]
     END [FOR EACH SHARE TRANSACTION WITH...]
-   UNTIL SHARE TRANSACTION:POSTDATE<TARGETSTARTDATE 
+   UNTIL SHARE TRANSACTION:POSTDATE<TARGETSTARTDATE
   END [FOR EACH SHARE]
 
  CALL CLEARTRANVARS
@@ -428,7 +433,7 @@ PROCEDURE GETTRANSACTIONS
           DO
            IF CHARACTERSEARCH(LOAN TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
             DO [valid target transaction - add to report]
-             BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+             BNOTEXT=SEGMENT(TCCOMMENT(1),4,LENGTH(TCCOMMENT(1)))
              CALL BNONLTS
              BNODELIMITER=BNODELIMSPACE
              BNODATALINEINPUT=BNOTEXT
@@ -444,9 +449,9 @@ PROCEDURE GETTRANSACTIONS
           END [IF TCCOUNT=1 THEN...]
          ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
           DO
-           IF CHARACTERSEARCH(TCCOMMENT(TCCOUNT-1),TARGETCOMMENT)>0 THEN
+           IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0 THEN
             DO
-             BNOTEXT=SEGMENT(TCCOMMENT(TCCOUNT),4,LENGTH(TCCOMMENT(TCCOUNT)))
+             BNOTEXT=SEGMENT(TCCOMMENT(2),4,LENGTH(TCCOMMENT(2)))
              CALL BNONLTS
              BNODELIMITER=BNODELIMSPACE
              BNODATALINEINPUT=BNOTEXT
@@ -464,7 +469,7 @@ PROCEDURE GETTRANSACTIONS
         END [IF LOAN TRANSACTION:ACTIONCODE<>"A"]
       END [LOAN TRANSACTION:COMMENTCODE<>1]
     END [FOR EACH LOAN TRANSACTION WITH...]
-   UNTIL LOAN TRANSACTION:POSTDATE<TARGETSTARTDATE 
+   UNTIL LOAN TRANSACTION:POSTDATE<TARGETSTARTDATE
   END [FOR EACH LOAN]
 END [PROCEDURE]
 
@@ -486,13 +491,6 @@ END
 PROCEDURE CLEARTRANVARS
 [* Clear the variables storing transactional detail
 *]
- FOR TMPLOOP=1 TO TCCOUNT
-  DO
-   TCCOMMENT(TMPLOOP)=""
-   TCSTMTDESCR(TMPLOOP)=""
-   TCIDTYPE(TMPLOOP)=0
-   TCID(TMPLOOP)=""
-  END
  TCCOUNT=0
  TOACCOUNT=""
  TOSLIDTYPE=""
@@ -585,10 +583,9 @@ PROCEDURE PROCESSRECORD
   COL=082 FORMAT("99",FMHDAY1)
  IF FMHDAY2>0 THEN
   COL=085 FORMAT("99",FMHDAY2)
- COL=095 RIGHT FMHPOSTDATE 
+ COL=095 RIGHT FMHPOSTDATE
  COL=104 RIGHT FMHEFFECTIVEDATE
  COL=113 RIGHT FMHNEXTXFERDATE
-[ COL=122 RIGHT FMHEXPIREDATE]
  BNOTEXT=FORMAT("###,###,###",FMHNEWLOC)
  CALL BNONLS
  COL=132 RIGHT BNOTEXT
@@ -626,7 +623,7 @@ PROCEDURE INITIALIZATIONS
  TRANSOURCECHR(TRANSOURCELOAN)="Loan"
  BNOTRUEFALSECHR(TRUE)="true"
  BNOTRUEFALSECHR(FALSE)="false"
- 
+
  FIRSTPAGE=TRUE
 END [PROCEDURE]
 
