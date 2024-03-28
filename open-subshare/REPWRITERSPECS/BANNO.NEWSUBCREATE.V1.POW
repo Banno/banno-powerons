@@ -5,7 +5,7 @@
 **  Letterfile Name:          BANNO.NEWSUBCREATE.FEEDISC.00-19
 **  Fee Display PowerOn Name: BANNO.NEWSUBCREATE.FEES.V1.POW (template)
 **
-**  Copyright 2020-2022 Jack Henry and Associates
+**  Copyright 2020-2024 Jack Henry and Associates
 **
 **  Ver. 1.0.0  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
@@ -65,6 +65,8 @@
 **  Ver. 1.3.0  12/13/23 RRobison
 **              Added minimumFundingAmount to the accountTypes array in the PRELOADDATA state.
 **              This allows the UX to display the minimum funding/opening balance on the share select screen.
+**  Ver. 1.3.1  03/28/24 RRobison
+**              Fixed error where json could be malformed in the PRELOADDATA state.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -561,10 +563,10 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.3.0"
- LASTMODDATE='12/13/23'
- LASTMODTIME="09:00 MT"
- PROGRAMUPDATENOTE1="Adding minimumFundingAmount to json"
+ PROGRAMVERSION="1.3.1"
+ LASTMODDATE='03/28/24'
+ LASTMODTIME="15:00 MT"
+ PROGRAMUPDATENOTE1="malformed json fix"
  PROGRAMUPDATENOTE2=""
  CONFIGPROGRAMMINDATE='10/20/22'
 
@@ -1755,18 +1757,9 @@ PROCEDURE SHAREOUTPUT
        IF SACSHARETYPEEXISTS(J)=TRUE AND
           SACSHARETYPES(I,J)<>"" THEN
         DO
-         IF J>0 THEN
-          DO
-           IF SACSHARETYPEEXISTS(J-1)=TRUE THEN
-            DO
-             IF SHARETYPEPRINTED=TRUE THEN
-              DO
-               PRINT ","
-              END
-            END
-          END
+         IF SHARETYPEPRINTED=TRUE THEN
+          PRINT ","
 
-         NEWLINE
          PRINT "          {"                            [new share type]
          NEWLINE
          SHARETYPEPRINTED=TRUE
@@ -1822,6 +1815,7 @@ PROCEDURE SHAREOUTPUT
           END
         [END A SHARE TYPE]
          PRINT "          }"
+         NEWLINE
         END
 
       END [FOR J SHARE TYPES]
