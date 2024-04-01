@@ -1750,6 +1750,7 @@ PROCEDURE SHAREOUTPUT
      PRINT Q+","
      NEWLINE
      PRINT "        "+Q+"accountTypes"+Q+":["
+     NEWLINE
 
      FOR J=0 TO SACSHARETYPESMAX
       DO
