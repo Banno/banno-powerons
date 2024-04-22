@@ -73,7 +73,7 @@
 **                of targeted certificate when a 503 error occurs.
 **    Ver. 1.4.1  01/16/24 JKeenan - Banno
 **                Corrected letter file read error
-**    Ver. 1.5.0  03/14/23 TKainz - Banno
+**    Ver. 1.5.0  03/14/24 TKainz - Banno
 **                Added parameter setting to delete/expire any transfer type 3
 **                records pointing to the targeted certificate upon the member
 **                submitting their selection.
