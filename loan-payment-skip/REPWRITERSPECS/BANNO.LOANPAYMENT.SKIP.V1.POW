@@ -1,4 +1,4 @@
-[*  Copyright 2019-2023 Jack Henry
+[*  Copyright 2019-2024 Jack Henry
 **
 **  PowerOn Name:                   BANNO.LOANPAYMENT.SKIP.V1.POW
 **  Configuration Letterfile Name:  BANNO.LOANPAYMENT.SKIP.CFG
@@ -55,7 +55,9 @@
 **              Other code cleanup
 **  Ver. 1.1.3 11/06/2023: JuCarson - Banno
 **             Corrected allowed share types for fee loop to include
-**             setting type 0 in SHARETYPES array. 
+**             setting type 0 in SHARETYPES array.
+**  Ver. 1.2.0 05/13/24: TKainz - Banno
+**             Added Program Installation Date parameter
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -249,6 +251,7 @@ DEFINE
  TMPPARAMVAL               = CHARACTER
  POS                       = NUMBER
  FOUND                     = NUMBER
+ CFGPARAMPID               = DATE
 END [DEFINE]
 
 SETUP
@@ -260,11 +263,11 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='11/06/23'
+ BNOLASTMODDATE='05/13/24'
  BNOLASTMODTIME="11:00 ET"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
- BNOPROGRAMVERSION="1.1.3"
+ BNOPROGRAMVERSION="1.2.0"
  BNOPRINTDEBUGINFODAYS=90
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
@@ -674,6 +677,8 @@ PROCEDURE INITIALIZEDATA
  ENDDATE=DEFAULTENDDATE
  HONORSKIPS=FALSE
  LOANSEASON=0
+ CFGPARAMPID=DATENULL    [no program installation date]
+
  GENERICUSERERRORMSG="We're sorry we've encountered an error. "+
                      "Please contact your credit union."
 
@@ -1106,6 +1111,20 @@ PROCEDURE READCONFIGFILESETTINGS
             VALIDTESTACCOUNT=TRUE
           END
         END
+
+[ get program installation date ]
+       ELSE IF TMPPARAM="PID" AND
+               TMPPARAMVAL<>"" THEN
+        DO
+         IF DATEVALUE(TMPPARAMVAL)<=SYSTEMDATE THEN
+          DO
+           CFGPARAMPID=DATEVALUE(TMPPARAMVAL)
+           IF CFGPARAMPID<>DATENULL AND
+              CFGPARAMPID+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
+            BNODEBUGMODE=BNODEBUGMODEON
+          END
+        END
+
       END [IF TMPPARAM<>"" THEN]
     END [WHILE LFERROR=""]
 
@@ -1828,5 +1847,4 @@ PROCEDURE BNOPRINTDEBUG
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
 
