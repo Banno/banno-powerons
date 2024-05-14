@@ -1532,7 +1532,9 @@ PROCEDURE PRINTPROGRAMINFO
  NEWLINE
  PRINT "    "+Q+"programVersion"+Q+": "+Q+PROGRAMVERSION+Q+","
  NEWLINE
- PRINT "    "+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q
+ PRINT "    "+Q+"programLastModDate"+Q+": "+Q+FORMAT("99/99/99-",LASTMODDATE)+LASTMODTIME+Q+","
+ NEWLINE
+ PRINT "    "+Q+"programInstallDate"+Q+": "+Q+FORMAT("99/99/99",LASTMODDATE)+Q
  NEWLINE
  PRINT "  "+"},"
  NEWLINE
