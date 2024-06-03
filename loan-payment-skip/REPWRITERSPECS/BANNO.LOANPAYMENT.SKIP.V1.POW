@@ -56,7 +56,7 @@
 **  Ver. 1.1.3 11/06/2023: JuCarson - Banno
 **             Corrected allowed share types for fee loop to include
 **             setting type 0 in SHARETYPES array.
-**  Ver. 1.2.0 05/16/24: TKainz - Banno
+**  Ver. 1.2.0 06/03/24: TKainz - Banno
 **             Added Program Installation Date parameter
 **
 **  For more information check
@@ -263,7 +263,7 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='05/16/24'
+ BNOLASTMODDATE='06/03/24'
  BNOLASTMODTIME="11:00 MT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
