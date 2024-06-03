@@ -605,7 +605,7 @@ PROCEDURE READCONFIGFILESETTINGS
 **  FD  PARAMFEEDISCL         Custom fee disclosure
 **  RI  PARAMREVOKEINST       Revocation instructions
 **  OIO PARAMOPTINOUTINFO     Opt-in/Opt-out Information Text
-**  SI  PARAMSERVICEINST      Service Instuctions
+**  SI  PARAMSERVICEINST      Service Instructions
 **  OI  PARAMOPTININFO        Opt-in Information Text
 **  OO  PARAMOPTOUTINFO       Opt-out Information Text
 **  OTA PARAMOTAAMOUNT        Overdraft Tolerance Amount
