@@ -77,7 +77,7 @@
 **                Added parameter setting to delete/expire any transfer type 3
 **                records pointing to the targeted certificate upon the member
 **                submitting their selection.
-**    Ver. 1.6.0  06/06/24 TKainz - Banno
+**    Ver. 1.5.1  06/06/24 TKainz - Banno
 **                         Added Program Installation Date parameter
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -350,10 +350,10 @@ DEFINE
  SXFER3SHAREID             = CHARACTER(4) ARRAY(99)
  STRANSFERCOUNTMAX         = 99
 
-[* Added 06/06/24 *]
+[* TKainz - added 06/06/24
+*]
  PARAMINSTALLDATE          = DATE
  PARAMDEBUGMODE            = NUMBER
- PARAMDEBUGMODEFOUND       = NUMBER
 END [DEFINE]
 
 SETUP
@@ -362,8 +362,10 @@ SETUP
  BNOLASTMODTIME="12:00 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
- BNOPROGRAMVERSION="1.6.0"
+ BNOPROGRAMVERSION="1.5.1"
  BNOPRINTDEBUGINFODAYS=90
+
+ BNODEBUGMODE=BNODEBUGMODEOFF
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
 
@@ -741,7 +743,7 @@ PROCEDURE READCONFIGFILESETTINGS
 *]
  INVALIDCONFIGPARAMS=FALSE
  READCONFIGERROR=FALSE
- PARAMDEBUGMODEFOUND=FALSE
+ PARAMDEBUGMODE=-1
 
  FILEOPEN("LETTER",BNOCFGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -961,12 +963,12 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Debug mode. This is a hidden parameter setting which can override the default debug
 ** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "ON"
 ** or "OFF" to force the debug mode to be other than the default value of being on for
-** the first 90 days after the most recent program modification date.
+** the first 90 days after the most recent program modification date orprogram installation
+** date, whichever is more recent
 *]
        ELSE IF PARAMNAME="DB" AND
                PARAMVALUE<>"" THEN
         DO
-         PARAMDEBUGMODEFOUND=TRUE
          IF CHARACTERSEARCH("ONTRUEYES",UPPERCASE(PARAMVALUE))>0 THEN
           PARAMDEBUGMODE=BNODEBUGMODEON
          ELSE IF CHARACTERSEARCH("OFFFALSENO",UPPERCASE(PARAMVALUE))>0 THEN
@@ -990,24 +992,17 @@ PROCEDURE READCONFIGFILESETTINGS
   END
 
 [* Update debugmode
-**   If the "DB" parameter is found and it's set to false, then force debug
+**   If the "DB" parameter is set to false, then force debug
 **     mode to off (overrides all other debug mode logic settings).
 **   If the "DB" parameter is set to true or the installation date was found and
 **     less than 90 days prior, set the debug mode to true.
-**   Otherwise, use the current state of the debug mode as set by the last
-**     mod date.
 *]
-
- IF PARAMDEBUGMODEFOUND=TRUE AND
-    PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
+ IF PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
   BNODEBUGMODE=BNODEBUGMODEOFF
- ELSE
-  DO
-   IF PARAMDEBUGMODE=BNODEBUGMODEON OR
+ ELSE IF PARAMDEBUGMODE=BNODEBUGMODEON OR
      (PARAMINSTALLDATE<>DATENULL AND
       PARAMINSTALLDATE+90>SYSTEMDATE) THEN
-    BNODEBUGMODE=BNODEBUGMODEON
-  END
+  BNODEBUGMODE=BNODEBUGMODEON
 
  LELISTINPUT=PARAMINELIGIBLEACCTS
  IF LELISTINPUT="" THEN
