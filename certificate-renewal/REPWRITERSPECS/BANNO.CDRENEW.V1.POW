@@ -963,8 +963,8 @@ PROCEDURE READCONFIGFILESETTINGS
 [* Debug mode. This is a hidden parameter setting which can override the default debug
 ** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "ON"
 ** or "OFF" to force the debug mode to be other than the default value of being on for
-** the first 90 days after the most recent program modification date orprogram installation
-** date, whichever is more recent
+** the first [BNOPRINTDEBUGINFODAYS] days after the most recent program modification date or
+** program installation date, whichever is more recent.
 *]
        ELSE IF PARAMNAME="DB" AND
                PARAMVALUE<>"" THEN
@@ -995,13 +995,13 @@ PROCEDURE READCONFIGFILESETTINGS
 **   If the "DB" parameter is set to false, then force debug
 **     mode to off (overrides all other debug mode logic settings).
 **   If the "DB" parameter is set to true or the installation date was found and
-**     less than 90 days prior, set the debug mode to true.
+**     less than [BNOPRINTDEBUGINFODAYS] days prior, set the debug mode to true.
 *]
  IF PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
   BNODEBUGMODE=BNODEBUGMODEOFF
  ELSE IF PARAMDEBUGMODE=BNODEBUGMODEON OR
      (PARAMINSTALLDATE<>DATENULL AND
-      PARAMINSTALLDATE+90>SYSTEMDATE) THEN
+      PARAMINSTALLDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE) THEN
   BNODEBUGMODE=BNODEBUGMODEON
 
  LELISTINPUT=PARAMINELIGIBLEACCTS
@@ -1283,6 +1283,7 @@ PROCEDURE INITIALIZATIONS
  PARAMDELETEXFERS=FALSE
  PARAMELIGIBLEIRSCODES="ALL"
  PARAMXFER3HANDLING=1 [Do nothing]
+ PARAMINSTALLDATE=DATENULL
 
  FOR TMPLOOP=0 TO USEROPTIONSMAX
   DO
