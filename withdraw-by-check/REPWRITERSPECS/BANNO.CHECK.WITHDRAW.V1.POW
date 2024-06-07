@@ -21,9 +21,10 @@
 **                           to have at least one valid Share or Loan type defined.
 **   Ver. 1.2.0  11/10/2023: R. Robison - Added support for displayErrorMessage soft text.
 **                           Refactor of error handling.
-**   Ver. 1.2.1  06/05/2024: J. Keenan - Updated the loggingErrorMessage for ineligible 
+**   Ver. 1.2.1  06/06/2024: J. Keenan - Updated the loggingErrorMessage for ineligible 
 **                           accounts/shares/loans and ineligible warning codes to include the 
 **                           share/loan type and account/share/loan warning code numbers.
+**                           T. Kainz - Added Program Installation Date parameter setting
 **
 **  This Banno service PowerOn allows the user to request a
 **  withdrawal by check from an eligible share or loan
@@ -74,6 +75,9 @@ DEFINE
  PARAMWARNINGSACCT         = CHARACTER
  PARAMWARNINGSSHARE        = CHARACTER
  PARAMWARNINGSLOAN         = CHARACTER
+ PARAMINSTALLDATE          = DATE
+ PARAMDEBUGMODE            = NUMBER
+ PARAMDEBUGMODEFOUND       = NUMBER
  PARAMCUSTOMTERMS          = CHARACTER ARRAY(40)
  PARAMCUSTOMTERMLINES      = NUMBER
  PARAMCUSTOMTERMLINESMAX   = 40
@@ -211,8 +215,8 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
 
- BNOLASTMODDATE='06/05/24'
- BNOLASTMODTIME="12:00 PT"
+ BNOLASTMODDATE='06/06/24'
+ BNOLASTMODTIME="17:00 PT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
  BNOPROGRAMVERSION="1.2.1"
@@ -368,7 +372,7 @@ PROCEDURE INITIALIZEDATA
  RGWDAMOUNT=$0.00
 
  BNOERRORCODE=0
- BNODEBUGMODE=FALSE
+ BNODEBUGMODE=BNODEBUGMODEOFF
  LFNUMBER=0
  LFERROR=""
  READCONFIGERROR=FALSE
@@ -386,6 +390,9 @@ PROCEDURE INITIALIZEDATA
  PARAMWARNINGSACCT="NONE"
  PARAMWARNINGSSHARE="NONE"
  PARAMWARNINGSLOAN="NONE"
+ PARAMDEBUGMODE=BNODEBUGMODEOFF
+ PARAMDEBUGMODEFOUND=FALSE
+ PARAMINSTALLDATE=DATENULL
  PARAMCUSTOMTERMLINES=0
  PARAMERRDISPLAYCOUNT=0
  FOR TMPLOOP=0 TO PARAMERRDISPLAYMAX
@@ -541,6 +548,9 @@ PROCEDURE VALIDATEACCOUNT
 ** RETURN  VALIDATESTATUS          Validate status
 ** RETURN  SLAVAILABLEBAL          The available balance/loan advance
 ** RETURN  SLDESCRIPTION           The Share/Loan description
+** RETURN  INVACCTWARNSFOUND       Invalid Account Warnings Found List
+** RETURN  INVSLWARNSFOUND         Invalid Share/Loan Warnings Found List
+** RETURN  INVSLTYPEFOUND          The invalid Share/Loan Type if Found
 *]
 
  VALIDATESTATUS=VALIDATEACCTNOTFOUND
@@ -817,15 +827,28 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="LW" AND
                PARAMVALUE<>"" THEN
         PARAMWARNINGSLOAN=PARAMVALUE
-[* Check for Debug Mode
+[* Check for Debug Mode. This is a hidden parameter setting which can override the default debug
+** mode setting. Use this "DEBUG:" parameter setting in the CFG Letter file with "ON"
+** or "OFF" to force the debug mode to be other than the default value of being on for
+** the first 90 days (or other value as set in the BNOPRINTDEBUGINFODAYS variable in the SETUP
+** division) after the most recent program modification date or from the program
+** installation date.
 *]
-       ELSE IF PARAMNAME="DEBUG" THEN
+       ELSE IF PARAMNAME="DEBUG" AND
+               PARAMVALUE<>"" THEN
         DO
+         PARAMDEBUGMODEFOUND=TRUE
+
          IF CHARACTERSEARCH("TRUEYES1DEBUGON",PARAMVALUE)>0 THEN
-          BNODEBUGMODE=TRUE
+          PARAMDEBUGMODE=BNODEBUGMODEON
          ELSE
-          BNODEBUGMODE=FALSE
+          PARAMDEBUGMODE=BNODEBUGMODEOFF
         END
+[* Program Installation Date
+*]
+       ELSE IF PARAMNAME="PID" AND
+               PARAMVALUE<>"" THEN
+        PARAMINSTALLDATE=DATEVALUE(PARAMVALUE)
 [* Custom terms & conditions
 *]
        ELSE IF PARAMNAME="TC" THEN
@@ -874,7 +897,26 @@ PROCEDURE READCONFIGFILESETTINGS
    FILECLOSE(LFNUMBER,LFERROR)
   END
 
- IF BNODEBUGMODE=TRUE THEN
+[* Update debugmode
+**   If the "DEBUG" parameter is found and it's set to false, then force debug
+**     mode to off (overrides all other debug mode logic settings).
+**   If the "DEBUG" parameter is set to true or the installation date was found and
+**     less than 90 days prior, set the debug mode to true.
+**   Otherwise, use the current state of the debug mode as set by the last
+**     mod date.
+*]
+ IF PARAMDEBUGMODEFOUND=TRUE AND
+    PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
+  BNODEBUGMODE=BNODEBUGMODEOFF
+ ELSE
+  DO
+   IF PARAMDEBUGMODE=BNODEBUGMODEON OR
+     (PARAMINSTALLDATE<>DATENULL AND
+      PARAMINSTALLDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE) THEN
+    BNODEBUGMODE=BNODEBUGMODEON
+  END
+
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
   DO
 
    NEWLINE
@@ -894,7 +936,11 @@ PROCEDURE READCONFIGFILESETTINGS
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="LW: "+PARAMWARNINGSLOAN
    CALL BNODEBUGMSGADD
-   BNODEBUGMSG="DEBUG: "+FORMAT("9",BNODEBUGMODE)
+   BNODEBUGMSG="DEBUG: "
+   IF PARAMDEBUGMODEFOUND=TRUE THEN [Leave blank if DEBUG: not found in CFG]
+    BNODEBUGMSG=BNODEBUGMSG+FORMAT("9",PARAMDEBUGMODE)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PID: "+FORMAT("99/99/9999",PARAMINSTALLDATE)
    CALL BNODEBUGMSGADD
    FOR TMPLOOP=1 TO PARAMCUSTOMTERMLINES
     DO
