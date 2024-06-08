@@ -1,6 +1,6 @@
 # Withdraw by check JSON contract
 
-_program version 1.2.1 - 06/2405/24_
+_program version 1.2.1 - 06/07/24_
 
 ## STATESTART state
 
@@ -102,13 +102,13 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 | 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
 | 502        | Invalid Address |||
 | 503        | Account Not Found || Error Code 503 is used for account find/validate errors |
-|            | Account Warning Found List [3-digit comma separated account warning list] |||
+|            | Account Warning Found | : [3-digit comma separated account warning list] ||
 |            | Share Not Found |||
 |            | Loan Not Found |||
-|            | Invalid Share Type Is [4-digit share type] |||
-|            | Invalid Loan Type Is [4-digit loan type] |||
-|            | Share Warning Found List [3-digit comma separated share warning list] |||
-|            | Loan Warning Found List [3-digit comma separated loan warning list] |||
+|            | Invalid Share Type | : [4-digit share type] ||
+|            | Invalid Loan Type | : [4-digit loan type] ||
+|            | Share Warning Found | : [3-digit comma separated share warning list] ||
+|            | Loan Warning Found | : [3-digit comma separated loan warning list] ||
 | 505        | Cross Account WD Attempted |||
 
 ## PERFORMWITHDRAW state
@@ -194,13 +194,13 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 | 501        | Avail. Balance <= $0.00 || Target Share/Loan available balance<=$0.00 |
 | 502        | Invalid Address |||
 | 503        | Account Not Found || Error Code 503 is used for account find/validate errors |
-|            | Account Warning Found List [3-digit comma separated account warning list] |||
+|            | Account Warning Found | : [3-digit comma separated account warning list] ||
 |            | Share Not Found |||
 |            | Loan Not Found |||
-|            | Invalid Share Type Is [4-digit share type] |||
-|            | Invalid Loan Type Is [4-digit loan type] |||
-|            | Share Warning Found List [3-digit comma separated share warning list] |||
-|            | Loan Warning Found List [3-digit comma separated loan warning list] |||
+|            | Invalid Share Type | : [4-digit share type] ||
+|            | Invalid Loan Type | : [4-digit loan type] ||
+|            | Share Warning Found | : [3-digit comma separated share warning list] ||
+|            | Loan Warning Found | : [3-digit comma separated loan warning list] ||
 | 504        | TRANPERFORM Error | : [transaction posting system error message. contains phrase "REG D"] | Reg D Limit |
 | 505        | Cross Account WD Attempted |||
 | 506        | Amount requested out of bounds |||

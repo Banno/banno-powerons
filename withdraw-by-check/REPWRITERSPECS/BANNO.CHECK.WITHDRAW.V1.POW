@@ -21,10 +21,10 @@
 **                           to have at least one valid Share or Loan type defined.
 **   Ver. 1.2.0  11/10/2023: R. Robison - Added support for displayErrorMessage soft text.
 **                           Refactor of error handling.
-**   Ver. 1.2.1  06/06/2024: J. Keenan - Updated the loggingErrorMessage for ineligible 
+**   Ver. 1.2.1  06/07/2024: J. Keenan - Updated the loggingErrorMessage for ineligible 
 **                           accounts/shares/loans and ineligible warning codes to include the 
 **                           share/loan type and account/share/loan warning code numbers.
-**                           T. Kainz - Added Program Installation Date parameter setting
+**                           Also, added Program Installation Date parameter setting
 **
 **  This Banno service PowerOn allows the user to request a
 **  withdrawal by check from an eligible share or loan
@@ -77,7 +77,6 @@ DEFINE
  PARAMWARNINGSLOAN         = CHARACTER
  PARAMINSTALLDATE          = DATE
  PARAMDEBUGMODE            = NUMBER
- PARAMDEBUGMODEFOUND       = NUMBER
  PARAMCUSTOMTERMS          = CHARACTER ARRAY(40)
  PARAMCUSTOMTERMLINES      = NUMBER
  PARAMCUSTOMTERMLINESMAX   = 40
@@ -136,9 +135,9 @@ DEFINE
  BACKSLASH                 = CHARACTER
  JSONBOOLEAN               = CHARACTER ARRAY(1)
  JSONPROPNAME              = CHARACTER
- INVACCTWARNSFOUND         = CHARACTER
- INVSLWARNSFOUND           = CHARACTER
- INVSLTYPEFOUND            = CHARACTER
+ INVACCTWARNSLIST          = CHARACTER
+ INVSLWARNSLIST            = CHARACTER
+ INVSLTYPE                 = CHARACTER
 
 [* Validate status codes
 *]
@@ -215,7 +214,7 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
 
- BNOLASTMODDATE='06/06/24'
+ BNOLASTMODDATE='06/07/23'
  BNOLASTMODTIME="17:00 PT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
@@ -390,8 +389,7 @@ PROCEDURE INITIALIZEDATA
  PARAMWARNINGSACCT="NONE"
  PARAMWARNINGSSHARE="NONE"
  PARAMWARNINGSLOAN="NONE"
- PARAMDEBUGMODE=BNODEBUGMODEOFF
- PARAMDEBUGMODEFOUND=FALSE
+ PARAMDEBUGMODE=-1
  PARAMINSTALLDATE=DATENULL
  PARAMCUSTOMTERMLINES=0
  PARAMERRDISPLAYCOUNT=0
@@ -548,17 +546,17 @@ PROCEDURE VALIDATEACCOUNT
 ** RETURN  VALIDATESTATUS          Validate status
 ** RETURN  SLAVAILABLEBAL          The available balance/loan advance
 ** RETURN  SLDESCRIPTION           The Share/Loan description
-** RETURN  INVACCTWARNSFOUND       Invalid Account Warnings Found List
-** RETURN  INVSLWARNSFOUND         Invalid Share/Loan Warnings Found List
-** RETURN  INVSLTYPEFOUND          The invalid Share/Loan Type if Found
+** RETURN  INVACCTWARNSLIST        Invalid Account Warnings Found List
+** RETURN  INVSLWARNSLIST          Invalid Share/Loan Warnings Found List
+** RETURN  INVSLTYPE               The invalid Share/Loan Type if Found
 *]
 
  VALIDATESTATUS=VALIDATEACCTNOTFOUND
  SLAVAILABLEBAL=$0.00
  SLDESCRIPTION=""
- INVACCTWARNSFOUND=""
- INVSLWARNSFOUND=""
- INVSLTYPEFOUND=""
+ INVACCTWARNSLIST=""
+ INVSLWARNSLIST=""
+ INVSLTYPE=""
  FOR ACCOUNT RGMEMBERNUM
   DO
 [*Check to make sure account does not have a targeted warning
@@ -570,9 +568,9 @@ PROCEDURE VALIDATEACCOUNT
         WARNINGSACCT(TMPLOOP)=TRUE THEN
       DO
        VALIDATESTATUS=VALIDATEWARNINGFOUND
-       IF INVACCTWARNSFOUND<>"" THEN
-        INVACCTWARNSFOUND=INVACCTWARNSFOUND+","
-       INVACCTWARNSFOUND=INVACCTWARNSFOUND+FORMAT("999",TMPLOOP)
+       IF INVACCTWARNSLIST<>"" THEN
+        INVACCTWARNSLIST=INVACCTWARNSLIST+","
+       INVACCTWARNSLIST=INVACCTWARNSLIST+FORMAT("999",TMPLOOP)
       END  
     END
 
@@ -615,10 +613,7 @@ PROCEDURE VALIDATEACCOUNT
        IF VALIDSHARETYPES(SHARE:TYPE)<>TRUE THEN
         DO
          VALIDATESTATUS=VALIDATEINVALIDSLTYPE
-         IF SLTYPELENGTH=2 THEN
-          INVSLTYPEFOUND=FORMAT("99",SHARE:TYPE)
-         ELSE
-          INVSLTYPEFOUND=FORMAT("9999",SHARE:TYPE)
+         INVSLTYPE=FORMAT("9999",SHARE:TYPE)
         END
 
        IF VALIDATESTATUS=VALIDATEOK AND
@@ -635,9 +630,9 @@ PROCEDURE VALIDATEACCOUNT
               WARNINGSSHARE(TMPLOOP)=TRUE THEN
             DO
              VALIDATESTATUS=VALIDATESLWARNINGFOUND
-             IF INVSLWARNSFOUND<>"" THEN
-              INVSLWARNSFOUND=INVSLWARNSFOUND+","
-             INVSLWARNSFOUND=INVSLWARNSFOUND+FORMAT("999",TMPLOOP)
+             IF INVSLWARNSLIST<>"" THEN
+              INVSLWARNSLIST=INVSLWARNSLIST+","
+             INVSLWARNSLIST=INVSLWARNSLIST+FORMAT("999",TMPLOOP)
             END
           END
         END  
@@ -674,10 +669,7 @@ PROCEDURE VALIDATEACCOUNT
        IF VALIDLOANTYPES(LOAN:TYPE)<>TRUE THEN
         DO
          VALIDATESTATUS=VALIDATEINVALIDSLTYPE
-         IF SLTYPELENGTH=2 THEN
-          INVSLTYPEFOUND=FORMAT("99",LOAN:TYPE)
-         ELSE
-          INVSLTYPEFOUND=FORMAT("9999",LOAN:TYPE)
+         INVSLTYPE=FORMAT("9999",LOAN:TYPE)
         END
 
        IF VALIDATESTATUS=VALIDATEOK AND
@@ -695,9 +687,9 @@ PROCEDURE VALIDATEACCOUNT
               WARNINGSLOAN(TMPLOOP)=TRUE THEN
             DO
              VALIDATESTATUS=VALIDATESLWARNINGFOUND
-             IF INVSLWARNSFOUND<>"" THEN
-              INVSLWARNSFOUND=INVSLWARNSFOUND+","
-             INVSLWARNSFOUND=INVSLWARNSFOUND+FORMAT("999",TMPLOOP)
+             IF INVSLWARNSLIST<>"" THEN
+              INVSLWARNSLIST=INVSLWARNSLIST+","
+             INVSLWARNSLIST=INVSLWARNSLIST+FORMAT("999",TMPLOOP)
             END
           END
         END
@@ -730,19 +722,19 @@ PROCEDURE VALIDATESETERROR
    IF VALIDATESTATUS=VALIDATEACCTNOTFOUND THEN
     BNOERRMESSAGE="Account Not Found"
    ELSE IF VALIDATESTATUS=VALIDATEWARNINGFOUND THEN
-    BNOERRMESSAGE="Account Warning Found List "+INVACCTWARNSFOUND
+    BNOERRMESSAGE="Account Warning Found: "+INVACCTWARNSLIST
    ELSE IF VALIDATESTATUS=VALIDATESLNOTFOUND AND RGSLTYPE="S" THEN
     BNOERRMESSAGE="Share Not Found"
    ELSE IF VALIDATESTATUS=VALIDATESLNOTFOUND AND RGSLTYPE="L" THEN
     BNOERRMESSAGE="Loan Not Found"
    ELSE IF VALIDATESTATUS=VALIDATEINVALIDSLTYPE AND RGSLTYPE="S" THEN
-    BNOERRMESSAGE="Invalid Share Type Is "+INVSLTYPEFOUND
+    BNOERRMESSAGE="Invalid Share Type: "+INVSLTYPE
    ELSE IF VALIDATESTATUS=VALIDATEINVALIDSLTYPE AND RGSLTYPE="L" THEN
-    BNOERRMESSAGE="Invalid Loan Type Is "+INVSLTYPEFOUND
+    BNOERRMESSAGE="Invalid Loan Type: "+INVSLTYPE
    ELSE IF VALIDATESTATUS=VALIDATESLWARNINGFOUND AND RGSLTYPE="S" THEN
-    BNOERRMESSAGE="Share Warning Found List "+INVSLWARNSFOUND
+    BNOERRMESSAGE="Share Warning Found: "+INVSLWARNSLIST
    ELSE IF VALIDATESTATUS=VALIDATESLWARNINGFOUND AND RGSLTYPE="L" THEN
-    BNOERRMESSAGE="Loan Warning Found List "+INVSLWARNSFOUND
+    BNOERRMESSAGE="Loan Warning Found: "+INVSLWARNSLIST
    CALL BNOERRUPDATE
   END       
  ELSE IF VALIDATESTATUS=VALIDATEAVAILBALZERO THEN
@@ -827,18 +819,15 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="LW" AND
                PARAMVALUE<>"" THEN
         PARAMWARNINGSLOAN=PARAMVALUE
-[* Check for Debug Mode. This is a hidden parameter setting which can override the default debug
+[* Debug mode. This is a hidden parameter setting which can override the default debug
 ** mode setting. Use this "DEBUG:" parameter setting in the CFG Letter file with "ON"
 ** or "OFF" to force the debug mode to be other than the default value of being on for
-** the first 90 days (or other value as set in the BNOPRINTDEBUGINFODAYS variable in the SETUP
-** division) after the most recent program modification date or from the program
-** installation date.
+** the first [BNOPRINTDEBUGINFODAYS] days after the most recent program modification date or
+** program installation date, whichever is more recent.
 *]
        ELSE IF PARAMNAME="DEBUG" AND
                PARAMVALUE<>"" THEN
         DO
-         PARAMDEBUGMODEFOUND=TRUE
-
          IF CHARACTERSEARCH("TRUEYES1DEBUGON",PARAMVALUE)>0 THEN
           PARAMDEBUGMODE=BNODEBUGMODEON
          ELSE
@@ -898,15 +887,12 @@ PROCEDURE READCONFIGFILESETTINGS
   END
 
 [* Update debugmode
-**   If the "DEBUG" parameter is found and it's set to false, then force debug
+**   If the "DEBUG" parameter is set to false, then force debug
 **     mode to off (overrides all other debug mode logic settings).
 **   If the "DEBUG" parameter is set to true or the installation date was found and
-**     less than 90 days prior, set the debug mode to true.
-**   Otherwise, use the current state of the debug mode as set by the last
-**     mod date.
+**     less than [BNOPRINTDEBUGINFODAYS] days prior, set the debug mode to true.
 *]
- IF PARAMDEBUGMODEFOUND=TRUE AND
-    PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
+ IF PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
   BNODEBUGMODE=BNODEBUGMODEOFF
  ELSE
   DO
@@ -936,9 +922,7 @@ PROCEDURE READCONFIGFILESETTINGS
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="LW: "+PARAMWARNINGSLOAN
    CALL BNODEBUGMSGADD
-   BNODEBUGMSG="DEBUG: "
-   IF PARAMDEBUGMODEFOUND=TRUE THEN [Leave blank if DEBUG: not found in CFG]
-    BNODEBUGMSG=BNODEBUGMSG+FORMAT("9",PARAMDEBUGMODE)
+   BNODEBUGMSG="DEBUG: "+FORMAT("+9",PARAMDEBUGMODE)
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="PID: "+FORMAT("99/99/9999",PARAMINSTALLDATE)
    CALL BNODEBUGMSGADD
