@@ -96,15 +96,18 @@ Any and all errors should be conveyed via the following structure:
 *All Errors begin with 'We're sorry we've encountered an error. Please contact your credit union.' followed by the Logging Error Message.
  That is the part of the error message that is displayed to the end user.
 
-| Logging Error Message                                                                | Additional Notes As Needed |
-|------------------------------------------------------------------------------------- |-----------------------------------------------|
-| Error Opening Letterfile [config file name]: [system generated letter file read error message] | This set of errors represents issues with the configuration letter file setup |
-| Duplicate loan type in CFG (BLT 1234) | In the CFG boat loan type has a duplicate loan type that is already in home, vehicle or secured loan type parameters. Remove the duplicates to resolve. |
-| Duplicate loan type in CFG (VLT 1234) | In the CFG vehicle loan type has a duplicate loan type that is already in home, boat or secured loan type parameters. Remove the duplicates to resolve.|
-| Duplicate loan type in CFG (SLT 1234) | In the CFG secured loan type has a duplicate loan type that is already in home, boat or vehicle loan type parameters. Remove the duplicates to resolve. |
-| Ineligible Loan Type | This set of errors is for ineligible loans |
-| Payoff Days more than Maximum allowed ||
-| Account Warning Found ||
-| Loan Warning Found ||
-| Loan Projection Error: [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for loan payoff processing errors |
-| Fee Specfile Error: [Banno loan payoff fees PowerOn generated error message] ||
+*See the Modifier section for additional details.
+ The Modifier is appended to the main Logging Error Message.
+
+| Logging Error Message                                                                 | Modifier                                                                             | Additional Notes As Needed                    |
+| ------------------------------------------------------------------------------------- |------------------------------------------------------------------------------------- |-----------------------------------------------|
+| Error Opening Letterfile [config file name] | : [system generated letter file read error message] | This set of errors represents issues with the configuration letter file setup |
+| Duplicate loan type in CFG (BLT 1234) || In the CFG boat loan type has a duplicate loan type that is already in home, vehicle or secured loan type parameters. Remove the duplicates to resolve. |
+| Duplicate loan type in CFG (VLT 1234) || In the CFG vehicle loan type has a duplicate loan type that is already in home, boat or secured loan type parameters. Remove the duplicates to resolve. |
+| Duplicate loan type in CFG (SLT 1234) || In the CFG secured loan type has a duplicate loan type that is already in home, boat or vehicle loan type parameters. Remove the duplicates to resolve. |
+| Ineligible Loan Type | : [4-digit loan type] | This set of errors is for ineligible loans |
+| Payoff Days more than Maximum allowed |||
+| Account Warning Found | : [3-digit comma separated account warning list] ||
+| Loan Warning Found | : [3-digit comma separated loan warning list] ||
+| Loan Projection Error | : [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for loan payoff processing errors |
+| Fee Specfile Error | : [Banno loan payoff fees PowerOn generated error message] ||
