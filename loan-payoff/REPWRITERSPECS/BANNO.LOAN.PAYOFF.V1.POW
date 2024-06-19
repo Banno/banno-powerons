@@ -34,7 +34,7 @@
 **                         Added forced space between consecutive lines of text
 **    Ver. 1.1.0  08/04/22 R. Robison - New features
 **                         Added support for payoff fee display in the UX.
-**    Ver. 1.1.1  06/18/24 J. Keenan - Updated the loggingErrorMessage
+**    Ver. 1.1.1  06/19/24 J. Keenan - Updated the loggingErrorMessage
 **                         for ineligible loans and ineligible
 **                         warning codes to include the loan type and
 **                         loan warning code numbers.
@@ -202,7 +202,7 @@ SETUP
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
  PROGRAMVERSION="1.1.1"
- LASTMODDATE='06/18/24'
+ LASTMODDATE='06/19/24'
  LASTMODTIME="17:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=90
@@ -212,8 +212,6 @@ SETUP
   DO
    INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
   END
- IF SYSTEMDATE<LASTMODDATE+PRINTCONFIGINFODAYS THEN
-  PRINTCONFIGINFO=TRUE
 END
 
 PRINT TITLE="BANNO.LOAN.PAYOFF.V1.POW"
@@ -648,8 +646,8 @@ PROCEDURE READCONFIGFILESETTINGS
         END
 
 [* Print config info. This is a hidden parameter setting which can override the default Print
-** config info setting. Use this "PC:" parameter setting in the CFG Letter file with "ON"
-** or "OFF" to force the Print config info setting to be other than the default value of being on for
+** config info setting. Use this "PC:" parameter setting in the CFG Letter file with "YES"
+** or "NO" to force the Print config info setting to be other than the default value of being on for
 ** the first [PRINTCONFIGINFODAYS] days after the most recent program modification date or
 ** program installation date, whichever is more recent.
 *]
@@ -659,7 +657,7 @@ PROCEDURE READCONFIGFILESETTINGS
          CALL TMPCHRNLS
          IF TMPCHR<>"" THEN
           DO
-           IF CHARACTERSEARCH("1YESTRUE",TMPCHR)>0 THEN
+           IF CHARACTERSEARCH("TRUEYES1DEBUGON",TMPCHR)>0 THEN
             PRINTCONFIGINFOPARAM=TRUE
            ELSE
             PRINTCONFIGINFOPARAM=FALSE
@@ -710,7 +708,6 @@ PROCEDURE GETLOANDATA
  LOANGOOD=TRUE
  INVACCTWARNSLIST=""
  INVLNWARNSLIST=""
- INVLNTYPE=""
  FOR ACCOUNT WITH NUMBER PAYOFFACCOUNTNUM
   DO
    FOR EACH LOAN WITH (VALUE(LOAN:ID)=VALUE(PAYOFFID))
@@ -1598,6 +1595,9 @@ PROCEDURE DISPLAYCONFIGINFO
 **   If the "PC:" parameter is set to true or the installation date was found and
 **     less than [PRINTCONFIGINFODAYS] days prior, set the Print config info setting to true.
 *]
+ IF LASTMODDATE+PRINTCONFIGINFODAYS>SYSTEMDATE THEN
+  PRINTCONFIGINFO=TRUE
+
  IF PRINTCONFIGINFOPARAM=FALSE THEN
   PRINTCONFIGINFO=FALSE
  ELSE
