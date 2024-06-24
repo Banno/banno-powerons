@@ -77,6 +77,8 @@
 **                Added parameter setting to delete/expire any transfer type 3
 **                records pointing to the targeted certificate upon the member
 **                submitting their selection.
+**    Ver. 1.5.1  06/06/24 TKainz - Banno
+**                         Added Program Installation Date parameter
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -346,18 +348,24 @@ DEFINE
  SXFER3EXPIREDATE          = DATE ARRAY(99)
  SXFER3LOC                 = NUMBER ARRAY(99)
  SXFER3SHAREID             = CHARACTER(4) ARRAY(99)
-
  STRANSFERCOUNTMAX         = 99
+
+[* TKainz - added 06/06/24
+*]
+ PARAMINSTALLDATE          = DATE
+ PARAMDEBUGMODE            = NUMBER
 END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='03/14/24'
+ BNOLASTMODDATE='06/06/24'
  BNOLASTMODTIME="12:00 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
- BNOPROGRAMVERSION="1.4.1"
+ BNOPROGRAMVERSION="1.5.1"
  BNOPRINTDEBUGINFODAYS=90
+
+ BNODEBUGMODE=BNODEBUGMODEOFF
  IF BNOLASTMODDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE THEN
   BNODEBUGMODE=BNODEBUGMODEON
 
@@ -731,9 +739,11 @@ PROCEDURE READCONFIGFILESETTINGS
 **  IM             PARAMINELIGIRSCODEMSG   Ineligible share IRS code msg (array of up to 999 lines of text)
 **  XM             PARAMINELIGXACCOUNTMSG  Ineligible cross account msg (array of up to 999 lines of text)
 **  DB             BNODEBUGMODE            Debug mode override
+**  PID            PARAMINSTALLDATE        Date program installed at CU
 *]
  INVALIDCONFIGPARAMS=FALSE
  READCONFIGERROR=FALSE
+ PARAMDEBUGMODE=-1
 
  FILEOPEN("LETTER",BNOCFGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -944,15 +954,27 @@ PROCEDURE READCONFIGFILESETTINGS
          USEROPTIONSCHR(6)=PARAMVALUE
         END
 
-[* Debug mode override
+[* Program Installation Date
 *]
-       ELSE IF PARAMNAME="DB" THEN
+       ELSE IF PARAMNAME="PID" AND
+               PARAMVALUE<>"" THEN
+        PARAMINSTALLDATE=DATEVALUE(PARAMVALUE)
+
+[* Debug mode. This is a hidden parameter setting which can override the default debug
+** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "ON"
+** or "OFF" to force the debug mode to be other than the default value of being on for
+** the first [BNOPRINTDEBUGINFODAYS] days after the most recent program modification date or
+** program installation date, whichever is more recent.
+*]
+       ELSE IF PARAMNAME="DB" AND
+               PARAMVALUE<>"" THEN
         DO
-         IF PARAMVALUE="TRUE" THEN
-          BNODEBUGMODE=TRUE
-         ELSE IF PARAMVALUE="FALSE" THEN
-          BNODEBUGMODE=FALSE
-       END
+         IF CHARACTERSEARCH("ONTRUEYES",UPPERCASE(PARAMVALUE))>0 THEN
+          PARAMDEBUGMODE=BNODEBUGMODEON
+         ELSE IF CHARACTERSEARCH("OFFFALSENO",UPPERCASE(PARAMVALUE))>0 THEN
+          PARAMDEBUGMODE=BNODEBUGMODEOFF
+        END
+
       END
 
      PARAMNAME=""
@@ -968,6 +990,19 @@ PROCEDURE READCONFIGFILESETTINGS
     END [WHILE LFERROR=""]
    FILECLOSE(LFNUMBER,LFERROR)
   END
+
+[* Update debugmode
+**   If the "DB" parameter is set to false, then force debug
+**     mode to off (overrides all other debug mode logic settings).
+**   If the "DB" parameter is set to true or the installation date was found and
+**     less than [BNOPRINTDEBUGINFODAYS] days prior, set the debug mode to true.
+*]
+ IF PARAMDEBUGMODE=BNODEBUGMODEOFF THEN
+  BNODEBUGMODE=BNODEBUGMODEOFF
+ ELSE IF PARAMDEBUGMODE=BNODEBUGMODEON OR
+     (PARAMINSTALLDATE<>DATENULL AND
+      PARAMINSTALLDATE+BNOPRINTDEBUGINFODAYS>SYSTEMDATE) THEN
+  BNODEBUGMODE=BNODEBUGMODEON
 
  LELISTINPUT=PARAMINELIGIBLEACCTS
  IF LELISTINPUT="" THEN
@@ -1054,6 +1089,12 @@ PROCEDURE READCONFIGFILESETTINGS
    BNODEBUGMSG="PARAMELIGIBLEIRSCODES="+PARAMELIGIBLEIRSCODES
    CALL BNODEBUGMSGADD
    BNODEBUGMSG=FORMAT("PARAMXFER3HANDLING=9",PARAMXFER3HANDLING)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMDEBUGMODE: "+FORMAT("9",PARAMDEBUGMODE)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="PARAMINSTALLDATE: "+FORMAT("99/99/9999",PARAMINSTALLDATE)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="BNODEBUGMODE: "+BOOLEANCHR(BNODEBUGMODE)
    CALL BNODEBUGMSGADD
 
    FOR TMPLOOP=1 TO PARAMPAYEETERMLINES
@@ -1242,6 +1283,7 @@ PROCEDURE INITIALIZATIONS
  PARAMDELETEXFERS=FALSE
  PARAMELIGIBLEIRSCODES="ALL"
  PARAMXFER3HANDLING=1 [Do nothing]
+ PARAMINSTALLDATE=DATENULL
 
  FOR TMPLOOP=0 TO USEROPTIONSMAX
   DO
@@ -2503,14 +2545,16 @@ PROCEDURE BNOPRINTPROGRAMINFO
 **  PASS    BNOPROGRAMVERSION  Program version
 **  PASS    BNOLASTMODDATE     Last mod date
 **  PASS    BNOLASTMODTIME     Last mod time
+**  PASS    PARAMINSTALLDATE   Program installation date
 *]
  PRINT BNOINDENT(1)+","
  NEWLINE
  PRINT BNOINDENT(1)+Q+"programInfo"+Q+":"+Q+
-                    BNOPROGRAMNAME+"  "+
+                    BNOPROGRAMNAME+"  ver. "+
                     BNOPROGRAMVERSION+"  "+
                     FORMAT("99/99/99 ",BNOLASTMODDATE)+
-                    BNOLASTMODTIME+Q
+                    BNOLASTMODTIME+
+                    FORMAT("  INSTALLED: 99/99/99 ",PARAMINSTALLDATE)+Q
 END [PROCEDURE]
 
 PROCEDURE BNOPRINTRGDATA
