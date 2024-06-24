@@ -1,0 +1,1853 @@
+[* Copyright 2024 Jack Henry and Associates
+**
+**  PowerOn Name: BANNO.M2MTRANSFERS.RPT.BATCH
+**
+**  --------------------------------------------------------------------
+**  Program Summary:
+**  --------------------------------------------------------------------
+**   This batch program looks through FM history and transaction history
+**   to generate a report of immediate and/or future dated one-time
+**   and recurring transfers created through the member's use of the Banno
+**   home banking program 'BANNO.M2MTRANSFERS.V3.POW'. The related
+**   configuration Letter file ('BANNO.M2MTRANSFERS.V3.CFG') contains a
+**   number of settings, a couple of which are also used by this program:
+**     'TRANSACTION DESCRIPTION/COMMENT DEFAULT' (as TC:)
+**        This setting must have a non-blank value and represents the
+**        share/loan comment this program is targeting. In lieu of this
+**        setting containing a value, this program's prompt 'Enter
+**        transaction comment to target' must contain a non-blank
+**        value.
+**     'CROSS ACCOUNT ACCESS' (as XA:)
+**        This setting is used to determine which accounts will be
+**        searched through looking for the target transactions/transfers.
+**
+**  --------------------------------------------------------------------
+**  Program Prompts:
+**  --------------------------------------------------------------------
+**   SymXchange User Number:
+**     The user number assigned to the SymXchange instance originating
+**     the targeted transactions and Share/Loan transfer records. The
+**     targeted user number should be between 0800 and 0899.
+**       DEFAULT: 0800
+**
+**   Enter transaction comment to target:
+**     This is the transaction comment attached to the targeted
+**     transactions which will be included in this report. If this value
+**     is left blank, then the value of the "TC:" parameter setting
+**     in the 'BANNO.M2MTRANSFERS.V3.CFG' Letter file will be used.
+**       DEFAULT: Left blank. The value from the 'TC:' setting in
+**       the noted Letter file will be used. If both the Letter file
+**       value and this prompt are blank, program run will be terminated
+**       as there must be a transaction comment to target.
+**
+**   Reporting start date [SYSTEMDATE]
+**     The starting date for the report. Only transactions and Share/Loan
+**     transfer records created on or after this date will be included
+**     in this report.
+**       DEFAULT: System date.
+**
+**   Reporting end date [SYSTEMDATE]
+**     The ending date for the report. Only transactions and Share/Loan
+**     transfer records created on or before this date will be included
+**     in this report.
+**       DEFAULT: System date.
+**
+**  --------------------------------------------------------------------
+**  Reports Produced:
+**  --------------------------------------------------------------------
+**   Banno M2M Transfer Report:
+**     Detail report listing any qualifying immediate or future dated
+**     Share/Loan transfers.
+**
+**  --------------------------------------------------------------------
+**  Additional Info:
+**  --------------------------------------------------------------------
+**   The transaction posting date and the share transfer FM history
+**   posting date are used to qualify the transactions/Share transfer
+**   records.
+**
+**   Transfers to an account and share/loan to which the member also has
+**   access to by way of Preference Access records are not included.
+**  --------------------------------------------------------------------
+**  Modification History
+**  --------------------------------------------------------------------
+**   Ver. 1.0.0 05/08/24  TKainz - Original Programming
+*]
+
+TARGET=ACCOUNT
+
+DEFINE
+ #INCLUDE "RD.GETDATA.DEF"
+ #INCLUDE "RB.LISTEXPAND.DEF"
+
+ FALSE                        = 0
+ TRUE                         = 1
+ DATENULL                     = '--/--/--'
+ TESTTYPETRAN                 = 0
+ TESTTYPEXFER                 = 1
+ TRANSOURCELOAN               = 1
+ TRANSOURCESHARE              = 0
+
+[* FROM BNOLB.SLLISTBUILD.DEF ]
+ BNOTRUE                      = 1
+ BNOFALSE                     = 0
+ BNODATENULL                  = '--/--/--'
+
+ BNOSLTYPECHR                 = CHARACTER ARRAY(2)
+ BNOSLTYPESHARE               = 0
+ BNOSLTYPELOAN                = 1
+ BNOSLTYPESHARELOAN           = 2
+
+ BNOACCESSTYPECHR             = CHARACTER ARRAY(3)
+ BNOACCESSTYPEIQ              = 0
+ BNOACCESSTYPEXFEROUT         = 1
+ BNOACCESSTYPEXFERIN          = 2
+ BNOACCESSTYPEWD              = 3
+
+ BNOSHARECODECHR              = CHARACTER ARRAY(3)
+ BNOSHARECODESHARE            = 0
+ BNOSHARECODEDRAFT            = 1
+ BNOSHARECODECERTIFICATE      = 2
+ BNOSHARECODECLUB             = 3
+
+ BNOLOANCODECHR               = CHARACTER ARRAY(6)
+ BNOLOANCODECLOSEDEND         = 0
+ BNOLOANCODEOPENEND           = 1
+ BNOLOANCODELOC               = 2
+ BNOLOANCODECC                = 3
+ BNOLOANCODELEASE             = 4
+ BNOLOANCODEAVGDAILYBALLOC    = 5
+ BNOLOANCODELOCCOMBO          = 6
+
+ BNOACCESSRECTYPEXFEROUT      = 0
+ BNOACCESSRECTYPEXFERIN       = 1
+ BNOACCESSRECTYPEALTACCT      = 2
+
+ BNOHBENABLEIQ                = 0
+ BNOHBENABLEXF                = 1
+
+ BNOSHAREARRAYMAX             = 200
+ BNOSHARECOUNT                = NUMBER
+ BNOTOTALSHAREBALANCE         = MONEY
+ BNOSHAREACCTNUM              = CHARACTER(10) ARRAY(200)
+ BNOSHAREID                   = CHARACTER(4) ARRAY(200)
+ BNOSHARETYPE                 = NUMBER ARRAY(200)
+ BNOSHAREDESC                 = CHARACTER ARRAY(200)
+ BNOSHAREAVAILBAL             = MONEY ARRAY(200)
+ BNOSHAREBALANCE              = MONEY ARRAY(200)
+ BNOSHARECODE                 = NUMBER ARRAY(200)
+ BNOSHAREMATURITYDATE         = DATE ARRAY(200)
+ BNOSHAREIQFLAG               = NUMBER ARRAY(200)
+ BNOSHAREXFERINFLAG           = NUMBER ARRAY(200)
+ BNOSHAREXFEROUTFLAG          = NUMBER ARRAY(200)
+ BNOSHAREWDFLAG               = NUMBER ARRAY(200)
+ BNOSHARESORTORDER            = NUMBER ARRAY(200)
+ BNOSHARENICKNAME             = CHARACTER ARRAY(200)
+ BNOSHAREXACCTPRIMARYNAME     = CHARACTER ARRAY(200)
+ BNOSHAREOPENDATE             = DATE ARRAY(200)
+ BNOSHARECLOSEDATE            = DATE ARRAY(200)
+ BNOSHARECHARGEOFFDATE        = DATE ARRAY(200)
+
+ BNOLOANARRAYMAX              = 200
+ BNOLOANCOUNT                 = NUMBER
+ BNOTOTALLOANBALANCE          = MONEY
+ BNOLOANACCTNUM               = CHARACTER(10) ARRAY(200)
+ BNOLOANID                    = CHARACTER(4) ARRAY(200)
+ BNOLOANTYPE                  = NUMBER ARRAY(200)
+ BNOLOANDESC                  = CHARACTER ARRAY(200)
+ BNOLOANBALANCE               = MONEY ARRAY(200)
+ BNOLOANEFFECTIVEBAL          = MONEY ARRAY(200)
+ BNOLOANAVAILCREDIT           = MONEY ARRAY(200)
+ BNOLOANDUEDATE               = DATE ARRAY(200)
+ BNOLOANPAYMENT               = MONEY ARRAY(200)
+ BNOLOANPAYMENTDUE            = MONEY ARRAY(200)
+ BNOLOANPASTDUEAMOUNT         = MONEY ARRAY(200)
+ BNOLOANPMTBUCKETAMT          = MONEY ARRAY(200)
+ BNOPMTBUCKETAMT              = MONEY
+ BNOLOANLOANCODE              = NUMBER ARRAY(200)
+ BNOLOANCREDITLIMIT           = MONEY ARRAY(200)
+ BNOLOANIQFLAG                = NUMBER ARRAY(200)
+ BNOLOANXFERINFLAG            = NUMBER ARRAY(200)
+ BNOLOANXFEROUTFLAG           = NUMBER ARRAY(200)
+ BNOLOANWDFLAG                = NUMBER ARRAY(200)
+ BNOLOANNICKNAME              = CHARACTER ARRAY(200)
+ BNOLOANXACCTPRIMARYNAME      = CHARACTER ARRAY(200)
+ BNOLOANOPENDATE              = DATE ARRAY(200)
+ BNOLOANCLOSEDATE             = DATE ARRAY(200)
+ BNOLOANCHARGEOFFDATE         = DATE ARRAY(200)
+
+ BNOEXTLOANARRAYMAX           = 20
+ BNOEXTLOANCOUNT              = NUMBER
+ BNOTOTALEXTLOANBALANCE       = MONEY
+ BNOINCLUDEEXTLOANS           = NUMBER
+ BNOEXTLOANTYPE               = NUMBER ARRAY(20)
+ BNOEXTLOANLOC                = NUMBER ARRAY(20)
+ BNOEXTLOANACCOUNTNUM         = CHARACTER ARRAY(20)
+ BNOEXTLOANDESC               = CHARACTER ARRAY(20)
+ BNOEXTLOANBALANCE            = MONEY ARRAY(20)
+ BNOEXTLOANAMOUNTDUE          = MONEY ARRAY(20)
+ BNOEXTLOANDUEDATE            = DATE ARRAY(20)
+ BNOEXTLOANPAYMENT            = MONEY ARRAY(20)
+ BNOEXTLOANLATEFEE            = MONEY ARRAY(20)
+ BNOEXTLOANESCPAYMENT         = MONEY ARRAY(20)
+ BNOEXTLOANAVAILCREDIT        = MONEY ARRAY(20)
+ BNOEXTLOANCREDITLIMIT        = MONEY ARRAY(20)
+ BNOEXTLOANIMPOUNDPAYMENT     = MONEY ARRAY(20)
+ BNOEXTLOANPIPAYMENT          = MONEY ARRAY(20)
+ BNOEXTLOANIQFLAG             = NUMBER ARRAY(20)
+ BNOEXTLOANXFERINFLAG         = NUMBER ARRAY(20)
+ BNOEXTLOANXFEROUTFLAG        = NUMBER ARRAY(20)
+ BNOEXTLOANWDFLAG             = NUMBER ARRAY(20)
+ BNOEXTLOANCLOSEDATE          = DATE ARRAY(20)
+
+ BNOSHARELOANCOUNT            = NUMBER
+ BNOFINDINDEX                 = NUMBER
+ BNOFINDACCTNUM               = CHARACTER(10)
+ BNOFINDID                    = CHARACTER(4)
+
+ BNOSLIDFOUND                 = NUMBER
+ BNOFOUND                     = NUMBER
+ BNOCROSSACCTSLTYPE           = NUMBER
+ BNOUSERHBENABLE              = NUMBER
+
+ BNOSERVICEXFERINLIST         = NUMBER ARRAY(99)
+ BNOSERVICEXFERINALLFLAG      = NUMBER
+ BNOSERVICEXFEROUTLIST        = NUMBER ARRAY(99)
+ BNOSERVICEXFEROUTALLFLAG     = NUMBER
+ BNOSERVICEWDLIST             = NUMBER ARRAY(99)
+ BNOSERVICEWDALLFLAG          = NUMBER
+ BNOSERVICELISTSETFLAG        = NUMBER
+
+ BNOEXCLUDESHARETYPES         = NUMBER ARRAY(9999)
+ BNOEXCLUDESHARETYPEALLFLAG   = NUMBER
+ BNOEXCLUDESHARELISTSETFLAG   = NUMBER
+ BNOEXCLUDELOANTYPES          = NUMBER ARRAY(9999)
+ BNOEXCLUDELOANTYPEALLFLAG    = NUMBER
+ BNOEXCLUDELOANLISTSETFLAG    = NUMBER
+ BNOINCLUDECLOSED             = NUMBER
+ BNOINCLUDECHARGEDOFF         = NUMBER
+
+ BNOSLCODE                    = NUMBER ARRAY(3)
+ BNOSLTYPE                    = NUMBER
+ BNOACCESSFLAG                = NUMBER
+ BNOACCESSIQFLAG              = NUMBER
+ BNOACCESSRECIQFLAG           = NUMBER
+ BNOACCESSRECWDFLAG           = NUMBER
+ BNOACCESSRECXFERINFLAG       = NUMBER
+ BNOACCESSRECXFEROUTFLAG      = NUMBER
+ BNOACCESSTYPE                = NUMBER
+ BNOACCESSWDFLAG              = NUMBER
+ BNOACCESSXFERINFLAG          = NUMBER
+ BNOACCESSXFEROUTFLAG         = NUMBER
+ BNOAVAILCALCMETHOD           = NUMBER
+ BNOCROSSACCTACCESS           = NUMBER
+ BNOCROSSACCTFLAG             = NUMBER
+ BNOEXCLUDELOANTYPELIST       = CHARACTER
+ BNOEXCLUDESHARETYPELIST      = CHARACTER
+ BNOLOCALLOOP                 = NUMBER
+ BNOPREFACCESSID              = CHARACTER(4)
+ BNOPREFACCESSIDTYPE          = NUMBER
+ BNOSERVICEWDFLAG             = NUMBER
+ BNOSERVICEXFERINFLAG         = NUMBER
+ BNOSERVICEXFEROUTFLAG        = NUMBER
+ BNOSLLOOP                    = NUMBER
+ BNOSLTYPEMAX                 = 9999
+ BNOSVCCODELOOP               = NUMBER
+ BNOSVCCODEMAX                = 99
+ BNOSYMXCLIENTNUM             = NUMBER
+ BNOSYMXINSTANCE              = NUMBER
+
+[* FOR PROCEDURE PARSEDATALINE ]
+ BNODATALINEFIELDMAX          = 9
+ BNODATALINEFIELD             = CHARACTER ARRAY(9)
+ BNODATAFIELDCOUNT            = NUMBER
+ BNODELIMITER                 = NUMBER
+ BNODELIMNONE                 = 0
+ BNODELIMCOMMA                = 44
+ BNODELIMSPACE                = 32
+ BNODATALINEINPUT             = CHARACTER
+ BNOTMPLOOP                   = NUMBER
+ BNOPOS                       = NUMBER
+ BNOTEXT                      = CHARACTER
+ BNOTRUEFALSECHR              = CHARACTER ARRAY(1)
+ CFGFILEERROR                 = CHARACTER
+ CFGFILELINE                  = CHARACTER
+ CFGFILENAME                  = CHARACTER
+ CFGFILENUMBER                = NUMBER
+ DAY1FOUND                    = NUMBER
+ DAY2FOUND                    = NUMBER
+ DEBUGMODE                    = NUMBER
+ FIRSTPAGE                    = NUMBER
+ FMHDAY1                      = NUMBER
+ FMHDAY2                      = NUMBER
+ FMHEFFECTIVEDATE             = DATE
+ FMHEXPIREDATE                = DATE
+ FMHFROMACCOUNT               = CHARACTER
+ FMHFROMID                    = CHARACTER
+ FMHFROMIDTYPE                = NUMBER
+ FMHNEWLOC                    = NUMBER
+ FMHNEXTXFERDATE              = DATE
+ FMHPOSTDATE                  = DATE
+ FMHTOACCOUNT                 = CHARACTER
+ FMHTOID                      = CHARACTER(4)
+ FMHTOIDTYPE                  = NUMBER
+ FMHXFERAMOUNT                = MONEY
+ FMHXFERFREQ                  = NUMBER
+ FMHXFERTYPE                  = NUMBER
+ FREQUENCIESCHR               = CHARACTER ARRAY(14)
+ IDTYPESCHR                   = CHARACTER ARRAY(4)
+ ISCROSSACCOUNT               = NUMBER
+ LASTSEQ                      = NUMBER
+ NEWLOCFOUND                  = NUMBER
+ TARGETCOMMENT                = CHARACTER
+ TARGETENDDATE                = DATE
+ TARGETSTARTDATE              = DATE
+ TARGETSYMXUSER               = NUMBER
+ TCCOMMENT                    = CHARACTER ARRAY(9)
+ TCCOUNT                      = NUMBER
+ TCCOUNTMAX                   = 9
+ TCID                         = CHARACTER ARRAY(9)
+ TCIDTYPE                     = NUMBER ARRAY(9)
+ TCSTMTDESCR                  = CHARACTER ARRAY(9)
+ TESTACCOUNTS                 = CHARACTER
+ TESTTYPE                     = NUMBER
+ THISACCOUNT                  = CHARACTER(10)
+ TMPLOOP                      = NUMBER
+ TOACCOUNT                    = CHARACTER
+ TOSLID                       = CHARACTER
+ TOSLIDTYPE                   = CHARACTER
+ TOTRANAMOUNT                 = MONEY
+ TRANSOURCE                   = NUMBER
+ TRANSOURCECHR                = CHARACTER ARRAY(1)
+ TRANSOURCEID                 = CHARACTER(4)
+ TRANPOSTDATE                 = DATE
+ XACCTACCESS                  = NUMBER
+ XATESTACCT                   = CHARACTER
+ XATESTSLIDTYPE               = CHARACTER
+ XATESTSLID                   = CHARACTER(4)
+ XFERTYPEFOUND                = NUMBER
+ XFERDAY1FOUND                = NUMBER
+ XFERDAY2FOUND                = NUMBER
+END [DEFINE]
+
+SETUP
+[* To run this program against a set of test members ONLY, enter up to 12,
+** 10-digit member numbers, each separated by a comma, in the TESTACCOUNTS
+** variable below. I.E: TESTACCOUNTS="0000012345,0000334567,0000004256"
+*]
+ TESTACCOUNTS=""
+
+[* DEBUGMODE: If set to TRUE and TESTACCOUNTS are being utilized, prints out
+** additional info pretaining to Preference Access records and transaction
+** share/loan transfer records testing for cross account access matching.
+*]
+ DEBUGMODE=FALSE
+
+ CALL INITIALIZATIONS
+ CALL PROGRAMPROMPTS
+ CALL FETCHLETTERFILEPARAMS
+END [SETUP]
+
+SELECT
+[* If M2M cross-account access is turned on then look through all accounts
+** where the account activity date is on or after the reporting start date
+** otherwise, narrow the focus down to only those accounts with an HB user
+** who has last logged into home banking on or after the reporting start date.
+*]
+ (
+  (
+   TESTACCOUNTS="" OR
+   (
+    TESTACCOUNTS<>"" AND
+    CHARACTERSEARCH(TESTACCOUNTS,ACCOUNT:NUMBER)>0
+   )
+  ) AND
+  (
+   ACCOUNT:CLOSEDATE=DATENULL OR
+   ACCOUNT:CLOSEDATE>TARGETSTARTDATE) AND
+   (
+    (
+     XACCTACCESS=FALSE AND
+     ANY PREFERENCE WITH (PREFERENCE:HBUSERNAME<>"" AND
+                          PREFERENCE:HBLASTLOGONDATE>=TARGETSTARTDATE)
+    ) OR
+    (
+     XACCTACCESS=TRUE AND
+     ACCOUNT:ACTIVITYDATE>=TARGETSTARTDATE
+    )
+   )
+ )
+END [SELECT]
+
+PRINT TITLE="Banno M2M Transfers Report"
+ THISACCOUNT=ACCOUNT:NUMBER
+ CALL MAINREPORTHEADER
+ CALL BUILDPREFACCESSLIST
+ CALL GETSHARETRANSFERRECS
+ CALL GETTRANSACTIONS
+END [PRINT]
+
+PROCEDURE PROGRAMPROMPTS
+[* Prompts used by this program. The default for each prompt is shown
+** in brackets.
+*]
+ TARGETSYMXUSER=CODEREAD("",
+                         "Enter the target SymXchange user number",
+                         "which must be in the range of 800-899",
+                         "SymXchange User Number [800]")
+
+ TARGETCOMMENT=CHARACTERREAD("",
+                             "Enter transaction comment to match. If left",
+                             "blank then 'TC' parameter value",
+                             "from BANNO.M2MTRANSFERS.V3.CFG Letter",
+                             "file will be used",
+                             "Enter transaction comment to target []")
+ IF TARGETCOMMENT<>"" THEN
+  DO
+   BNOTEXT=TARGETCOMMENT
+   CALL BNONLTS
+   TARGETCOMMENT=BNOTEXT
+  END
+ TARGETSTARTDATE=DATEREAD("",
+                          "Reporting start date [SYSTEMDATE]")
+ IF TARGETSTARTDATE=DATENULL THEN
+  TARGETSTARTDATE=SYSTEMDATE
+
+ TARGETENDDATE=DATEREAD("",
+                        "Reporting end date [SYSTEMDATE]")
+ IF TARGETENDDATE=DATENULL THEN
+  TARGETENDDATE=SYSTEMDATE
+
+ IF TARGETSYMXUSER<800 OR
+    TARGETSYMXUSER>899 THEN
+  DO
+   PRINT FORMAT("Invalid SymXchange user number:999 - TERMINATING PROGRAM RUN.",TARGETSYMXUSER)
+   NEWLINE
+   TERMINATE
+  END
+ ELSE IF TARGETENDDATE<TARGETSTARTDATE OR
+         TARGETSTARTDATE>SYSTEMDATE THEN
+  DO
+   PRINT "Invalid start/end date(s) - TERMINATING PROGRAM RUN."
+   NEWLINE
+   TERMINATE
+  END
+END [PROCEDURE]
+
+PROCEDURE FETCHLETTERFILEPARAMS
+[* Open Letter file BANNO.M2MTRANSFERS.V3.CFG to retrieve needed
+** parameter settings:
+** 'TC:' (tran comment to search for)
+** 'XA:' (cross accounts allowed flag
+*]
+ XACCTACCESS=FALSE
+
+ FILEOPEN("LETTER",CFGFILENAME,"READ",CFGFILENUMBER,CFGFILEERROR)
+ IF CFGFILEERROR="" THEN
+  DO
+   WHILE (CFGFILEERROR="")
+    DO
+     FILEREADLINE(CFGFILENUMBER,CFGFILELINE,CFGFILEERROR)
+     IF CFGFILEERROR="" THEN
+      DO
+       IF TARGETCOMMENT="" AND
+          UPPERCASE(SEGMENT(CFGFILELINE,1,3))="TC:" THEN
+        DO
+         BNOTEXT=SEGMENT(CFGFILELINE,4,LENGTH(CFGFILELINE))
+         IF LENGTH(BNOTEXT)>0 THEN
+          CALL BNONLTS
+         TARGETCOMMENT=BNOTEXT
+        END
+       IF UPPERCASE(SEGMENT(CFGFILELINE,1,3))="XA:" THEN
+        DO
+         BNOTEXT=SEGMENT(CFGFILELINE,4,LENGTH(CFGFILELINE))
+         IF LENGTH(BNOTEXT)>0 THEN
+          CALL BNONLTS
+         IF CHARACTERSEARCH("YESTRUEON",UPPERCASE(BNOTEXT))>0 THEN
+          XACCTACCESS=TRUE
+        END
+      END [IF CFGFILEERROR=""...]
+     ELSE IF CFGFILEERROR<>"EOF" THEN
+      DO
+       PRINT "Error reading Letter file '"+CFGFILENAME+"': "+CFGFILEERROR
+       NEWLINE
+       PRINT "TERMINATING"
+       NEWLINE
+       TERMINATE
+      END
+    END [WHILE CFGFILEERROR=""]
+  END [IF CFGFILEERROR=""]
+ ELSE
+  DO
+   PRINT "Letter file '"+CFGFILENAME+"' open error:"+CFGFILEERROR
+   NEWLINE
+   PRINT "TERMINATING"
+   NEWLINE
+   TERMINATE
+  END
+
+[* Print parameters for this run to the Batch Output report
+*]
+ PRINT FORMAT("TARGETSYMXUSER:9999",TARGETSYMXUSER)
+ NEWLINE
+ PRINT FORMAT("TARGETSTARTDATE:99/99/99",TARGETSTARTDATE)
+ NEWLINE
+ PRINT FORMAT("TARGETENDDATE:99/99/99",TARGETENDDATE)
+ NEWLINE
+ PRINT "TARGETCOMMENT:'"+TARGETCOMMENT+"'"
+ NEWLINE
+ PRINT "XACCTACCESS: "+BNOTRUEFALSECHR(XACCTACCESS)
+ NEWLINE
+ NEWLINE
+
+ IF TARGETCOMMENT="" THEN
+  DO
+   PRINT "Target Comment not determined - TERMINATING PROGRAM RUN."
+   NEWLINE
+   TERMINATE
+  END
+END [PROCEDURE]
+
+PROCEDURE BUILDPREFACCESSLIST
+[* Build a list of other accounts and shares/loans the member has
+** access to.
+*]
+ IF DEBUGMODE=TRUE AND
+    TESTACCOUNTS<>"" THEN
+  DO
+   PRINT "BUILDING LIST OF ACCESSIBLE SHARES & LOANS"
+   NEWLINE
+  END
+ BNOSLTYPE=BNOSLTYPESHARELOAN
+ BNOCROSSACCTACCESS=BNOTRUE
+ BNOSLCODE(BNOSHARECODESHARE)=BNOTRUE
+ BNOSLCODE(BNOSHARECODEDRAFT)=BNOTRUE
+ BNOSLCODE(BNOSHARECODECERTIFICATE)=BNOTRUE
+ BNOSLCODE(BNOSHARECODECLUB)=BNOTRUE
+ BNOEXCLUDESHARETYPELIST="none"
+ BNOEXCLUDELOANTYPELIST="none"
+ BNOINCLUDEEXTLOANS=BNOFALSE
+ BNOINCLUDECLOSED=BNOFALSE
+ BNOINCLUDECHARGEDOFF=BNOFALSE
+ BNOACCESSTYPE=BNOACCESSTYPEIQ
+ BNOAVAILCALCMETHOD=0
+ BNOSERVICELISTSETFLAG=BNOFALSE
+ BNOEXCLUDESHARELISTSETFLAG=BNOFALSE
+ BNOEXCLUDELOANLISTSETFLAG=BNOFALSE
+
+ CALL BNOBUILDSHARELOANLIST
+
+ IF DEBUGMODE=TRUE AND
+    TESTACCOUNTS<>"" THEN
+  DO
+   PRINT "HOME ACCOUNT:"+THISACCOUNT
+   NEWLINE
+   FOR TMPLOOP=1 TO BNOSHARECOUNT
+    DO
+     PRINT FORMAT("  SHARE ##9  ",TMPLOOP)+
+           BNOSHAREACCTNUM(TMPLOOP)+" S "+BNOSHAREID(TMPLOOP)
+     NEWLINE
+    END
+
+   FOR TMPLOOP=1 TO BNOLOANCOUNT
+    DO
+     PRINT FORMAT("  LOAN ##9  ",TMPLOOP)+
+           BNOSHAREACCTNUM(TMPLOOP)+" L "+BNOLOANID(TMPLOOP)
+     NEWLINE
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE GETTRANSACTIONS
+[* Target SymX transactions (by user number)
+** Load a transaction sequence:
+**   A transaction followed by one or more comments
+** Test the transaction:
+**   Either the second comment after the transaction will have the
+**   TARGETCOMMENT as part of the transaction comment field, OR
+**   the TARGETCOMMENT will be part of the transaction
+**   statement description 1 field.
+*]
+ CALL CLEARTRANVARS
+ TESTTYPE=TESTTYPETRAN
+
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL OR
+                      SHARE:CLOSEDATE>=TARGETSTARTDATE)
+  DO
+   TRANSOURCE=TRANSOURCESHARE
+   TRANSOURCEID=SHARE:ID
+   FOR EACH SHARE TRANSACTION WITH (SHARE TRANSACTION:ACCOUNTNUMBER=ACCOUNT:NUMBER AND
+                                    SHARE TRANSACTION:POSTDATE>=TARGETSTARTDATE AND
+                                   (SHARE TRANSACTION:POSTDATE<=TARGETENDDATE OR
+                                    TARGETENDDATE=DATENULL) AND
+                                    SHARE TRANSACTION:VOIDCODE=0 AND
+                                    SHARE TRANSACTION:USERNUMBER=TARGETSYMXUSER)
+    DO
+     IF SHARE TRANSACTION:COMMENTCODE=1 THEN
+      DO
+       IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
+        DO
+         TCCOUNT=TCCOUNT+1
+         TCCOMMENT(TCCOUNT)=SHARE TRANSACTION:COMMENT
+         TCIDTYPE(TCCOUNT)=SHARE TRANSACTION:IDTYPE
+         TCID(TCCOUNT)=SHARE TRANSACTION:ID
+         TCSTMTDESCR(TCCOUNT)=SHARE TRANSACTION:STMTDESC:1
+        END
+      END
+     ELSE [transaction segment is not a comment - validate & process]
+      DO
+       IF SHARE TRANSACTION:ACTIONCODE<>"W" THEN
+        CALL CLEARTRANVARS
+       ELSE
+        DO
+         IF TCCOUNT=1 THEN [transaction with statement description]
+          DO
+           IF CHARACTERSEARCH(SHARE TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
+            DO [valid target transaction - add to report]
+             BNOTEXT=SEGMENT(TCCOMMENT(1),4,LENGTH(TCCOMMENT(1)))
+             CALL BNONLTS
+             BNODELIMITER=BNODELIMSPACE
+             BNODATALINEINPUT=BNOTEXT
+             CALL PARSEDATALINE
+             TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+             TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+             TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+             TOTRANAMOUNT=SHARE TRANSACTION:TRANAMOUNT
+             TRANPOSTDATE=SHARE TRANSACTION:POSTDATE
+
+             IF TOACCOUNT<>THISACCOUNT THEN
+              DO
+               XATESTACCT=TOACCOUNT
+               XATESTSLIDTYPE=TOSLIDTYPE
+               XATESTSLID=TOSLID
+               CALL CHECKFORCROSSACCT
+              END
+
+             IF ISCROSSACCOUNT=FALSE THEN
+              CALL PRINTTRANTOREPORT
+
+             CALL CLEARTRANVARS
+            END
+          END [IF TCCOUNT=1 THEN...]
+         ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
+          DO
+           IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0 THEN
+            DO
+             BNOTEXT=SEGMENT(TCCOMMENT(2),4,LENGTH(TCCOMMENT(2)))
+             CALL BNONLTS
+             BNODELIMITER=BNODELIMSPACE
+             BNODATALINEINPUT=BNOTEXT
+             CALL PARSEDATALINE
+
+             TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+             TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+             TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+             TOTRANAMOUNT=SHARE TRANSACTION:TRANAMOUNT
+             TRANPOSTDATE=SHARE TRANSACTION:POSTDATE
+
+             IF TOACCOUNT<>THISACCOUNT THEN
+              DO
+               XATESTACCT=TOACCOUNT
+               XATESTSLIDTYPE=TOSLIDTYPE
+               XATESTSLID=TOSLID
+               CALL CHECKFORCROSSACCT
+              END
+
+             IF ISCROSSACCOUNT=FALSE THEN
+              CALL PRINTTRANTOREPORT
+
+             CALL CLEARTRANVARS
+            END
+          END [IF TCCOUNT=2]
+        END [IF SHARE TRANSACTION:ACTIONCODE<>"W"]
+      END [SHARE TRANSACTION:COMMENTCODE<>1]
+    END [FOR EACH SHARE TRANSACTION WITH...]
+   UNTIL SHARE TRANSACTION:POSTDATE<TARGETSTARTDATE
+  END [FOR EACH SHARE]
+
+ CALL CLEARTRANVARS
+ FOR EACH LOAN
+  DO
+   TRANSOURCE=TRANSOURCELOAN
+   TRANSOURCEID=LOAN:ID
+   FOR EACH LOAN TRANSACTION WITH (LOAN TRANSACTION:ACCOUNTNUMBER=ACCOUNT:NUMBER AND
+                                    LOAN TRANSACTION:POSTDATE>=TARGETSTARTDATE AND
+                                   (LOAN TRANSACTION:POSTDATE<=TARGETENDDATE OR
+                                    TARGETENDDATE=DATENULL) AND
+                                    LOAN TRANSACTION:VOIDCODE=0 AND
+                                    LOAN TRANSACTION:USERNUMBER=TARGETSYMXUSER)
+    DO
+     IF LOAN TRANSACTION:COMMENTCODE=1 THEN
+      DO
+       IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
+        DO
+         TCCOUNT=TCCOUNT+1
+         TCCOMMENT(TCCOUNT)=LOAN TRANSACTION:COMMENT
+         TCIDTYPE(TCCOUNT)=LOAN TRANSACTION:IDTYPE
+         TCID(TCCOUNT)=LOAN TRANSACTION:ID
+         TCSTMTDESCR(TCCOUNT)=LOAN TRANSACTION:STMTDESC:1
+        END
+      END
+     ELSE [transaction is not a comment - validate & process]
+      DO
+       IF LOAN TRANSACTION:ACTIONCODE<>"A" THEN
+        CALL CLEARTRANVARS
+       ELSE
+        DO
+         IF TCCOUNT=1 THEN [transaction with statement description]
+          DO
+           IF CHARACTERSEARCH(LOAN TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0 THEN
+            DO [valid target transaction - add to report]
+             BNOTEXT=SEGMENT(TCCOMMENT(1),4,LENGTH(TCCOMMENT(1)))
+             CALL BNONLTS
+             BNODELIMITER=BNODELIMSPACE
+             BNODATALINEINPUT=BNOTEXT
+             CALL PARSEDATALINE
+             TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+             TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+             TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+             TOTRANAMOUNT=LOAN TRANSACTION:TRANAMOUNT
+             TRANPOSTDATE=LOAN TRANSACTION:POSTDATE
+
+             IF TOACCOUNT<>THISACCOUNT THEN
+              DO
+               XATESTACCT=TOACCOUNT
+               XATESTSLIDTYPE=TOSLIDTYPE
+               XATESTSLID=TOSLID
+               CALL CHECKFORCROSSACCT
+              END
+
+             IF ISCROSSACCOUNT=FALSE THEN
+              CALL PRINTTRANTOREPORT
+
+             CALL CLEARTRANVARS
+            END
+          END [IF TCCOUNT=1 THEN...]
+         ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
+          DO
+           IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0 THEN
+            DO
+             BNOTEXT=SEGMENT(TCCOMMENT(2),4,LENGTH(TCCOMMENT(2)))
+             CALL BNONLTS
+             BNODELIMITER=BNODELIMSPACE
+             BNODATALINEINPUT=BNOTEXT
+             CALL PARSEDATALINE
+
+             TOACCOUNT=BNODATALINEFIELD(BNODATAFIELDCOUNT-2)
+             TOSLIDTYPE=BNODATALINEFIELD(BNODATAFIELDCOUNT-1)
+             TOSLID=BNODATALINEFIELD(BNODATAFIELDCOUNT)
+             TOTRANAMOUNT=LOAN TRANSACTION:TRANAMOUNT
+             TRANPOSTDATE=LOAN TRANSACTION:POSTDATE
+
+             IF TOACCOUNT<>THISACCOUNT THEN
+              DO
+               XATESTACCT=TOACCOUNT
+               XATESTSLIDTYPE=TOSLIDTYPE
+               XATESTSLID=TOSLID
+               CALL CHECKFORCROSSACCT
+              END
+
+             IF ISCROSSACCOUNT=FALSE THEN
+              CALL PRINTTRANTOREPORT
+
+             CALL CLEARTRANVARS
+            END
+          END [IF TCCOUNT=2]
+        END [IF LOAN TRANSACTION:ACTIONCODE<>"A"]
+      END [LOAN TRANSACTION:COMMENTCODE<>1]
+    END [FOR EACH LOAN TRANSACTION WITH...]
+   UNTIL LOAN TRANSACTION:POSTDATE<TARGETSTARTDATE
+  END [FOR EACH LOAN]
+END [PROCEDURE]
+
+PROCEDURE CHECKFORCROSSACCT
+[* Loop through a list of cross-account accessible shares or
+** loans to look for a match (acct and S/L ID) to the current
+** transaction being reviewed. If a match is found set flag.
+**
+** PASS:   XATESTACCT      Target account
+** PASS:   XATESTSLID      Target S/L ID
+** RETURN: ISCROSSACCOUNT  Was a match found (boolean T/F)
+*]
+ ISCROSSACCOUNT=FALSE
+
+ IF UPPERCASE(XATESTSLIDTYPE)="SHARE" AND
+    BNOSHARECOUNT>0 THEN
+  DO
+   FOR TMPLOOP=1 TO BNOSHARECOUNT
+    DO
+     IF XATESTACCT=BNOSHAREACCTNUM(TMPLOOP) AND
+        XATESTSLID=BNOSHAREID(TMPLOOP) THEN
+      DO
+       ISCROSSACCOUNT=TRUE
+       TMPLOOP=BNOSHARECOUNT
+      END
+    END
+  END
+ ELSE IF UPPERCASE(XATESTSLIDTYPE)="LOAN" AND
+         BNOLOANCOUNT>0 THEN
+  DO
+   FOR TMPLOOP=1 TO BNOLOANCOUNT
+    DO
+     IF XATESTACCT=BNOLOANACCTNUM(TMPLOOP) AND
+        XATESTSLID=BNOLOANID(TMPLOOP) THEN
+      DO
+       ISCROSSACCOUNT=TRUE
+       TMPLOOP=BNOLOANCOUNT
+      END
+    END
+  END
+ IF DEBUGMODE=TRUE AND
+    TESTACCOUNTS<>"" THEN
+  DO
+   IF TESTTYPE=TESTTYPETRAN THEN
+    PRINT "TESTING TRANSACTION REC FOR X-ACCT: "
+   ELSE IF TESTTYPE=TESTTYPEXFER THEN
+    PRINT "TESTING TRANSFER REC FOR X-ACCT: "
+   PRINT XATESTACCT+" "+UPPERCASE(XATESTSLIDTYPE)+" "+XATESTSLID+
+         FORMAT("     ISCROSSACCOUNT=9",ISCROSSACCOUNT)
+   NEWLINE
+  END
+END [PROCEDURE]
+
+PROCEDURE PRINTTRANTOREPORT
+[* Print the detail for an immediate transfer (from tran history)
+*]
+ COL=001 ACCOUNT:NUMBER
+ COL=013 TRANSOURCECHR(TRANSOURCE)
+ COL=020 TRANSOURCEID
+ COL=026 TOACCOUNT
+ COL=038 TOSLIDTYPE
+ COL=045 TOSLID
+ COL=061 RIGHT TOTRANAMOUNT
+ COL=064 "IMMEDIATE"
+ COL=095 RIGHT TRANPOSTDATE
+ NEWLINE
+END
+
+PROCEDURE CLEARTRANVARS
+[* Clear the variables storing transactional detail
+*]
+ TCCOUNT=0
+ TOACCOUNT=""
+ TOSLIDTYPE=""
+ TOSLID=""
+ TOTRANAMOUNT=$0.00
+END [PROCEDURE]
+
+PROCEDURE GETSHARETRANSFERRECS
+[* Read through FM History for Share transfer records created within the
+** desired date range and by the desired user number. At each change in
+** the sequence number, evaluate the current data saved. If a targeted
+** transaction, then record, clear the record arrays and then read through
+** the next record until the FM History post date < target start date.
+*]
+ CALL CLEARFIELDS
+ LASTSEQ=0
+ TESTTYPE=TESTTYPEXFER
+
+ FOR EACH FMHISTORY WITH (FMHISTORY:POSTDATE>=TARGETSTARTDATE AND
+                          FMHISTORY:POSTDATE<=TARGETENDDATE AND
+                          FMHISTORY:FMTYPE=0 AND [CREATION]
+                          FMHISTORY:RECORDTYPE=8 AND [SHARE TRANSFER RECORD]
+                          FMHISTORY:USERNUMBER=TARGETSYMXUSER)
+  DO
+   IF FMHISTORY:SEQUENCENUMBER<>LASTSEQ THEN
+    DO
+     IF LASTSEQ>0 AND
+        FMHXFERTYPE=3 THEN
+      DO
+       XATESTACCT=FMHTOACCOUNT
+       XATESTSLIDTYPE=IDTYPESCHR(FMHTOIDTYPE)
+       XATESTSLID=FMHTOID
+       CALL CHECKFORCROSSACCT
+       IF ISCROSSACCOUNT=FALSE THEN
+        CALL PROCESSRECORD
+      END
+
+     CALL CLEARFIELDS
+
+     LASTSEQ=FMHISTORY:SEQUENCENUMBER
+    END
+   IF CHARACTERSEARCH(UPPERCASE(FMHISTORY:FIELDNAME),"NEW LOCATOR")>0 THEN
+    DO
+     FMHNEWLOC=FMHISTORY:NEWNUMBER
+     FMHFROMACCOUNT=FMHISTORY:ACCOUNTNUMBER
+     FMHFROMIDTYPE=FMHISTORY:IDTYPE
+     FMHFROMID=FMHISTORY:ID
+     FMHPOSTDATE=FMHISTORY:POSTDATE
+    END
+   ELSE IF FMHISTORY:FIELDNUMBER=14 THEN  [Locator]
+    FMHNEWLOC=FMHISTORY:NEWNUMBER
+   ELSE IF FMHISTORY:FIELDNUMBER=13 THEN  [Day 2 - can be multiple entries]
+    DO
+     IF DAY2FOUND=FALSE THEN
+      DO
+       IF FMHISTORY:OLDNUMBER<>0 THEN
+        DO
+         DAY2FOUND=TRUE
+         FMHDAY2=FMHISTORY:NEWNUMBER
+        END
+       ELSE
+        FMHDAY2=FMHISTORY:NEWNUMBER
+      END
+    END
+   ELSE IF FMHISTORY:FIELDNUMBER=12 THEN  [Day 1 - can be multiple entries]
+    DO
+     IF DAY1FOUND=FALSE THEN
+      DO
+       IF FMHISTORY:OLDNUMBER<>0 THEN
+        DO
+         DAY1FOUND=TRUE
+         FMHDAY1=FMHISTORY:NEWNUMBER
+        END
+       ELSE
+        FMHDAY1=FMHISTORY:NEWNUMBER
+      END
+    END
+   ELSE IF FMHISTORY:FIELDNUMBER=11 THEN  [Xfer Freq]
+    FMHXFERFREQ=FMHISTORY:NEWNUMBER
+   ELSE IF FMHISTORY:FIELDNUMBER=10 THEN  [Next Date]
+    FMHNEXTXFERDATE=FMHISTORY:NEWDATE
+   ELSE IF FMHISTORY:FIELDNUMBER=08 THEN  [Expiration Date]
+    FMHEXPIREDATE=FMHISTORY:NEWDATE
+   ELSE IF FMHISTORY:FIELDNUMBER=07 THEN  [Effective Date]
+    FMHEFFECTIVEDATE=FMHISTORY:NEWDATE
+   ELSE IF FMHISTORY:FIELDNUMBER=05 THEN  [Amount]
+    FMHXFERAMOUNT=FMHISTORY:NEWMONEY
+   ELSE IF FMHISTORY:FIELDNUMBER=04 THEN  [ID]
+    FMHTOID=FMHISTORY:NEWCHARACTER
+   ELSE IF FMHISTORY:FIELDNUMBER=03 THEN  [ID Type]
+    FMHTOIDTYPE=FMHISTORY:NEWNUMBER
+   ELSE IF FMHISTORY:FIELDNUMBER=02 THEN  [Account]
+    FMHTOACCOUNT=FMHISTORY:NEWCHARACTER
+   ELSE IF FMHISTORY:FIELDNUMBER=01 AND   [Transfer Type - can be multiple entries]
+           FMHISTORY:OLDNUMBER=0 THEN
+    FMHXFERTYPE=FMHISTORY:NEWNUMBER
+  END
+ UNTIL FMHISTORY:POSTDATE<TARGETSTARTDATE [FOR EACH FMHISTORY]
+
+ IF FMHXFERTYPE=3 THEN [Catch last transaction - if type 3]
+  DO
+   XATESTACCT=FMHTOACCOUNT
+   XATESTSLIDTYPE=IDTYPESCHR(FMHTOIDTYPE)
+   XATESTSLID=FMHTOID
+   CALL CHECKFORCROSSACCT
+   IF ISCROSSACCOUNT=FALSE THEN
+    CALL PROCESSRECORD
+  END
+ CALL CLEARFIELDS
+
+END [PROCEDURE]
+
+PROCEDURE PROCESSRECORD
+[* Process the current FM History sequence
+*]
+ COL=001 FMHFROMACCOUNT
+ COL=013 IDTYPESCHR(FMHFROMIDTYPE)
+ COL=020 FMHFROMID
+ COL=026 FMHTOACCOUNT
+ COL=038 IDTYPESCHR(FMHTOIDTYPE)
+ COL=045 FMHTOID
+ COL=061 RIGHT FMHXFERAMOUNT
+ COL=064 FREQUENCIESCHR(FMHXFERFREQ)
+ IF FMHDAY1>0 THEN
+  COL=082 FORMAT("99",FMHDAY1)
+ IF FMHDAY2>0 THEN
+  COL=085 FORMAT("99",FMHDAY2)
+ COL=095 RIGHT FMHPOSTDATE
+ COL=104 RIGHT FMHEFFECTIVEDATE
+ COL=113 RIGHT FMHNEXTXFERDATE
+ BNOTEXT=FORMAT("###,###,###",FMHNEWLOC)
+ CALL BNONLS
+ COL=132 RIGHT BNOTEXT
+ NEWLINE
+
+END [PROCEDURE]
+
+
+PROCEDURE INITIALIZATIONS
+[* Variable and array initializations
+*]
+ CFGFILENAME="BANNO.M2MTRANSFERS.V3.CFG"
+
+ FREQUENCIESCHR(0)="Demand"
+ FREQUENCIESCHR(1)="Annual"
+ FREQUENCIESCHR(2)="Semiannual"
+ FREQUENCIESCHR(3)="Quarterly"
+ FREQUENCIESCHR(4)="Monthly"
+ FREQUENCIESCHR(5)="Semimonthly"
+ FREQUENCIESCHR(6)="Biweekly Skp Fst"
+ FREQUENCIESCHR(7)="Biweekly Skip Lst"
+ FREQUENCIESCHR(8)="Biweekly"
+ FREQUENCIESCHR(9)="Weekly"
+ FREQUENCIESCHR(10)="Immediate"
+ FREQUENCIESCHR(11)="Weekly Skip Fst"
+ FREQUENCIESCHR(12)="Weekly Skip Lst"
+ FREQUENCIESCHR(13)="Bimonthly"
+
+ IDTYPESCHR(0)="Share"
+ IDTYPESCHR(1)="Loan"
+ IDTYPESCHR(2)="EFT"
+ IDTYPESCHR(3)="Ext Loan"
+
+ TRANSOURCECHR(TRANSOURCESHARE)="Share"
+ TRANSOURCECHR(TRANSOURCELOAN)="Loan"
+ BNOTRUEFALSECHR(TRUE)="true"
+ BNOTRUEFALSECHR(FALSE)="false"
+
+ FIRSTPAGE=TRUE
+END [PROCEDURE]
+
+PROCEDURE CLEARFIELDS
+[* Clear the record fields for the next transaction or
+** transfer record
+*]
+ FMHPOSTDATE=DATENULL
+ FMHDAY1=0
+ FMHDAY2=0
+ FMHXFERFREQ=0
+ FMHNEXTXFERDATE=DATENULL
+ FMHEXPIREDATE=DATENULL
+ FMHEFFECTIVEDATE=DATENULL
+ FMHXFERAMOUNT=$0.00
+ FMHTOID=""
+ FMHTOIDTYPE=0
+ FMHTOACCOUNT=""
+ FMHXFERTYPE=0
+ FMHNEWLOC=0
+ FMHFROMACCOUNT=""
+ FMHFROMIDTYPE=0
+ FMHFROMID=""
+ XFERTYPEFOUND=FALSE
+ XFERDAY1FOUND=FALSE
+ XFERDAY2FOUND=FALSE
+ NEWLOCFOUND=FALSE
+ DAY1FOUND=FALSE
+ DAY2FOUND=FALSE
+END [PROCEDURE]
+
+PROCEDURE MAINREPORTHEADER
+[* Print main report header. The first page includes the settings (prompts)
+** the report is based off of.
+*]
+ HEADERS
+  IF FIRSTPAGE=TRUE THEN
+   DO
+    COL=001 "Reporting online banking transactions with a transaction comment of '"+
+             TARGETCOMMENT+"' and Share transfers"
+    NEWLINE
+    COL=001 FORMAT("occurring on or after 99/99/99 ",TARGETSTARTDATE)+
+            FORMAT("and on or before 99/99/99 ",TARGETENDDATE)+
+            FORMAT("by user 9999",TARGETSYMXUSER)+" ("+
+            GETDATACHAR(GETUSERNAME,TARGETSYMXUSER)+")"
+    NEWLINE
+    COL=001 REPEATCHR("=",132)
+    NEWLINE
+    FIRSTPAGE=FALSE
+   END
+  COL=001 "TRANSFER FROM----------|"
+  COL=026 "TRANSFER TO------------|"
+  COL=051 "TRANSFER DETAIL"+REPEATCHR("-",66)+"|"
+  NEWLINE
+  COL=001 "ACCOUNT"
+  COL=013 "S/L"
+  COL=020 "ID"
+  COL=026 "ACCOUNT"
+  COL=038 "S/L"
+  COL=045 "ID"
+  COL=061 RIGHT "TRAN AMOUNT"
+  COL=064 "FRQ"
+  COL=082 "D1"
+  COL=085 "D2"
+  COL=088 "POST"
+  COL=097 "EFF"
+  COL=106 "NEXT"
+[  COL=115 "EXP"]
+  COL=132 RIGHT "Xfer Loc"
+  NEWLINE
+  COL=001 REPEATCHR("-",132)
+  NEWLINE
+ END
+END [PROCEDURE]
+
+PROCEDURE BNONLTS
+[* Remove leading and trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ CALL BNONTS
+ CALL BNONLS
+END [PROCEDURE]
+
+PROCEDURE BNONLS
+[* Remove leading spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF LENGTH(BNOTEXT)=0 THEN
+  BNOTEXT=""
+ ELSE
+  DO
+   WHILE (LENGTH(BNOTEXT)>0 AND
+          SEGMENT(BNOTEXT,1,1)=" ")
+    DO
+     BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNONTS
+[* Remove trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  BNOTEXT=SEGMENT(BNOTEXT,1,LENGTH(BNOTEXT))
+END [PROCEDURE]
+
+PROCEDURE PARSEDATALINE
+[* Parse through a line of delimited data and store individual fields into an array
+**
+**  PASS    BNODELIMITER       Character delimiter to be used. valid values are:
+**                             BNODELIMQUOTE, BNODELIMCR, BNODELIMLF, BNODELIMCOMMA,
+**                             BNODELIMTAB, BNODELIMPIPE, BNODELIMCARET or the ascii
+**                             numeric value of the delimiter.
+**  PASS    BNODATALINEINPUT   Line of data to be parsed.
+**  RETURN  BNODATALINEFIELD   Array of data elements from the parsed BNODATALINEINPUT
+**  RETURN  BNODATAFIELDCOUNT  Number of elements in the BNODATALINEFIELD array
+*]
+
+ FOR BNOTMPLOOP=0 TO BNODATALINEFIELDMAX
+  DO
+   BNODATALINEFIELD(BNOTMPLOOP)=""
+  END
+ BNODATAFIELDCOUNT=0
+ IF BNODELIMITER=BNODELIMNONE THEN
+  BNODELIMITER=BNODELIMCOMMA
+ WHILE BNODATALINEINPUT<>""
+  DO
+   BNOPOS=CHARACTERSEARCH(BNODATALINEINPUT,CTRLCHR(BNODELIMITER))
+   BNODATAFIELDCOUNT=BNODATAFIELDCOUNT+1
+   IF BNOPOS=0 THEN
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=BNODATALINEINPUT
+     BNODATALINEINPUT=""
+    END
+   ELSE
+    DO
+     BNODATALINEFIELD(BNODATAFIELDCOUNT)=SEGMENT(BNODATALINEINPUT,1,BNOPOS-1)
+     BNODATALINEINPUT=SEGMENT(BNODATALINEINPUT,BNOPOS+1,LENGTH(BNODATALINEINPUT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOBUILDSHARELOANLISTINIT
+[* Initialize Share/Loan list build values and program
+** defaults
+*]
+ BNOSLTYPE=BNOSLTYPESHARELOAN
+ BNOCROSSACCTACCESS=BNOFALSE
+ BNOSLCODE(BNOSHARECODESHARE)=BNOTRUE
+ BNOSLCODE(BNOSHARECODEDRAFT)=BNOTRUE
+ BNOSLCODE(BNOSHARECODECERTIFICATE)=BNOTRUE
+ BNOSLCODE(BNOSHARECODECLUB)=BNOTRUE
+ BNOEXCLUDESHARETYPELIST="none"
+ BNOEXCLUDELOANTYPELIST="none"
+ BNOINCLUDEEXTLOANS=BNOFALSE
+ BNOINCLUDECLOSED=BNOFALSE
+ BNOINCLUDECHARGEDOFF=BNOFALSE
+ BNOACCESSTYPE=BNOACCESSTYPEIQ
+ BNOAVAILCALCMETHOD=0
+ BNOSERVICELISTSETFLAG=BNOFALSE
+ BNOEXCLUDESHARELISTSETFLAG=BNOFALSE
+ BNOEXCLUDELOANLISTSETFLAG=BNOFALSE
+
+ BNOSHARECODECHR(BNOSHARECODESHARE)="share"
+ BNOSHARECODECHR(BNOSHARECODEDRAFT)="draft"
+ BNOSHARECODECHR(BNOSHARECODECERTIFICATE)="certificate"
+ BNOSHARECODECHR(BNOSHARECODECLUB)="club"
+
+ BNOLOANCODECHR(BNOLOANCODECLOSEDEND)="closed end"
+ BNOLOANCODECHR(BNOLOANCODEOPENEND)="open end"
+ BNOLOANCODECHR(BNOLOANCODELOC)="line of credit"
+ BNOLOANCODECHR(BNOLOANCODECC)="credit card"
+ BNOLOANCODECHR(BNOLOANCODELEASE)="lease"
+ BNOLOANCODECHR(BNOLOANCODEAVGDAILYBALLOC)="avg daily bal loc"
+ BNOLOANCODECHR(BNOLOANCODELOCCOMBO)="loc combination"
+
+ BNOACCESSTYPECHR(BNOACCESSTYPEIQ)="Inquiry"
+ BNOACCESSTYPECHR(BNOACCESSTYPEXFEROUT)="Xfer Out"
+ BNOACCESSTYPECHR(BNOACCESSTYPEXFERIN)="Xfer In"
+ BNOACCESSTYPECHR(BNOACCESSTYPEWD)="Withdrawal"
+
+ BNOSLTYPECHR(BNOSLTYPESHARE)="Shares Only"
+ BNOSLTYPECHR(BNOSLTYPELOAN)="Loans Only"
+ BNOSLTYPECHR(BNOSLTYPESHARELOAN)="Shares and Loans"
+
+ CALL BNOSETUSERHBENABLE                  [PREFERENCE:HBENABLE]
+
+ BNOINCLUDEEXTLOANS=BNOFALSE
+ BNOFINDACCTNUM=""
+
+ BNOSHARECOUNT=0
+ BNOTOTALSHAREBALANCE=$0.00
+
+ BNOLOANCOUNT=0
+ BNOTOTALLOANBALANCE=$0.00
+
+ BNOEXTLOANCOUNT=0
+ BNOTOTALEXTLOANBALANCE=$0.00
+ BNOINCLUDEEXTLOANS=BNOFALSE
+END
+
+PROCEDURE BNOBUILDSHARELOANLIST
+[* Based upon the program settings, the program branches off to
+** gather Share, Loan, and/or External Loan data.
+*]
+ IF BNOSLTYPE=BNOSLTYPESHARE OR BNOSLTYPE=BNOSLTYPESHARELOAN THEN
+  CALL BNOBUILDSHARELIST
+
+ IF BNOSLTYPE=BNOSLTYPELOAN OR BNOSLTYPE=BNOSLTYPESHARELOAN THEN
+  DO
+   CALL BNOBUILDLOANLIST
+   IF BNOINCLUDEEXTLOANS=BNOTRUE THEN
+    CALL BNOBUILDEXTLOANLIST
+  END
+
+ BNOSHARELOANCOUNT=BNOSHARECOUNT+BNOLOANCOUNT+BNOEXTLOANCOUNT
+END
+
+PROCEDURE BNOBUILDSHARELIST
+[* Build a list of valid shares. This procedure performs preliminary checking
+** to only allow Shares which are not charged-off, which are not invalid
+** share types (based upon the settings) and are a valid share code.
+*]
+ CALL BNOSETSERVICELISTS
+ CALL BNOSETEXCLUDESHARELIST
+ BNOSHARECOUNT=0
+ BNOTOTALSHAREBALANCE=$0.00
+
+ FOR EACH SHARE WITH ((BNOINCLUDECLOSED=BNOTRUE OR
+                      (BNOINCLUDECLOSED=BNOFALSE AND
+                       SHARE:CLOSEDATE=BNODATENULL)) AND
+                      (BNOINCLUDECHARGEDOFF=BNOTRUE OR
+                      (BNOINCLUDECHARGEDOFF=BNOFALSE AND
+                       SHARE:CHARGEOFFDATE=BNODATENULL)) AND
+                       BNOSLCODE(SHARE:SHARECODE)=BNOTRUE AND
+                       BNOEXCLUDESHARETYPEALLFLAG=BNOFALSE AND
+                       BNOEXCLUDESHARETYPES(SHARE:TYPE)=BNOFALSE)
+  DO
+   BNOCROSSACCTFLAG=BNOFALSE
+   BNOACCESSIQFLAG=BNOTRUE
+   BNOACCESSXFEROUTFLAG=BNOTRUE
+   BNOACCESSXFERINFLAG=BNOTRUE
+   BNOACCESSWDFLAG=BNOTRUE
+   CALL BNOADDTOSHARELIST
+  END
+ UNTIL BNOSHARECOUNT>=BNOSHAREARRAYMAX
+
+ IF BNOCROSSACCTACCESS=BNOTRUE THEN
+  DO
+   BNOCROSSACCTSLTYPE=BNOSLTYPESHARE
+   CALL BNOADDCROSSACCOUNTS
+  END
+END
+
+PROCEDURE BNOADDTOSHARELIST
+[* Check that target Share is valid and if so, add
+** it to the array of Shares
+*]
+ CALL BNOCHECKUSERHBENABLE
+
+[Check service codes]
+ BNOSERVICEXFERINFLAG=BNOFALSE
+ BNOSERVICEXFEROUTFLAG=BNOFALSE
+ BNOSERVICEWDFLAG=BNOFALSE
+
+ IF BNOSERVICEXFERINALLFLAG=BNOTRUE THEN
+  BNOSERVICEXFERINFLAG=BNOTRUE
+ IF BNOSERVICEXFEROUTALLFLAG=BNOTRUE THEN
+  BNOSERVICEXFEROUTFLAG=BNOTRUE
+ IF BNOSERVICEWDALLFLAG=BNOTRUE THEN
+  BNOSERVICEWDFLAG=BNOTRUE
+
+ BNOSVCCODELOOP=1
+ WHILE (BNOSERVICEXFERINFLAG=BNOFALSE OR
+        BNOSERVICEXFEROUTFLAG=BNOFALSE OR
+        BNOSERVICEWDFLAG=BNOFALSE) AND
+        BNOSVCCODELOOP<=BNOSVCCODEMAX
+  DO
+   IF BNOSERVICEXFERINLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(SHARE,BNOSVCCODELOOP) THEN
+      BNOSERVICEXFERINFLAG=BNOTRUE
+    END
+   IF BNOSERVICEXFEROUTLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(SHARE,BNOSVCCODELOOP) THEN
+      BNOSERVICEXFEROUTFLAG=BNOTRUE
+    END
+   IF BNOSERVICEWDLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(SHARE,BNOSVCCODELOOP) THEN
+      BNOSERVICEWDFLAG=BNOTRUE
+    END
+   BNOSVCCODELOOP=BNOSVCCODELOOP+1
+  END
+
+ IF BNOSERVICEXFERINFLAG=BNOFALSE THEN
+  BNOACCESSXFERINFLAG=BNOFALSE
+ IF BNOSERVICEXFEROUTFLAG=BNOFALSE THEN
+  BNOACCESSXFEROUTFLAG=BNOFALSE
+ IF BNOSERVICEWDFLAG=BNOFALSE THEN
+  BNOACCESSWDFLAG=BNOFALSE
+
+ BNOACCESSFLAG=BNOFALSE
+ IF BNOACCESSTYPE=BNOACCESSTYPEIQ AND
+    BNOACCESSIQFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEXFERIN AND
+         BNOACCESSXFERINFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEXFEROUT AND
+         BNOACCESSXFEROUTFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEWD AND
+         BNOACCESSWDFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+
+[*  Now remove access based on restrictions
+*]
+ IF SHARE:AVAILABLEBALANCE<=$0.00 AND
+   (BNOACCESSTYPE=BNOACCESSTYPEXFEROUT OR
+    BNOACCESSTYPE=BNOACCESSTYPEWD) THEN
+  BNOACCESSFLAG=BNOFALSE
+
+[*  This block of code just checks for duplicates since ACCESS records
+**  can point to duplicate shares/loans.
+*]
+ IF BNOCROSSACCTFLAG=BNOFALSE THEN
+  BNOSLIDFOUND=BNOFALSE
+ ELSE
+  DO
+   BNOFINDID=SHARE:ID
+   BNOFINDACCTNUM=ACCOUNT:NUMBER
+   CALL BNOFINDSHAREACCT
+  END
+
+ IF BNOACCESSFLAG=BNOTRUE AND BNOSLIDFOUND=BNOFALSE THEN
+  DO
+   BNOSHARECOUNT=BNOSHARECOUNT+1
+
+   BNOSHAREXACCTPRIMARYNAME(BNOSHARECOUNT)=""
+   BNOSHAREAVAILBAL(BNOSHARECOUNT)=$0.00
+
+   IF BNOCROSSACCTFLAG=BNOTRUE THEN
+    BNOSHAREXACCTPRIMARYNAME(BNOSHARECOUNT)=NAME:LONGNAME
+   BNOSHAREACCTNUM(BNOSHARECOUNT)=ACCOUNT:NUMBER
+   BNOSHAREID(BNOSHARECOUNT)=SHARE:ID
+   BNOSHARETYPE(BNOSHARECOUNT)=SHARE:TYPE
+   BNOSHAREDESC(BNOSHARECOUNT)=SHARE:DESCRIPTION
+   BNOSHAREIQFLAG(BNOSHARECOUNT)=BNOACCESSIQFLAG
+   BNOSHAREXFERINFLAG(BNOSHARECOUNT)=BNOACCESSXFERINFLAG
+   BNOSHAREXFEROUTFLAG(BNOSHARECOUNT)=BNOACCESSXFEROUTFLAG
+   BNOSHAREWDFLAG(BNOSHARECOUNT)=BNOACCESSWDFLAG
+   BNOSHAREAVAILBAL(BNOSHARECOUNT)=SHARE:AVAILABLEBALANCE
+   IF BNOAVAILCALCMETHOD=1 THEN
+    BNOSHAREAVAILBAL(BNOSHARECOUNT)=
+     BNOSHAREAVAILBAL(BNOSHARECOUNT)-SHARE:LOANPAYMENTHOLD
+   BNOSHARESORTORDER(BNOSHARECOUNT)=0
+   BNOSHAREBALANCE(BNOSHARECOUNT)=SHARE:BALANCE
+   BNOSHARECODE(BNOSHARECOUNT)=SHARE:SHARECODE
+   BNOSHAREMATURITYDATE(BNOSHARECOUNT)=SHARE:MATURITYDATE
+   BNOTOTALSHAREBALANCE=BNOTOTALSHAREBALANCE+SHARE:BALANCE
+   BNOSHARENICKNAME(BNOSHARECOUNT)=SHARE:NICKNAME
+   BNOSHAREOPENDATE(BNOSHARECOUNT)=SHARE:OPENDATE
+   BNOSHARECLOSEDATE(BNOSHARECOUNT)=SHARE:CLOSEDATE
+   BNOSHARECHARGEOFFDATE(BNOSHARECOUNT)=SHARE:CHARGEOFFDATE
+  END
+END
+
+PROCEDURE BNOADDCROSSACCOUNTS
+[* Review the current Preference Access records on the account
+** to add cross account Shares and/or Loans as appropriate
+*]
+ FOR EACH PREFERENCE
+  DO
+   FOR EACH PREFERENCE ACCESS WITH
+    ((PREFERENCE ACCESS:ACCESSTYPE=BNOACCESSRECTYPEXFEROUT OR
+      PREFERENCE ACCESS:ACCESSTYPE=BNOACCESSRECTYPEALTACCT) AND
+     (PREFERENCE ACCESS:IDTYPE=2 OR
+    ((PREFERENCE ACCESS:IDTYPE=0 AND
+      BNOCROSSACCTSLTYPE=BNOSLTYPESHARE) OR
+     (PREFERENCE ACCESS:IDTYPE=1 AND
+      BNOCROSSACCTSLTYPE=BNOSLTYPELOAN))))
+    DO
+     BNOACCESSRECIQFLAG=BNOFALSE
+     BNOACCESSRECXFEROUTFLAG=BNOFALSE
+     BNOACCESSRECXFERINFLAG=BNOFALSE
+     BNOACCESSRECWDFLAG=BNOFALSE
+
+     IF PREFERENCE ACCESS:ACCESSTYPE=BNOACCESSRECTYPEXFEROUT THEN
+      BNOACCESSRECXFERINFLAG=BNOTRUE
+     ELSE IF PREFERENCE ACCESS:ACCESSTYPE=BNOACCESSRECTYPEALTACCT THEN
+      DO
+       IF PREFERENCE ACCESS:ENABLEINQUIRY=BNOTRUE THEN
+        BNOACCESSRECIQFLAG=BNOTRUE
+       IF PREFERENCE ACCESS:ENABLEDEPOSIT=BNOTRUE THEN
+        BNOACCESSRECXFERINFLAG=BNOTRUE
+       IF PREFERENCE ACCESS:ENABLEWITHDRAWAL=BNOTRUE THEN
+        DO
+         BNOACCESSRECXFEROUTFLAG=BNOTRUE
+         BNOACCESSRECWDFLAG=BNOTRUE
+        END
+      END
+
+     BNOPREFACCESSIDTYPE=PREFERENCE ACCESS:IDTYPE
+     BNOPREFACCESSID=PREFERENCE ACCESS:ID
+     FOR ACCOUNT PREFERENCE ACCESS:ACCOUNTNUMBER
+      DO
+       IF BNOCROSSACCTSLTYPE=BNOSLTYPESHARE AND
+         (BNOPREFACCESSIDTYPE=2 OR
+          BNOPREFACCESSIDTYPE=0) THEN
+        DO
+         FOR EACH SHARE WITH ((BNOINCLUDECLOSED=BNOTRUE OR
+                              (BNOINCLUDECLOSED=BNOFALSE AND
+                               SHARE:CLOSEDATE=BNODATENULL)) AND
+                              (BNOINCLUDECHARGEDOFF=BNOTRUE OR
+                              (BNOINCLUDECHARGEDOFF=BNOFALSE AND
+                               SHARE:CHARGEOFFDATE=BNODATENULL)) AND
+                               BNOSLCODE(SHARE:SHARECODE)=BNOTRUE AND
+                               BNOEXCLUDESHARETYPEALLFLAG=BNOFALSE AND
+                               BNOEXCLUDESHARETYPES(SHARE:TYPE)=BNOFALSE)
+          DO
+           IF BNOPREFACCESSIDTYPE=2 OR
+             (BNOPREFACCESSIDTYPE=0 AND BNOPREFACCESSID=SHARE:ID) THEN
+            DO
+             BNOCROSSACCTFLAG=BNOTRUE
+             BNOACCESSIQFLAG=BNOACCESSRECIQFLAG
+             BNOACCESSXFEROUTFLAG=BNOACCESSRECXFEROUTFLAG
+             BNOACCESSXFERINFLAG=BNOACCESSRECXFERINFLAG
+             BNOACCESSWDFLAG=BNOACCESSRECWDFLAG
+             IF BNOSHARECOUNT<BNOSHAREARRAYMAX THEN
+              CALL BNOADDTOSHARELIST
+            END
+          END
+         UNTIL BNOSHARECOUNT>=BNOSHAREARRAYMAX
+        END
+       IF BNOCROSSACCTSLTYPE=BNOSLTYPELOAN AND
+         (BNOPREFACCESSIDTYPE=2 OR
+          BNOPREFACCESSIDTYPE=1) THEN
+        DO
+         FOR EACH LOAN WITH ((BNOINCLUDECLOSED=BNOTRUE OR
+                             (BNOINCLUDECLOSED=BNOFALSE AND
+                              LOAN:CLOSEDATE=BNODATENULL)) AND
+                             (BNOINCLUDECHARGEDOFF=BNOTRUE OR
+                             (BNOINCLUDECHARGEDOFF=BNOFALSE AND
+                              LOAN:CHARGEOFFDATE=BNODATENULL)) AND
+                              BNOEXCLUDELOANTYPEALLFLAG=BNOFALSE AND
+                              BNOEXCLUDELOANTYPES(LOAN:TYPE)=BNOFALSE)
+
+          DO
+           IF BNOPREFACCESSIDTYPE=2 OR
+             (BNOPREFACCESSIDTYPE=1 AND BNOPREFACCESSID=LOAN:ID) THEN
+            DO
+             BNOCROSSACCTFLAG=BNOTRUE
+             BNOACCESSIQFLAG=BNOACCESSRECIQFLAG
+             BNOACCESSXFEROUTFLAG=BNOACCESSRECXFEROUTFLAG
+             BNOACCESSXFERINFLAG=BNOACCESSRECXFERINFLAG
+             BNOACCESSWDFLAG=BNOACCESSRECWDFLAG
+             IF BNOLOANCOUNT<BNOLOANARRAYMAX THEN
+              CALL BNOADDTOLOANLIST
+            END
+          END
+         UNTIL BNOLOANCOUNT>=BNOLOANARRAYMAX
+        END
+      END
+    END
+  END
+END
+
+PROCEDURE BNOFINDSHAREACCT
+[* Determine if the account and Share ID are already in the array
+**
+** PASS    BNOFINDACCTNUM    Account trying to match
+** PASS    BNOFINDID         Share ID trying to match
+** RETURN  BNOSLIDFOUND      BOOLEAN - Found?
+** RETURN  BNOFINDINDEX      Index of array element which matched
+*]
+ BNOFINDINDEX=0
+ BNOSLIDFOUND=BNOFALSE
+ BNOSLLOOP=1
+ WHILE (BNOSLIDFOUND=BNOFALSE AND BNOSLLOOP<=BNOSHARECOUNT)
+  DO
+   IF BNOFINDID=BNOSHAREID(BNOSLLOOP) AND
+      BNOFINDACCTNUM=BNOSHAREACCTNUM(BNOSLLOOP) THEN
+    DO
+     BNOSLIDFOUND=BNOTRUE
+     BNOFINDINDEX=BNOSLLOOP
+    END
+   BNOSLLOOP=BNOSLLOOP+1
+  END
+END
+
+PROCEDURE BNOBUILDLOANLIST
+[* Build a list of eligible loans
+*]
+
+ CALL BNOSETSERVICELISTS
+ CALL BNOSETEXCLUDELOANLIST
+ BNOLOANCOUNT=0
+ BNOTOTALLOANBALANCE=$0.00
+
+ FOR EACH LOAN WITH ((BNOINCLUDECLOSED=BNOTRUE OR
+                     (BNOINCLUDECLOSED=BNOFALSE AND
+                      LOAN:CLOSEDATE=BNODATENULL)) AND
+                     (BNOINCLUDECHARGEDOFF=BNOTRUE OR
+                     (BNOINCLUDECHARGEDOFF=BNOFALSE AND
+                      LOAN:CHARGEOFFDATE=BNODATENULL)) AND
+                      BNOEXCLUDELOANTYPEALLFLAG=BNOFALSE AND
+                      BNOEXCLUDELOANTYPES(LOAN:TYPE)=BNOFALSE)
+  DO
+   BNOCROSSACCTFLAG=BNOFALSE
+   BNOACCESSIQFLAG=BNOTRUE
+   BNOACCESSXFEROUTFLAG=BNOTRUE
+   BNOACCESSXFERINFLAG=BNOTRUE
+   BNOACCESSWDFLAG=BNOTRUE
+   CALL BNOADDTOLOANLIST
+  END
+ UNTIL BNOLOANCOUNT>=BNOLOANARRAYMAX
+
+ IF BNOCROSSACCTACCESS=BNOTRUE THEN
+  DO
+   BNOCROSSACCTSLTYPE=BNOSLTYPELOAN
+   CALL BNOADDCROSSACCOUNTS
+  END
+END
+
+PROCEDURE BNOADDTOLOANLIST
+[* Check the current loan targeted for eligibility and
+** if eligible, then add to the array.
+*]
+ CALL BNOCHECKUSERHBENABLE
+
+[Check service codes]
+ BNOSERVICEXFERINFLAG=BNOFALSE
+ BNOSERVICEXFEROUTFLAG=BNOFALSE
+ BNOSERVICEWDFLAG=BNOFALSE
+ IF BNOSERVICEXFERINALLFLAG=BNOTRUE THEN
+  BNOSERVICEXFERINFLAG=BNOTRUE
+ IF BNOSERVICEXFEROUTALLFLAG=BNOTRUE THEN
+  BNOSERVICEXFEROUTFLAG=BNOTRUE
+ IF BNOSERVICEWDALLFLAG=BNOTRUE THEN
+  BNOSERVICEWDFLAG=BNOTRUE
+
+ BNOSVCCODELOOP=1
+ WHILE (BNOSERVICEXFERINFLAG=BNOFALSE OR
+        BNOSERVICEXFEROUTFLAG=BNOFALSE OR
+        BNOSERVICEWDFLAG=BNOFALSE) AND
+        BNOSVCCODELOOP<=BNOSVCCODEMAX
+  DO
+   IF BNOSERVICEXFERINLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(LOAN,BNOSVCCODELOOP) THEN
+      BNOSERVICEXFERINFLAG=BNOTRUE
+    END
+   IF BNOSERVICEXFEROUTLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(LOAN,BNOSVCCODELOOP) THEN
+      BNOSERVICEXFEROUTFLAG=BNOTRUE
+    END
+   IF BNOSERVICEWDLIST(BNOSVCCODELOOP)=BNOTRUE THEN
+    DO
+     IF ANYSERVICE(LOAN,BNOSVCCODELOOP) THEN
+      BNOSERVICEWDFLAG=BNOTRUE
+    END
+   BNOSVCCODELOOP=BNOSVCCODELOOP+1
+  END
+
+ IF BNOSERVICEXFERINFLAG=BNOFALSE THEN
+  BNOACCESSXFERINFLAG=BNOFALSE
+ IF BNOSERVICEXFEROUTFLAG=BNOFALSE THEN
+  BNOACCESSXFEROUTFLAG=BNOFALSE
+ IF BNOSERVICEWDFLAG=BNOFALSE THEN
+  BNOACCESSWDFLAG=BNOFALSE
+
+ BNOACCESSFLAG=BNOFALSE
+ IF BNOACCESSTYPE=BNOACCESSTYPEIQ AND
+    BNOACCESSIQFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEXFERIN AND
+         BNOACCESSXFERINFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEXFEROUT AND
+         BNOACCESSXFEROUTFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+ ELSE IF BNOACCESSTYPE=BNOACCESSTYPEWD AND
+         BNOACCESSWDFLAG=BNOTRUE THEN
+  BNOACCESSFLAG=BNOTRUE
+
+[*  Now remove access based on restrictions
+*]
+ IF LOAN:AVAILABLECREDIT<=$0.00 AND
+   (BNOACCESSTYPE=BNOACCESSTYPEXFEROUT OR
+    BNOACCESSTYPE=BNOACCESSTYPEWD) THEN
+  BNOACCESSFLAG=BNOFALSE
+
+[*  This block of code just checks for duplicates since ACCESS records
+**  can point to duplicate shares/loans.
+*]
+ IF BNOCROSSACCTFLAG=BNOFALSE THEN
+  BNOSLIDFOUND=BNOFALSE
+ ELSE
+  DO
+   BNOFINDID=LOAN:ID
+   BNOFINDACCTNUM=ACCOUNT:NUMBER
+   CALL BNOFINDLOANACCT
+  END
+
+ IF BNOACCESSFLAG=BNOTRUE AND BNOSLIDFOUND=BNOFALSE THEN
+  DO
+   BNOLOANCOUNT=BNOLOANCOUNT+1
+
+   BNOLOANXACCTPRIMARYNAME(BNOLOANCOUNT)=""
+   BNOLOANEFFECTIVEBAL(BNOLOANCOUNT)=$0.00
+
+   IF BNOCROSSACCTFLAG=BNOTRUE THEN
+    BNOLOANXACCTPRIMARYNAME(BNOLOANCOUNT)=NAME:LONGNAME
+   BNOTOTALLOANBALANCE=BNOTOTALLOANBALANCE+LOAN:BALANCE
+   BNOLOANIQFLAG(BNOLOANCOUNT)=BNOACCESSIQFLAG
+   BNOLOANXFERINFLAG(BNOLOANCOUNT)=BNOACCESSXFERINFLAG
+   BNOLOANXFEROUTFLAG(BNOLOANCOUNT)=BNOACCESSXFEROUTFLAG
+   BNOLOANWDFLAG(BNOLOANCOUNT)=BNOACCESSWDFLAG
+   BNOLOANACCTNUM(BNOLOANCOUNT)=ACCOUNT:NUMBER
+   BNOLOANID(BNOLOANCOUNT)=LOAN:ID
+   BNOLOANTYPE(BNOLOANCOUNT)=LOAN:TYPE
+   BNOLOANDESC(BNOLOANCOUNT)=LOAN:DESCRIPTION
+   BNOLOANBALANCE(BNOLOANCOUNT)=LOAN:BALANCE
+   BNOLOANDUEDATE(BNOLOANCOUNT)=LOAN:DUEDATE
+   BNOLOANPAYMENT(BNOLOANCOUNT)=LOAN:PAYMENT
+   BNOLOANPAYMENTDUE(BNOLOANCOUNT)=LOAN:PAYMENTDUE
+   BNOLOANPASTDUEAMOUNT(BNOLOANCOUNT)=LOAN:PASTDUEAMOUNT
+   CALL BNOFINDLOANPMTBUCKETAMT
+   BNOLOANPMTBUCKETAMT(BNOLOANCOUNT)=BNOPMTBUCKETAMT
+   BNOLOANLOANCODE(BNOLOANCOUNT)=LOAN:LOANCODE
+   BNOLOANCREDITLIMIT(BNOLOANCOUNT)=LOAN:CREDITLIMIT
+   BNOLOANEFFECTIVEBAL(BNOLOANCOUNT)=LOAN:BALANCE
+   IF LOAN:INTERESTTYPE>9 AND LOAN:CLOSEDATE=BNODATENULL THEN
+    BNOLOANEFFECTIVEBAL(BNOLOANCOUNT)=BNOLOANEFFECTIVEBAL(BNOLOANCOUNT)+
+     LOAN:INTERESTDUE+LOAN:LATECHARGEDUE
+   BNOLOANAVAILCREDIT(BNOLOANCOUNT)=LOAN:AVAILABLECREDIT
+   BNOLOANNICKNAME(BNOLOANCOUNT)=LOAN:NICKNAME
+   BNOLOANOPENDATE(BNOLOANCOUNT)=LOAN:OPENDATE
+   BNOLOANCLOSEDATE(BNOLOANCOUNT)=LOAN:CLOSEDATE
+   BNOLOANCHARGEOFFDATE(BNOLOANCOUNT)=LOAN:CHARGEOFFDATE
+  END
+END
+
+PROCEDURE BNOFINDLOANACCT
+[* Check if the current loan being evaluated is already in the
+** list of eligible loans. If not, then add it.
+**
+** PASS    BNOFINDACCTNUM    Account trying to match
+** PASS    BNOFINDID         Loan ID trying to match
+** RETURN  BNOSLIDFOUND      BOOLEAN - Found?
+** RETURN  BNOFINDINDEX      Index of array element which matched
+*]
+ BNOFINDINDEX=0
+ BNOSLIDFOUND=BNOFALSE
+ BNOSLLOOP=1
+ WHILE (BNOSLIDFOUND=BNOFALSE AND BNOSLLOOP<=BNOLOANCOUNT)
+  DO
+   IF BNOFINDID=BNOLOANID(BNOSLLOOP) AND
+      BNOFINDACCTNUM=BNOLOANACCTNUM(BNOSLLOOP)THEN
+    DO
+     BNOSLIDFOUND=BNOTRUE
+     BNOFINDINDEX=BNOSLLOOP
+    END
+   BNOSLLOOP=BNOSLLOOP+1
+  END
+END
+
+PROCEDURE BNOBUILDEXTLOANLIST
+[* Validate certain aspects of the current External Loan record and if the
+** External Loan record remains eligible, add it to the array
+*]
+ BNOEXTLOANCOUNT=0
+ BNOTOTALEXTLOANBALANCE=$0.00
+ FOR EACH EXTERNALLOAN
+  DO
+   BNOACCESSFLAG=BNOTRUE
+
+   IF EXTERNALLOAN:STATUS=1 OR
+     (BNOINCLUDECLOSED=BNOFALSE AND
+      EXTERNALLOAN:CLOSEDATE<>BNODATENULL) THEN
+    BNOACCESSFLAG=BNOFALSE
+
+   IF BNOACCESSFLAG=BNOTRUE THEN
+    DO
+     BNOEXTLOANCOUNT=BNOEXTLOANCOUNT+1
+
+     BNOEXTLOANDESC(BNOEXTLOANCOUNT)=EXTERNALLOAN:DESCRIPTION
+     BNOEXTLOANACCOUNTNUM(BNOEXTLOANCOUNT)=EXTERNALLOAN:ACCOUNTNUMBER
+     BNOEXTLOANLOC(BNOEXTLOANCOUNT)=EXTERNALLOAN:LOCATOR
+     BNOEXTLOANTYPE(BNOEXTLOANCOUNT)=EXTERNALLOAN:TYPE
+     BNOEXTLOANIQFLAG(BNOEXTLOANCOUNT)=BNOTRUE
+     BNOEXTLOANXFEROUTFLAG(BNOEXTLOANCOUNT)=BNOTRUE
+     BNOEXTLOANXFERINFLAG(BNOEXTLOANCOUNT)=BNOFALSE
+     BNOEXTLOANWDFLAG(BNOEXTLOANCOUNT)=BNOFALSE
+     BNOEXTLOANBALANCE(BNOEXTLOANCOUNT)=EXTERNALLOAN:BALANCE
+     BNOEXTLOANAMOUNTDUE(BNOEXTLOANCOUNT)=EXTERNALLOAN:PAYMENTDUE
+     BNOEXTLOANPIPAYMENT(BNOEXTLOANCOUNT)=EXTERNALLOAN:PRINCINTPAYMENT
+     BNOEXTLOANESCPAYMENT(BNOEXTLOANCOUNT)=EXTERNALLOAN:ESCROWPAYMENT
+     BNOEXTLOANIMPOUNDPAYMENT(BNOEXTLOANCOUNT)=EXTERNALLOAN:IMPOUNDPAYMENT
+     BNOEXTLOANLATEFEE(BNOEXTLOANCOUNT)=EXTERNALLOAN:LATECHARGEDUE
+     BNOEXTLOANDUEDATE(BNOEXTLOANCOUNT)=EXTERNALLOAN:DUEDATE
+     BNOEXTLOANAVAILCREDIT(BNOEXTLOANCOUNT)=EXTERNALLOAN:AVAILCREDIT
+     BNOEXTLOANCREDITLIMIT(BNOEXTLOANCOUNT)=EXTERNALLOAN:CREDITLIMIT
+     BNOEXTLOANPAYMENT(BNOEXTLOANCOUNT)=EXTERNALLOAN:PRINCINTPAYMENT+
+      EXTERNALLOAN:ESCROWPAYMENT
+     BNOEXTLOANCLOSEDATE(BNOEXTLOANCOUNT)=EXTERNALLOAN:CLOSEDATE
+
+     BNOTOTALEXTLOANBALANCE=BNOTOTALEXTLOANBALANCE+
+                            BNOEXTLOANBALANCE(BNOEXTLOANCOUNT)
+    END
+  END
+ UNTIL BNOEXTLOANCOUNT>=BNOEXTLOANARRAYMAX
+END
+
+PROCEDURE BNOFINDLOANPMTBUCKETAMT
+[* BNOLOANPAYMENT value from the pre-built loan information array may not
+** be accurate when loan is delinquent. Some clients may choose not to
+** display BNOLOANPAYMENTDUE as includes payment + any delinquent amount.
+** Provide another option to display next Payment based on PMTBUCKETS.
+** Clients now have an option to choose from BNOLOANPAYMENT,
+** BNOLOANPAYMENTDUE or BNOLOANPMTBUCKETAMT to display in Payment column.
+** Default remains BNOLOANPAYMENT.
+]
+ BNOPMTBUCKETAMT=$0.00
+ IF LOAN:DUEDATE>=LOAN:PMTBUCKETDUEDATE:1 OR
+    LOAN:PMTBUCKETDUEDATE:1='--/--/--' THEN
+  BNOPMTBUCKETAMT=LOAN:PAYMENT
+ ELSE
+  DO
+   BNOLOCALLOOP=1
+   BNOFOUND=BNOFALSE
+   WHILE BNOFOUND=BNOFALSE AND BNOLOCALLOOP<=7
+    DO
+     IF LOAN:DUEDATE>=LOAN:PMTBUCKETDUEDATE:(BNOLOCALLOOP) AND
+        LOAN:PMTBUCKETDUEDATE:(BNOLOCALLOOP)<>'--/--/--' THEN
+      DO
+       BNOPMTBUCKETAMT=LOAN:PMTBUCKETAMOUNT:(BNOLOCALLOOP)
+       BNOFOUND=BNOTRUE
+      END
+     BNOLOCALLOOP=BNOLOCALLOOP+1
+    END
+  END
+END
+
+PROCEDURE BNOSETSERVICELISTS
+[* Create boolean arrays of service codes for xfer in, xfer out & WD
+** Service code values are pulled from system parameters
+**  RETURN  BNOSERVICEXFERINLIST(a)  Boolean array of xfer in svc codes
+**  RETURN  BNOSERVICEXFEROUTLIST(a)  Boolean array of xfer out svc codes
+**  RETURN  BNOSERVICEWDLIST(a)  Boolean array of svc codes for WD
+*]
+
+ IF BNOSERVICELISTSETFLAG=BNOFALSE THEN
+  DO
+   LELISTINPUT=GETDATACHARACTER(GETPARAMSYMXCHCLSERVICESXIN,BNOSYMXINSTANCE,BNOSYMXCLIENTNUM)
+   CALL LISTEXPAND
+   BNOSERVICEXFERINALLFLAG=LEALLFLAG
+   FOR BNOSVCCODELOOP=0 TO BNOSVCCODEMAX
+    DO
+     BNOSERVICEXFERINLIST(BNOSVCCODELOOP)=LELIST(BNOSVCCODELOOP)
+    END
+
+   LELISTINPUT=GETDATACHARACTER(GETPARAMSYMXCHCLSERVICESXOUT,BNOSYMXINSTANCE,BNOSYMXCLIENTNUM)
+   CALL LISTEXPAND
+   BNOSERVICEXFEROUTALLFLAG=LEALLFLAG
+   FOR BNOSVCCODELOOP=0 TO BNOSVCCODEMAX
+    DO
+     BNOSERVICEXFEROUTLIST(BNOSVCCODELOOP)=LELIST(BNOSVCCODELOOP)
+    END
+
+   LELISTINPUT=GETDATACHARACTER(GETPARAMSYMXCHCLSERVICESWD,BNOSYMXINSTANCE,BNOSYMXCLIENTNUM)
+   CALL LISTEXPAND
+   BNOSERVICEWDALLFLAG=LEALLFLAG
+   FOR BNOSVCCODELOOP=0 TO BNOSVCCODEMAX
+    DO
+     BNOSERVICEWDLIST(BNOSVCCODELOOP)=LELIST(BNOSVCCODELOOP)
+    END
+   BNOSERVICELISTSETFLAG=BNOTRUE
+  END
+END
+
+PROCEDURE BNOSETEXCLUDESHARELIST
+[* Build a list of invalid Share types
+** PASS    BNOINFOEXCLUDESHARETYPELIST  List of invalid Share types in list format
+** RETURN  BNOEXCLUDESHARETYPES(a) Boolean array of invalid share types
+** RETURN  BNOEXCLUDESHARETYPEALLFLAG Boolean - Exclude all share types?
+*]
+ IF BNOEXCLUDESHARELISTSETFLAG=BNOFALSE THEN
+  DO
+   LELISTINPUT=BNOEXCLUDESHARETYPELIST
+   CALL LISTEXPAND
+   BNOEXCLUDESHARETYPEALLFLAG=LEALLFLAG
+   FOR BNOSLLOOP=0 TO BNOSLTYPEMAX
+    DO
+     BNOEXCLUDESHARETYPES(BNOSLLOOP)=LELIST(BNOSLLOOP)
+    END
+   BNOEXCLUDESHARELISTSETFLAG=BNOTRUE
+  END
+END
+
+PROCEDURE BNOSETEXCLUDELOANLIST
+[* Build a list of invalid Loan types
+** PASS    BNOINFOEXCLUDELOANTYPELIST  List of invalid loan types in list format
+** RETURN  BNOEXCLUDELOANTYPES(a) Boolean array of invalid loan types
+** RETURN  BNOEXCLUDELOANTYPEALLFLAG Boolean - Exclude all loan types?
+*]
+ IF BNOEXCLUDELOANLISTSETFLAG=BNOFALSE THEN
+  DO
+   LELISTINPUT=BNOEXCLUDELOANTYPELIST
+   CALL LISTEXPAND
+   BNOEXCLUDELOANTYPEALLFLAG=LEALLFLAG
+   FOR BNOSLLOOP=0 TO BNOSLTYPEMAX
+    DO
+     BNOEXCLUDELOANTYPES(BNOSLLOOP)=LELIST(BNOSLLOOP)
+    END
+   BNOEXCLUDELOANLISTSETFLAG=BNOTRUE
+  END
+END
+
+PROCEDURE BNOSETUSERHBENABLE
+[* Get the level of user access from the current
+** Preference Record accessed
+** RETURN  BNOUSERHBENABLE Preference HB Enable state
+*]
+ BNOUSERHBENABLE=BNOHBENABLEIQ [0 = IQ only (default)]
+ FOR EACH PREFERENCE
+  DO
+   BNOUSERHBENABLE=PREFERENCE:HBENABLE
+  END
+END
+
+PROCEDURE BNOCHECKUSERHBENABLE
+[* Set the Preference access flags accordingly based upon the
+** current HB Enable setting. HB Enable WD & Transfers is assumed
+** and all flags defaulted to TRUE unless otherwise restricted
+*]
+ IF BNOUSERHBENABLE=BNOHBENABLEIQ THEN
+  DO
+   BNOACCESSXFEROUTFLAG=BNOFALSE
+   BNOACCESSXFERINFLAG=BNOFALSE
+   BNOACCESSWDFLAG=BNOFALSE
+  END
+ ELSE IF BNOUSERHBENABLE=BNOHBENABLEXF THEN
+  BNOACCESSWDFLAG=BNOFALSE
+END
+
+#INCLUDE "RB.LISTEXPAND"
+
