@@ -61,7 +61,7 @@
 **             when a fee amount is set to $0.00.
 **  Ver. 1.2.0 06/03/24: TKainz - Banno
 **             Added Program Installation Date parameter
-**  Ver. 1.2.1 06/26/24 JKeenan - Banno
+**  Ver. 1.2.1 06/28/24 JKeenan - Banno
 **             Updated the loggingErrorMessage for ineligible loans and 
 **             ineligible warning codes to include the loan type and
 **             loan warning code numbers.
@@ -142,14 +142,14 @@ DEFINE
  LOANTYPES           = NUMBER        ARRAY(9999)
  SHARETYPES          = NUMBER        ARRAY(9999)
  TYPESMAX            = 9999
- INVLNTYPE           = CHARACTER(4)  ARRAY(25)
 
  LOANWARNINGS        = NUMBER        ARRAY(999)
  ACCTWARNINGS        = NUMBER        ARRAY(999)
  WARNINGSMAX         = 999
+ EXISTINGLNSERVS     = CHARACTER     ARRAY(25)
  INVACCTWARNS        = CHARACTER     ARRAY(25)
  INVLNWARNS          = CHARACTER     ARRAY(25)
- EXISTINGLNSERVS     = CHARACTER     ARRAY(25)
+ INVLNTYPE           = CHARACTER(4)  ARRAY(25)
 
  LOANSERVICECODE     = NUMBER        ARRAY(99)
  SERVICECODEMAX      = 99
@@ -274,7 +274,7 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='06/26/24'
+ BNOLASTMODDATE='06/28/24'
  BNOLASTMODTIME="17:00 PT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
@@ -439,13 +439,13 @@ PROCEDURE PROCGETPRELOADDATA
         DO
          PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)
          IF TEMPLOOP=INELIGIBLECODELOANTYPE THEN
-          PRINT ": "+INVLNTYPE(LOANLOOP)
+          PRINT INVLNTYPE(LOANLOOP)
          ELSE IF TEMPLOOP=INELIGIBLECODEACCTWARNING THEN
-          PRINT ": "+INVACCTWARNS(LOANLOOP)
+          PRINT INVACCTWARNS(LOANLOOP)
          ELSE IF TEMPLOOP=INELIGIBLECODELOANWARNING THEN
-          PRINT ": "+INVLNWARNS(LOANLOOP)
+          PRINT INVLNWARNS(LOANLOOP)
          ELSE IF TEMPLOOP=INELIGIBLECODESERVICECODE THEN
-          PRINT ". It has Code(s): "+EXISTINGLNSERVS(LOANLOOP)
+          PRINT EXISTINGLNSERVS(LOANLOOP)
          PRINT Q
          NEWLINE
          INELIGIBLEDISPLAYED=TRUE
@@ -650,7 +650,7 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
   DO
    ERRORFLAG=TRUE
    ERRORMSGUSER=GENERICUSERERRORMSG
-   ERRORMSGLOG="Skip Pay Fee Post Failed. Error="+TRANERROR
+   ERRORMSGLOG="Skip Pay Fee Post Failed. Error: "+TRANERROR
   END
 
  PRINT "],"+Q+"clientErrorMessage"+Q+":"
@@ -769,17 +769,17 @@ PROCEDURE INITIALIZEDATA
 
  [Initialize the ineligible reason messages]
  INELIGIBLEREASONS(INELIGIBLECODELOANTYPE)=
-  "Ineligible Loan Type"
+  "Ineligible Loan Type: "
  INELIGIBLEREASONS(INELIGIBLECODELOANWARNING)=
-  "Loan Warning Found"
+  "Loan Warning Found: "
  INELIGIBLEREASONS(INELIGIBLECODEMAXSKIPS)=
   "Max Loan skips already used for last 12 months"
  INELIGIBLEREASONS(INELIGIBLECODETIMESKIP)=
   "Insufficient time since last skip"
  INELIGIBLEREASONS(INELIGIBLECODEACCTWARNING)=
-  "Account Warning Found"
+  "Account Warning Found: "
  INELIGIBLEREASONS(INELIGIBLECODESERVICECODE)=
-  "Eligible Service Code(s) not found"
+  "Eligible Service Code(s) not found. existing service codes = "
  INELIGIBLEREASONS(INELIGIBLECODEMINPAYMENT)=
   "Payment Less than Minimum allowed"
  INELIGIBLEREASONS(INELIGIBLECODEMAXPAYMENT)=
@@ -1294,13 +1294,9 @@ PROCEDURE GETLOANDATA
         SERVICEFOUND=FALSE
       END
     END
-[* If none found, and some are defined set ineligible code.
-** Else eligible, so clear unneeded EXISTINGLNSERVS(TOTALLOANS)
-*]
+[ If none found, and some are defined]
    IF SERVICEFOUND=FALSE THEN
     LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODESERVICECODE)=TRUE
-   ELSE
-    EXISTINGLNSERVS(TOTALLOANS)=""
 
 [ Payment amount]
    IF LOANMINPAYMENT>$0.00 AND LOAN:PAYMENT<LOANMINPAYMENT THEN
