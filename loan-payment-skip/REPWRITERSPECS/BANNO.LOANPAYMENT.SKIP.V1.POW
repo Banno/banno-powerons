@@ -62,9 +62,9 @@
 **  Ver. 1.2.0 06/03/24: TKainz - Banno
 **             Added Program Installation Date parameter
 **  Ver. 1.2.1 06/28/24 JKeenan - Banno
-**             Updated the loggingErrorMessage for ineligible loans and 
-**             ineligible warning codes to include the loan type and
-**             loan warning code numbers.
+**             Updated the JSON for ineligibilityReason to include 
+**             the ineligible loan type, loan service codes,
+**             and account and loan warning code numbers.
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
