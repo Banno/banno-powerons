@@ -64,7 +64,7 @@
 **               * Updated procedures for building Share/Loan list.
 **               * Check for double-quotes in Share/Loan description and
 **                 nickname fields and replace with single-quotes.
-**   Ver. 3.2.2  07/05/2024 J. Keenan - 
+**   Ver. 3.2.2  07/09/2024 J. Keenan - 
 **               * Corrected issue so that the loggingErrorMessage
 **                 for ineligible account type now indicates when the
 **                 account type is invalid and lists the account type.
@@ -216,6 +216,7 @@ DEFINE
  PARAMTESTACCTLIST         = CHARACTER
  PARAMINSTALLDATE          = DATE
  PARAMDEBUGMODE            = NUMBER
+ PARAMDEBUGMODECHR         = CHARACTER
 
  PASLIDTEST                = CHARACTER
  PASLIDTYPETEST            = NUMBER
@@ -363,8 +364,8 @@ END [DEFINE]
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.2.2"
- LASTMODDATE               = '07/5/2024'
- LASTMODTIME               = "17:00 PT"
+ LASTMODDATE               = '07/9/2024'
+ LASTMODTIME               = "12:00 PT"
  PROGRAMUPDATENOTE1        = "Corrected the loggingErrorMessage to display the ineligible account type."
  PROGRAMUPDATENOTE2        = "Added Program Installation Date parameter to CFG."
 
@@ -2292,6 +2293,7 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMTESTACCTLIST=""
  PARAMINSTALLDATE=DATENULL
  PARAMDEBUGMODE=-1
+ PARAMDEBUGMODECHR=""
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -2455,13 +2457,16 @@ PROCEDURE READCONFIGFILESETTINGS
 ** the first [AUTODEBUGDAYS] days after the most recent program modification date or
 ** program installation date, whichever is more recent.
 *]
-       ELSE IF PARAMNAME="DB" AND 
-               PARAMVALUE<>"" THEN
-        DO
-         IF CHARACTERSEARCH("TRUEYES1DEBUGON",UPPERCASE(PARAMVALUE))>0 THEN
-          PARAMDEBUGMODE=DEBUGMODEON
-         ELSE
-          PARAMDEBUGMODE=DEBUGMODEOFF
+       ELSE IF PARAMNAME="DB" THEN
+        DO 
+         PARAMDEBUGMODECHR=PARAMVALUE [Used later in DEBUG output]
+         IF PARAMVALUE<>"" THEN
+          DO
+           IF CHARACTERSEARCH("TRUEYES1DEBUGON",UPPERCASE(PARAMVALUE))>0 THEN
+            PARAMDEBUGMODE=DEBUGMODEON
+           ELSE
+            PARAMDEBUGMODE=DEBUGMODEOFF
+          END
         END
 [* Program Installation Date 
 *]
@@ -2529,7 +2534,8 @@ PROCEDURE READCONFIGFILESETTINGS
   END
  CALL BNODEBUGMSGADD
 
- BNODEBUGMSG="DB:"+FORMAT("+9",PARAMDEBUGMODE)
+ IF PARAMDEBUGMODE<>-1 THEN
+  BNODEBUGMSG="DB:"+PARAMDEBUGMODECHR
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="PID:"+FORMAT("99/99/9999",PARAMINSTALLDATE)
  CALL BNODEBUGMSGADD
@@ -2791,7 +2797,7 @@ PROCEDURE ERRORHANDLER
   ELSE IF WARNINGFOUND<>FALSE THEN
    ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Warning ###9",WARNINGFOUND)
   ELSE IF INVALIDACCTTYPEFOUND=TRUE THEN
-   ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type ####9",ACCOUNT:TYPE)
+   ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type ###9",ACCOUNT:TYPE)
   ELSE
    ERRORDETAIL(2)=ERRORDETAIL(2)+": No eligible transfer from shares/loans"
 
