@@ -64,6 +64,13 @@
 **               * Updated procedures for building Share/Loan list.
 **               * Check for double-quotes in Share/Loan description and
 **                 nickname fields and replace with single-quotes.
+**   Ver. 3.2.2  07/10/2024 J. Keenan - 
+**               * Corrected issue so that the loggingErrorMessage
+**                 for ineligible account type now indicates when the
+**                 account type is invalid and lists the account type.
+**               * Added Program Installation Date parameter setting.
+**               * Set debugmode to on as default for first 90 days after
+**                 latest update. Can be overridden by hidden parameter  "DB:".
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -207,6 +214,9 @@ DEFINE
  PARAMLBLID                = CHARACTER(80)
  PARAMTESTMODE             = NUMBER
  PARAMTESTACCTLIST         = CHARACTER
+ PARAMINSTALLDATE          = DATE
+ PARAMDEBUGMODE            = NUMBER
+ PARAMDEBUGMODECHR         = CHARACTER
 
  PASLIDTEST                = CHARACTER
  PASLIDTYPETEST            = NUMBER
@@ -314,7 +324,7 @@ DEFINE
  SHARECODECLUB             = 3
  SHARECODEMAX              = 3
  TARGETSLIDFOUND           = NUMBER
- AUTODEBUGDAYS             = 45
+ AUTODEBUGDAYS             = 90
  FOUND                     = NUMBER
  TESTIDLENGTH2             = 2
  TESTIDLENGTH4             = 4
@@ -353,11 +363,11 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.2.1"
- LASTMODDATE               = '01/31/2024'
- LASTMODTIME               = "09:00 MT"
- PROGRAMUPDATENOTE1        = "Update Share/Loan list build procedures"
- PROGRAMUPDATENOTE2        = "comment length validation, last name spaces"
+ PROGRAMVERSION            = "3.2.2"
+ LASTMODDATE               = '07/10/2024'
+ LASTMODTIME               = "15:00 PT"
+ PROGRAMUPDATENOTE1        = "Corrected the loggingErrorMessage to display the ineligible account type."
+ PROGRAMUPDATENOTE2        = "Added Program Installation Date parameter to CFG."
 
  TRANRECIPTYPECHR(0)       = "savings"
  TRANRECIPTYPECHR(1)       = "checking"
@@ -2267,9 +2277,6 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMINSTINDIVLIMIT=$0.00
  PARAMCROSSACCTACCESS=FALSE
  PARAMNTSLTYPE=BNOSLTYPESHARE
- DEBUGMODE=DEBUGMODEOFF
- IF SYSTEMDATE<LASTMODDATE+AUTODEBUGDAYS THEN
-  DEBUGMODE=DEBUGMODEON
  PARAMMEMOMODE=FALSE
  PARAMALLOWEDIT=FALSE
  PARAMVALIDATIONNAMETYPES="00,01,05,06,07,08,09"
@@ -2284,6 +2291,9 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMLBLID=""
  PARAMTESTMODE=FALSE
  PARAMTESTACCTLIST=""
+ PARAMINSTALLDATE=DATENULL
+ PARAMDEBUGMODE=-1
+ PARAMDEBUGMODECHR=""
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -2441,13 +2451,28 @@ PROCEDURE READCONFIGFILESETTINGS
         DO
          PARAMLBLID=PARAMVALUE
         END
-[* Debug mode
+[* Debug mode. This is a hidden parameter setting which can override the default Debug
+** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "YES"
+** or "NO" to force the Debug mode setting to be other than the default value of being on for
+** the first [AUTODEBUGDAYS] days after the most recent program modification date or
+** program installation date, whichever is more recent.
 *]
        ELSE IF PARAMNAME="DB" THEN
-        DO
-         IF CHARACTERSEARCH("1YESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
-          DEBUGMODE=DEBUGMODEON
+        DO 
+         PARAMDEBUGMODECHR=PARAMVALUE [Used later in DEBUG output]
+         IF PARAMVALUE<>"" THEN
+          DO
+           IF CHARACTERSEARCH("TRUEYES1DEBUGON",UPPERCASE(PARAMVALUE))>0 THEN
+            PARAMDEBUGMODE=DEBUGMODEON
+           ELSE
+            PARAMDEBUGMODE=DEBUGMODEOFF
+          END
         END
+[* Program Installation Date 
+*]
+       ELSE IF PARAMNAME="PID" AND
+               PARAMVALUE<>"" THEN
+        PARAMINSTALLDATE=DATEVALUE(PARAMVALUE)                  
 [* Memo mode
 *]
        ELSE IF PARAMNAME="MM" THEN
@@ -2509,7 +2534,12 @@ PROCEDURE READCONFIGFILESETTINGS
   END
  CALL BNODEBUGMSGADD
 
- BNODEBUGMSG="DB:"+FORMAT("9",DEBUGMODE)
+ IF PARAMDEBUGMODE<>-1 THEN
+  DO
+   BNODEBUGMSG="DB:"+PARAMDEBUGMODECHR
+   CALL BNODEBUGMSGADD
+  END
+ BNODEBUGMSG="PID:"+FORMAT("99/99/9999",PARAMINSTALLDATE)
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="MM:"+FORMAT("9",PARAMMEMOMODE)
  CALL BNODEBUGMSGADD
@@ -2643,10 +2673,27 @@ END [PROCEDURE]
 
 PROCEDURE BNOPRINTDEBUG
 [* Add debug messages to JSON output
-**  PASS    DEBUGMODE  Boolean - is debug mode on
+**  If the "DB:" parameter is set to false, then force Debug mode
+**    setting to off (overrides all other Debug mode logic settings).
+**  If the "DB:" parameter is set to true or the installation date was found and
+**    less than [AUTODEBUGDAYS] days prior, set the Debug mode setting to true.
+**  PASS    DEBUGMODE  Boolean
 **  PASS    BNODEBUGCOUNT  Number of debut lines to send to JSON output
 **  RETURN  BNODEBUGMSGLIST  debug output
 *]
+ IF LASTMODDATE+AUTODEBUGDAYS>SYSTEMDATE THEN
+  DEBUGMODE=DEBUGMODEON
+
+ IF PARAMDEBUGMODE=DEBUGMODEOFF THEN
+  DEBUGMODE=DEBUGMODEOFF
+ ELSE
+  DO
+   IF PARAMDEBUGMODE=DEBUGMODEON OR
+     (PARAMINSTALLDATE<>DATENULL AND
+      PARAMINSTALLDATE+AUTODEBUGDAYS>SYSTEMDATE) THEN
+    DEBUGMODE=DEBUGMODEON
+  END
+
  IF DEBUGMODE=DEBUGMODEON THEN
   DO
    FOR DEBUGLOOP=1 TO BNODEBUGCOUNT
@@ -2741,20 +2788,24 @@ PROCEDURE ERRORHANDLER
  ERRORDETAILOFFSET=ERRORCODE-500
 
  IF ERRORDETAILOFFSET=1 THEN
-  IF READCONFIGERROR=TRUE THEN
-   ERRORDETAIL(1)=ERRORDETAIL(1)+": "+READCONFIGERRORMSG
-  ELSE IF PARAMVALIDATIONERROR=TRUE THEN
-   ERRORDETAIL(1)=ERRORDETAIL(1)+": Invalid Parameter in CFG file"
+  DO
+   IF READCONFIGERROR=TRUE THEN
+    ERRORDETAIL(1)=ERRORDETAIL(1)+": "+READCONFIGERRORMSG
+   ELSE IF PARAMVALIDATIONERROR=TRUE THEN
+    ERRORDETAIL(1)=ERRORDETAIL(1)+": Invalid Parameter in CFG file"
+  END
 
  IF ERRORDETAILOFFSET=2 THEN
-  IF PA3FOUND=FALSE THEN
-   ERRORDETAIL(2)=ERRORDETAIL(2)+": Pref Access type 3 not found"
-  ELSE IF WARNINGFOUND<>FALSE THEN
-   ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Warning ###9",WARNINGFOUND)
-  ELSE IF BNOSHARECOUNT=0 AND BNOLOANCOUNT=0 THEN
-   ERRORDETAIL(2)=ERRORDETAIL(2)+": No eligible transfer from shares/loans"
-  ELSE
-   ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type ####9",ACCOUNT:TYPE)
+  DO
+   IF PA3FOUND=FALSE THEN
+    ERRORDETAIL(2)=ERRORDETAIL(2)+": Pref Access type 3 not found"
+   ELSE IF WARNINGFOUND<>FALSE THEN
+    ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Warning ###9",WARNINGFOUND)
+   ELSE IF INVALIDACCTTYPEFOUND=TRUE THEN
+    ERRORDETAIL(2)=ERRORDETAIL(2)+FORMAT(": Acct Type ###9",ACCOUNT:TYPE)
+   ELSE [BNOSHARECOUNT=0 AND BNOLOANCOUNT=0]
+    ERRORDETAIL(2)=ERRORDETAIL(2)+": No eligible transfer from shares/loans"
+  END
 
  IF ERRORDETAILOFFSET=4 THEN
   DO
