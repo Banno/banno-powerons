@@ -61,8 +61,9 @@
 **             when a fee amount is set to $0.00.
 **  Ver. 1.2.0 06/03/24: TKainz - Banno
 **             Added Program Installation Date parameter
-**  Ver. 1.2.1 06/28/24 JKeenan - Banno
+**  Ver. 1.2.1 07/10/24 JKeenan - Banno
 **             Updated the JSON for ineligibilityReason to include 
+**             an additional line only viewable in logs, that shows
 **             the ineligible loan type, loan service codes,
 **             and account and loan warning code numbers.
 **
@@ -274,8 +275,8 @@ SETUP
  TERMS(2)="Some more text"
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
- BNOLASTMODDATE='06/28/24'
- BNOLASTMODTIME="17:00 PT"
+ BNOLASTMODDATE='07/10/24'
+ BNOLASTMODTIME="12:00 PT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
  BNOPROGRAMVERSION="1.2.1"
@@ -437,17 +438,31 @@ PROCEDURE PROCGETPRELOADDATA
        IF LOANINELIGIBLECODE(LOANLOOP,TEMPLOOP)=TRUE AND
           INELIGIBLEDISPLAYED=FALSE THEN
         DO
-         PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)
-         IF TEMPLOOP=INELIGIBLECODELOANTYPE THEN
-          PRINT INVLNTYPE(LOANLOOP)
-         ELSE IF TEMPLOOP=INELIGIBLECODEACCTWARNING THEN
-          PRINT INVACCTWARNS(LOANLOOP)
-         ELSE IF TEMPLOOP=INELIGIBLECODELOANWARNING THEN
-          PRINT INVLNWARNS(LOANLOOP)
-         ELSE IF TEMPLOOP=INELIGIBLECODESERVICECODE THEN
-          PRINT EXISTINGLNSERVS(LOANLOOP)
-         PRINT Q
-         NEWLINE
+         IF TEMPLOOP=INELIGIBLECODELOANTYPE OR
+            TEMPLOOP=INELIGIBLECODEACCTWARNING OR
+            TEMPLOOP=INELIGIBLECODELOANWARNING OR
+            TEMPLOOP=INELIGIBLECODESERVICECODE THEN
+          DO [Add further detail in logs for these ineligibility reasons]
+           PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)+Q+","
+           NEWLINE
+           IF TEMPLOOP=INELIGIBLECODELOANTYPE THEN
+            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVLNTYPE(LOANLOOP)+Q
+           ELSE IF TEMPLOOP=INELIGIBLECODEACCTWARNING THEN
+            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVACCTWARNS(LOANLOOP)+Q
+           ELSE IF TEMPLOOP=INELIGIBLECODELOANWARNING THEN
+            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVLNWARNS(LOANLOOP)+Q
+           ELSE [TEMPLOOP=INELIGIBLECODESERVICECODE]
+            DO
+             TMPCHR="Existing service codes = "+EXISTINGLNSERVS(LOANLOOP)
+             PRINT Q+"ineligibilityDetail"+Q+": "+Q+TMPCHR+Q
+            END
+           NEWLINE
+          END
+         ELSE
+          DO
+           PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)+Q
+           NEWLINE
+          END
          INELIGIBLEDISPLAYED=TRUE
         END
       END
@@ -769,17 +784,17 @@ PROCEDURE INITIALIZEDATA
 
  [Initialize the ineligible reason messages]
  INELIGIBLEREASONS(INELIGIBLECODELOANTYPE)=
-  "Ineligible Loan Type: "
+  "Ineligible Loan Type"
  INELIGIBLEREASONS(INELIGIBLECODELOANWARNING)=
-  "Loan Warning Found: "
+  "Loan Warning Found"
  INELIGIBLEREASONS(INELIGIBLECODEMAXSKIPS)=
   "Max Loan skips already used for last 12 months"
  INELIGIBLEREASONS(INELIGIBLECODETIMESKIP)=
   "Insufficient time since last skip"
  INELIGIBLEREASONS(INELIGIBLECODEACCTWARNING)=
-  "Account Warning Found: "
+  "Account Warning Found"
  INELIGIBLEREASONS(INELIGIBLECODESERVICECODE)=
-  "Eligible Service Code(s) not found. existing service codes = "
+  "Eligible Service Code(s) not found"
  INELIGIBLEREASONS(INELIGIBLECODEMINPAYMENT)=
   "Payment Less than Minimum allowed"
  INELIGIBLEREASONS(INELIGIBLECODEMAXPAYMENT)=
@@ -1437,7 +1452,7 @@ PROCEDURE GETSKIPCRITERIA
 
      ELSE IF LOAN:PAYMENTFREQUENCY=2 THEN [semiannual]
       DO
-[* advance the due date and matuurity date by 6 months
+[* advance the due date and maturity date by 6 months
 *]
        LNEWDUEDATE=DATEOFFSET(LDUEDATE,6,LOAN:DUEDAY1)
        IF LMATURITYDATE<>DATENULL THEN
@@ -1455,7 +1470,7 @@ PROCEDURE GETSKIPCRITERIA
 
      ELSE IF LOAN:PAYMENTFREQUENCY=4 THEN [monthly]
       DO
-[* advance the due date and matuurity date by 1 month
+[* advance the due date and maturity date by 1 month
 *]
        LNEWDUEDATE=DATEOFFSET(LDUEDATE,1,LOAN:DUEDAY1)
        IF LMATURITYDATE<>DATENULL THEN
