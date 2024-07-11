@@ -76,27 +76,34 @@ If the request is successful, the poweron should respond with:
 Any and all errors should be conveyed via the following structure:
 ```json
 {
-  "clientErrorMessage":"if error processing, a user friendly error message (unused currently)",
-  "loggingErrorMessage":"if error processing, something to log"
+  "clientErrorMessage": "if error processing, a user friendly error message",
+  "loggingErrorMessage": "if error processing, something to log"
 }
 ```
-### Response Messages & Corresponding Logging Error Messages
 
-*All Errors begin with 'We're sorry we've encountered an error. Please contact your credit union.' followed by the Logging Error Message.
- That is the part of the error message that is displayed to the end user.
+### Client Error Message
+_Returned in the `clientErrorMessage` json property_
 
-| Logging Error Message                                                                | Additional Notes As Needed |
-|------------------------------------------------------------------------------------- |-----------------------------------------------|
-| No loan types found in CFG Letter file | This set of errors represents issues with the configuration letter file setup |
-| Invalid loan tracking type: 1234 ||
-| Invalid sub source code: 123 ||
-| Invalid other action: 123 | Configuration error when OA (other action) CFG file setting is not 0 (share fee comment) or 1 (loan fee comment) |
-| Test mode on but no test account(s) defined | Configuration error when TNC (test newest changes) CFG file setting is TRUE, but TML (test member list) is blank |
-| Invalid start/end date(s) ||
-| Error Opening Letterfile [config file name]: [system generated letter file read error message] ||
-| Invalid loan id: [loan id] | This set of errors is for skip payment processing errors |
-| Attempt to skip a payment on an ineligible loan: [loan id] ||
-| Invalid fee share id: [share id] ||
-| Loan Record Update Failed. Error: [file maintenance system error message] ||
-| Tracking Record Create Failed. Error: [file maintenance system error message] ||
-| Skip Pay Fee Post Failed. Error=[transaction posting system error message] ||
+This is the error text that is presented to the end user.  Currently the PowerOn code returns the following `clientErrorMessage` for all errors: 
+```
+We're sorry we've encountered an error. Please contact your credit union.
+```
+
+### Logging Error Messages
+_Returned in the `loggingErrorMessage` json property_
+
+| Logging Error Message                                              | Additional Notes (As Needed)                                                                                     |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| No loan types found in CFG Letter file                             | This set of errors represents issues with the configuration letter file setup                                    |
+| Invalid loan tracking type: [4-digit tracking type]                |                                                                                                                  |
+| Invalid sub source code: [3-digit sub source code]                 |                                                                                                                  |
+| Invalid other action: [3-digit other action]                       | Configuration error when OA (other action) CFG file setting is not 0 (share fee comment) or 1 (loan fee comment) |
+| Test mode on but no test account(s) defined                        | Configuration error when TNC (test newest changes) CFG file setting is TRUE, but TML (test member list) is blank |
+| Invalid start/end date(s)                                          |                                                                                                                  |
+| Error Opening Letterfile [config file name]: [sys generated error] |                                                                                                                  |
+| Invalid loan id: [loan id]                                         | This set of errors is for skip payment processing errors                                                         |
+| Attempt to skip a payment on an ineligible loan: [loan id]         |                                                                                                                  |
+| Invalid fee share id: [share id]                                   |                                                                                                                  |
+| Loan Record Update Failed. Error: [file maint system error]        |                                                                                                                  |
+| Tracking Record Create Failed. Error: [file maint system error]    |                                                                                                                  |
+| Skip Pay Fee Post Failed. Error: [tran posting system error]       |                                                                                                                  |
