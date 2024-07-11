@@ -59,9 +59,9 @@
 **  Ver. 1.1.4 05/30/2024: JuCarson - Banno
 **             Corrected issue with relationship level fee amounts
 **             when a fee amount is set to $0.00.
-**  Ver. 1.2.0 06/03/24: TKainz - Banno
+**  Ver. 1.2.0 06/03/2024: TKainz - Banno
 **             Added Program Installation Date parameter
-**  Ver. 1.2.1 07/10/24 JKeenan - Banno
+**  Ver. 1.2.1 07/10/2024 JKeenan - Banno
 **             Updated the JSON for ineligibilityReason to include 
 **             an additional line only viewable in logs, that shows
 **             the ineligible loan type, loan service codes,
@@ -151,6 +151,7 @@ DEFINE
  INVACCTWARNS        = CHARACTER     ARRAY(25)
  INVLNWARNS          = CHARACTER     ARRAY(25)
  INVLNTYPE           = CHARACTER(4)  ARRAY(25)
+ INELIGDETAIL        = CHARACTER
 
  LOANSERVICECODE     = NUMBER        ARRAY(99)
  SERVICECODEMAX      = 99
@@ -276,7 +277,7 @@ SETUP
  TERMSLINESCOUNT=2
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
  BNOLASTMODDATE='07/10/24'
- BNOLASTMODTIME="12:00 PT"
+ BNOLASTMODTIME="15:00 PT"
  BNOPROGRAMNAME="BANNO.LOANPAYMENT.SKIP.V1.POW"
  BNOCFGFILENAME = "BANNO.LOANPAYMENT.SKIP.CFG"
  BNOPROGRAMVERSION="1.2.1"
@@ -438,31 +439,21 @@ PROCEDURE PROCGETPRELOADDATA
        IF LOANINELIGIBLECODE(LOANLOOP,TEMPLOOP)=TRUE AND
           INELIGIBLEDISPLAYED=FALSE THEN
         DO
-         IF TEMPLOOP=INELIGIBLECODELOANTYPE OR
-            TEMPLOOP=INELIGIBLECODEACCTWARNING OR
-            TEMPLOOP=INELIGIBLECODELOANWARNING OR
-            TEMPLOOP=INELIGIBLECODESERVICECODE THEN
-          DO [Add further detail in logs for these ineligibility reasons]
-           PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)+Q+","
-           NEWLINE
-           IF TEMPLOOP=INELIGIBLECODELOANTYPE THEN
-            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVLNTYPE(LOANLOOP)+Q
-           ELSE IF TEMPLOOP=INELIGIBLECODEACCTWARNING THEN
-            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVACCTWARNS(LOANLOOP)+Q
-           ELSE IF TEMPLOOP=INELIGIBLECODELOANWARNING THEN
-            PRINT Q+"ineligibilityDetail"+Q+": "+Q+INVLNWARNS(LOANLOOP)+Q
-           ELSE [TEMPLOOP=INELIGIBLECODESERVICECODE]
-            DO
-             TMPCHR="Existing service codes = "+EXISTINGLNSERVS(LOANLOOP)
-             PRINT Q+"ineligibilityDetail"+Q+": "+Q+TMPCHR+Q
-            END
-           NEWLINE
-          END
-         ELSE
-          DO
-           PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)+Q
-           NEWLINE
-          END
+         INELIGDETAIL=""
+[ Add further detail in logs for these ineligibility reasons ]
+         IF TEMPLOOP=INELIGIBLECODELOANTYPE THEN
+          INELIGDETAIL=INVLNTYPE(LOANLOOP)
+         ELSE IF TEMPLOOP=INELIGIBLECODEACCTWARNING THEN
+          INELIGDETAIL=INVACCTWARNS(LOANLOOP)
+         ELSE IF TEMPLOOP=INELIGIBLECODELOANWARNING THEN
+          INELIGDETAIL=INVLNWARNS(LOANLOOP)
+         ELSE IF TEMPLOOP=INELIGIBLECODESERVICECODE THEN
+          INELIGDETAIL="Existing service codes = "+EXISTINGLNSERVS(LOANLOOP)
+
+         PRINT Q+"ineligibilityReason"+Q+": "+Q+INELIGIBLEREASONS(TEMPLOOP)+Q+","
+         NEWLINE
+         PRINT Q+"ineligibilityDetail"+Q+": "+Q+INELIGDETAIL+Q
+         NEWLINE
          INELIGIBLEDISPLAYED=TRUE
         END
       END
