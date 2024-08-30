@@ -69,6 +69,8 @@
 **              Fixed error where json could be malformed in the PRELOADDATA state.
 **  Ver. 1.4.0  05/15/24 TKainz
 **              Added program installation date parameter setting.
+**  Ver. 1.4.1  08/30/24 JuCarson
+**              Fixed error where double quotes from share defaults caused json error. 
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -565,15 +567,20 @@ DEFINE
  CONFIGPROGRAMMISMATCH     = NUMBER
 
  PARAMINSTALLDATE          = DATE
+
+ CHARCHECK                 = CHARACTER
+ CHARCHECKRETURN           = CHARACTER
+ CHARCHECKTMP              = CHARACTER
+ CHARCHECKNUM              = NUMBER
 END
 
 SETUP
- PROGRAMVERSION="1.4.0"
- LASTMODDATE='05/15/24'
- LASTMODTIME="12:00 MT"
+ PROGRAMVERSION="1.4.1"
+ LASTMODDATE='08/30/24'
+ LASTMODTIME="10:00 ET"
 
- PROGRAMUPDATENOTE1="Added program installation date parameter"
- PROGRAMUPDATENOTE2="Moved various initializations to a separate procedure"
+ PROGRAMUPDATENOTE1="Fixed double quote json error"
+ PROGRAMUPDATENOTE2=""
  CONFIGPROGRAMMINDATE='10/20/22'
 
 END [SETUP]
@@ -1789,7 +1796,9 @@ PROCEDURE SHAREOUTPUT
          NEWLINE
 
          [SHARE DESCRIPTION]
-         PRINT "            "+Q+"name"+Q+": "+Q+GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)+Q+","
+         CHARCHECK=GETDATACHAR(GETDEFAULTSHARE,VALUE(SACSHARETYPES(I,J)),55)
+         CALL CHECKFORINVALIDCHARS
+         PRINT "            "+Q+"name"+Q+": "+Q+CHARCHECKRETURN+Q+","
          NEWLINE
 
          [SHARE TERM - FOR SHARECODES 2 OR 3]
@@ -4103,5 +4112,26 @@ PROCEDURE REMOVELEADINGSPACES
  TMPCHR=SEGMENT(TMPCHR,I,LENGTH(TMPCHR))
 END
 
-#INCLUDE "RB.LISTEXPAND"
+PROCEDURE CHECKFORINVALIDCHARS
+[* Check the passed character value for any double-quotes (ascii 34)
+** and if any found replace with a single-quote character (ascii 39).
+**  PASS    CHARCHECK  Character value being tested
+**  RETURN  CHARCHECKRETURN  Updated CHARCHECK character value
+*]
+ CHARCHECKRETURN=""
 
+ TMPCHR=CHARCHECK
+ CALL NLTS
+ CHARCHECK=TMPCHR
+
+ FOR CHARCHECKNUM=1 TO LENGTH(CHARCHECK)
+  DO
+   CHARCHECKTMP=SEGMENT(CHARCHECK,CHARCHECKNUM,CHARCHECKNUM)
+   IF CHARCHECKTMP=CTRLCHR(34) THEN
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(39)
+   ELSE
+    CHARCHECKRETURN=CHARCHECKRETURN+CHARCHECKTMP
+  END
+END [PROCEDURE]
+
+#INCLUDE "RB.LISTEXPAND"
