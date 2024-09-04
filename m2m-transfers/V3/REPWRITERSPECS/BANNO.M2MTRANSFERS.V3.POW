@@ -71,6 +71,9 @@
 **               * Added Program Installation Date parameter setting.
 **               * Set debugmode to on as default for first 90 days after
 **                 latest update. Can be overridden by hidden parameter  "DB:".
+**   Ver. 3.2.3  09/04/2024 JuCarson - Banno
+**               * Fixed error where backslashes from share nickname or description
+**                 caused json error.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -363,11 +366,11 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.2.2"
- LASTMODDATE               = '07/10/2024'
- LASTMODTIME               = "15:00 PT"
- PROGRAMUPDATENOTE1        = "Corrected the loggingErrorMessage to display the ineligible account type."
- PROGRAMUPDATENOTE2        = "Added Program Installation Date parameter to CFG."
+ PROGRAMVERSION            = "3.2.3"
+ LASTMODDATE               = '09/04/2024'
+ LASTMODTIME               = "10:00 ET"
+ PROGRAMUPDATENOTE1        = "Fixed backslash json error"
+ PROGRAMUPDATENOTE2        = ""
 
  TRANRECIPTYPECHR(0)       = "savings"
  TRANRECIPTYPECHR(1)       = "checking"
@@ -3354,21 +3357,21 @@ END [PROCEDURE]
 
 PROCEDURE CHECKFORINVALIDCHARS
 [* Check the passed character value for any double-quotes (ascii 34)
-** and if any found replace with a single-quote character (ascii 39).
+** or backslashes (ascii 92) and if found prepend with an escape
+** character (ascii 92).
+**
 **  PASS    CHARCHECK  Character value being tested
 **  RETURN  CHARCHECKRETURN  Updated CHARCHECK character value
 *]
  CHARCHECKRETURN=""
 
- NLTSCHR=CHARCHECK
- CALL NLTS
- CHARCHECK=NLTSCHR
-
  FOR CHARCHECKNUM=1 TO LENGTH(CHARCHECK)
   DO
    CHARCHECKTMP=SEGMENT(CHARCHECK,CHARCHECKNUM,CHARCHECKNUM)
    IF CHARCHECKTMP=CTRLCHR(34) THEN
-    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(39)
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(34)
+   ELSE IF CHARCHECKTMP=CTRLCHR(92) THEN
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(92)
    ELSE
     CHARCHECKRETURN=CHARCHECKRETURN+CHARCHECKTMP
   END

@@ -70,7 +70,9 @@
 **  Ver. 1.4.0  05/15/24 TKainz
 **              Added program installation date parameter setting.
 **  Ver. 1.4.1  08/30/24 JuCarson
-**              Fixed error where double quotes from share defaults caused json error. 
+**              Fixed error where double quotes from share defaults caused json error.
+**  Ver. 1.4.2  09/04/24 JuCarson
+**              Fixed error where backslashes from share defaults caused json error.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -575,11 +577,11 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.4.1"
- LASTMODDATE='08/30/24'
+ PROGRAMVERSION="1.4.2"
+ LASTMODDATE='09/04/24'
  LASTMODTIME="10:00 ET"
 
- PROGRAMUPDATENOTE1="Fixed double quote json error"
+ PROGRAMUPDATENOTE1="Fixed backslash json error"
  PROGRAMUPDATENOTE2=""
  CONFIGPROGRAMMINDATE='10/20/22'
 
@@ -4114,7 +4116,9 @@ END
 
 PROCEDURE CHECKFORINVALIDCHARS
 [* Check the passed character value for any double-quotes (ascii 34)
-** and if any found replace with a single-quote character (ascii 39).
+** or backslashes (ascii 92) and if found prepend with an escape
+** character (ascii 92).
+**
 **  PASS    CHARCHECK  Character value being tested
 **  RETURN  CHARCHECKRETURN  Updated CHARCHECK character value
 *]
@@ -4124,10 +4128,13 @@ PROCEDURE CHECKFORINVALIDCHARS
   DO
    CHARCHECKTMP=SEGMENT(CHARCHECK,CHARCHECKNUM,CHARCHECKNUM)
    IF CHARCHECKTMP=CTRLCHR(34) THEN
-    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(39)
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(34)
+   ELSE IF CHARCHECKTMP=CTRLCHR(92) THEN
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(92)
    ELSE
     CHARCHECKRETURN=CHARCHECKRETURN+CHARCHECKTMP
   END
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
