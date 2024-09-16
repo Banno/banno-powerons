@@ -60,12 +60,14 @@
 **             Corrected issue with relationship level fee amounts
 **             when a fee amount is set to $0.00.
 **  Ver. 1.2.0 06/03/2024: TKainz - Banno
-**             Added Program Installation Date parameter
+**             Added Program Installation Date parameter.
 **  Ver. 1.2.1 07/10/2024 JKeenan - Banno
-**             Updated the JSON for ineligibilityReason to include 
+**             Updated the JSON for ineligibilityReason to include
 **             an additional line only viewable in logs, that shows
 **             the ineligible loan type, loan service codes,
 **             and account and loan warning code numbers.
+**  Ver. 1.3.0 09/17/2024: TKainz - Banno
+**             Added Max Skips per Loan Life parameter.
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -95,6 +97,7 @@ DEFINE
  LOANSEASON          = NUMBER
  GRACEDAYS           = NUMBER
  SKIPCOUNT           = NUMBER
+ LOANLIFESKIPCOUNT   = NUMBER
  TEMPLOOP            = NUMBER
  TIMEPERIOD          = CHARACTER
  ERRORMSGUSER        = CHARACTER
@@ -135,10 +138,10 @@ DEFINE
  READCONFIGERRORMSG  = CHARACTER
 
  LOANID              = CHARACTER(4)  ARRAY(25)
- LOANINELIGIBLECODE  = NUMBER        ARRAY(25,14)
+ LOANINELIGIBLECODE  = NUMBER        ARRAY(25,15)
  LOANSMAX            = 25
- INELIGIBLEREASONS   = CHARACTER(60) ARRAY(14)
- INELIGIBLEREASONSMAX= 14
+ INELIGIBLEREASONS   = CHARACTER(60) ARRAY(15)
+ INELIGIBLEREASONSMAX= 15
 
  LOANTYPES           = NUMBER        ARRAY(9999)
  SHARETYPES          = NUMBER        ARRAY(9999)
@@ -177,7 +180,7 @@ DEFINE
  INELIGIBLECODESET         = 0  [loan ineligible flag]
  INELIGIBLECODELOANTYPE    = 1  [Incorrect loan type]
  INELIGIBLECODELOANWARNING = 2  [has loan warning]
- INELIGIBLECODEMAXSKIPS    = 3  [has used max skips already]
+ INELIGIBLECODEMAXSKIPSYEAR= 3  [has used max skips allowed per year already]
  INELIGIBLECODETIMESKIP    = 4  [not enough time between skips]
  INELIGIBLECODEACCTWARNING = 5  [has account warning]
  INELIGIBLECODESERVICECODE = 6  [does not have required svc code]
@@ -189,10 +192,12 @@ DEFINE
  INELIGIBLECODEMINPMTCOUNT = 12 [minimum payment count not met]
  INELIGIBLECODEAPPROVALCODE= 13 [has invalid approval code]
  INELIGIBLECODEDQPAYMENTS  = 14 [has excessive DQ payment history]
+ INELIGIBLECODEMAXSKIPSLIFE= 15 [has used max skips allowed per loan life already]
 
  FEEAMOUNT                 = MONEY
  LOANTRACKINGTYPE          = NUMBER
- MAXSKIPS                  = NUMBER
+ MAXSKIPSYEAR              = NUMBER
+ MAXSKIPSLIFE              = NUMBER
  MINMONTHSINCE             = NUMBER
  SUBSOURCECODE             = NUMBER
  OTHERACTION               = NUMBER
@@ -204,7 +209,8 @@ DEFINE
 
  DEFAULTFEEAMOUNT          = $35.00
  DEFAULTLOANTRACKINGTYPE   = 77
- DEFAULTMAXSKIPS           = 2
+ DEFAULTMAXSKIPSYEAR       = 0
+ DEFAULTMAXSKIPSLIFE       = 0
  DEFAULTMINMONTHSINCE      = 2
  DEFAULTSUBSOURCECODE      = 33 [Skip Payment Fee]
  DEFAULTOTHERACTION        = 0  [Use "FEE OTHER" OTHERACTION with Fee]
@@ -689,7 +695,8 @@ END [PROCEDURE]
 PROCEDURE INITIALIZEDATA
  FEEAMOUNT=DEFAULTFEEAMOUNT
  LOANTRACKINGTYPE=DEFAULTLOANTRACKINGTYPE
- MAXSKIPS=DEFAULTMAXSKIPS
+ MAXSKIPSYEAR=DEFAULTMAXSKIPSYEAR
+ MAXSKIPSLIFE=DEFAULTMAXSKIPSLIFE
  MINMONTHSINCE=DEFAULTMINMONTHSINCE
  SUBSOURCECODE=DEFAULTSUBSOURCECODE
  OTHERACTION=DEFAULTOTHERACTION
@@ -778,8 +785,10 @@ PROCEDURE INITIALIZEDATA
   "Ineligible Loan Type"
  INELIGIBLEREASONS(INELIGIBLECODELOANWARNING)=
   "Loan Warning Found"
- INELIGIBLEREASONS(INELIGIBLECODEMAXSKIPS)=
+ INELIGIBLEREASONS(INELIGIBLECODEMAXSKIPSYEAR)=
   "Max Loan skips already used for last 12 months"
+ INELIGIBLEREASONS(INELIGIBLECODEMAXSKIPSLIFE)=
+  "Max Loan skips per loan life already used"
  INELIGIBLEREASONS(INELIGIBLECODETIMESKIP)=
   "Insufficient time since last skip"
  INELIGIBLEREASONS(INELIGIBLECODEACCTWARNING)=
@@ -1004,7 +1013,14 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF TMPPARAM="PS" AND
                TMPPARAMVAL<>"" THEN
         DO
-         MAXSKIPS=VALUE(TMPPARAMVAL)
+         MAXSKIPSYEAR=VALUE(TMPPARAMVAL)
+        END
+
+[ Max skips per loan life ]
+       ELSE IF TMPPARAM="SL" AND
+               TMPPARAMVAL<>"" THEN
+        DO
+         MAXSKIPSLIFE=VALUE(TMPPARAMVAL)
         END
 
 [ Min months since last skip ]
@@ -1316,18 +1332,27 @@ PROCEDURE GETLOANDATA
 [ Grace period]
    IF LOAN:DUEDATE+GRACEDAYS<SYSTEMDATE THEN
     LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEPASTDUE)=TRUE
+
 [ Skips]
    SKIPCOUNT=0
-   FOR EACH LOAN TRACKING WITH (LOAN TRACKING:TYPE=LOANTRACKINGTYPE AND
-                                LOAN TRACKING:USERDATE1>=
-                                DATEOFFSET(SYSTEMDATE,-12,0))
+   LOANLIFESKIPCOUNT=0
+
+   FOR EACH LOAN TRACKING WITH (LOAN TRACKING:TYPE=LOANTRACKINGTYPE)
     DO
-     SKIPCOUNT=SKIPCOUNT+1
+     IF LOAN TRACKING:USERDATE1>=DATEOFFSET(SYSTEMDATE,-12,0) THEN
+      SKIPCOUNT=SKIPCOUNT+1
+     LOANLIFESKIPCOUNT=LOANLIFESKIPCOUNT+1
     END
-   UNTIL SKIPCOUNT=MAXSKIPS
+
 [ Too many skips in last year]
-   IF SKIPCOUNT>=MAXSKIPS THEN
-    LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEMAXSKIPS)=TRUE
+   IF MAXSKIPSYEAR>0 AND
+      SKIPCOUNT>=MAXSKIPSYEAR THEN
+    LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEMAXSKIPSYEAR)=TRUE
+
+[ Too many skips during loan life]
+   IF MAXSKIPSLIFE>0 and
+      LOANLIFESKIPCOUNT>=MAXSKIPSLIFE THEN
+    LOANINELIGIBLECODE(TOTALLOANS,INELIGIBLECODEMAXSKIPSLIFE)=TRUE
 
    SKIPCOUNT=0
    FOR EACH LOAN TRACKING WITH (
