@@ -33,6 +33,10 @@
 **                         Added Program Installation Date parameter
 **    Ver. 1.3.0  08/13/24 TKainz - Banno
 **                         Added setting for default ODT amount.
+**    Ver. 1.4.0  09/16/24 TKainz - Banno
+**                         Added parameter option to clear/not clear the ODT amount
+**                         upon opt-out:
+**                           CLEAR OVERDRAFT TOLERANCE AMOUNT ON OPT-OUT
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -103,6 +107,7 @@ DEFINE
  PARAMOTASHARETYPE            = NUMBER ARRAY(99)
  PARAMOTACOUNT                = NUMBER
  PARAMOTAMAX                  = 99
+ PARAMCOTA                    = NUMBER
  PARAMOPTINOUTINFOTEXT        = CHARACTER ARRAY(10)
  PARAMOPTINOUTINFOTEXTLINES   = NUMBER
  PARAMOPTINOUTINFOTEXTLINESMAX= 10
@@ -622,6 +627,7 @@ PROCEDURE READCONFIGFILESETTINGS
 **  OI  PARAMOPTININFO        Opt-in Information Text
 **  OO  PARAMOPTOUTINFO       Opt-out Information Text
 **  OTA PARAMOTAAMOUNT        Overdraft Tolerance Amount
+**  COTA PARAMCOTA            Clear ODT amount on opt-out
 **  PID PARAMINSTALLDATE      Date program installed at CU
 *]
  INVALIDCONFIGPARAMS=FALSE
@@ -720,7 +726,13 @@ PROCEDURE READCONFIGFILESETTINGS
             END
           END [IF COLONPOS>1 AND...]
         END [ELSE IF PARAMNAME="OTA" AND...]
-
+       ELSE IF PARAMNAME="COTA" THEN
+        DO
+         IF CHARACTERSEARCH("YESTRUE1",UPPERCASE(PARAMVALUE))>0 THEN
+          PARAMCOTA=TRUE
+         ELSE
+          PARAMCOTA=FALSE
+        END [ELSE IF PARAMNAME="COTA"]
 [* Debug mode. This is a hidden parameter setting which can override the default debug
 ** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "ON"
 ** or "OFF" to force the debug mode to be other than the default value of being on for
@@ -890,6 +902,7 @@ PROCEDURE READCONFIGFILESETTINGS
    BNODEBUGMSG="  AFF: "+FORMAT("9",PARAMAF1FALSE) CALL BNODEBUGMSGADD
    BNODEBUGMSG="  PARAMDEBUGMODE: "+FORMAT("9",PARAMDEBUGMODE) CALL BNODEBUGMSGADD
    BNODEBUGMSG="  PID: "+FORMAT("99/99/9999",PARAMINSTALLDATE) CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  COTA: "+FORMAT("9",PARAMCOTA) CALL BNODEBUGMSGADD
    BNODEBUGMSG="  BNODEBUGMODE: "+BOOLEANCHR(BNODEBUGMODE) CALL BNODEBUGMSGADD
 
    IF DEFAULTOTAVALUE>=$0.00 THEN
@@ -1540,9 +1553,14 @@ PROCEDURE FMODTAMOUNT
   DO
    IF SDODTNEWSTATUS(TMPLOOP)=FALSE THEN
     DO
-     NEWODTAMOUNT=$0.00
-     BNODEBUGMSG="SETTING NEW ODT AMOUNT TO $0.00"
-     CALL BNODEBUGMSGADD
+     IF PARAMCOTA=TRUE THEN
+      DO
+       NEWODTAMOUNT=$0.00
+       BNODEBUGMSG="SETTING NEW ODT AMOUNT TO $0.00"
+       CALL BNODEBUGMSGADD
+      END
+     ELSE
+      NEWODTAMOUNT=SDOVERDRAFTTOLERANCE(TMPLOOP)
     END
    ELSE
     DO
