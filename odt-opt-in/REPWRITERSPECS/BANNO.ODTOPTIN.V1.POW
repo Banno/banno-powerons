@@ -52,8 +52,6 @@ DEFINE
 
  TRUE                         = 1
  FALSE                        = 0
- YES                          = 1
- NO                           = 0
  FMUNCHANGED                  = 0
  FMSUCCESSFUL                 = 1
  FMUNSUCCESSFUL               = 2
@@ -731,9 +729,9 @@ PROCEDURE READCONFIGFILESETTINGS
        ELSE IF PARAMNAME="COTA" THEN
         DO
          IF CHARACTERSEARCH("YESTRUE1",UPPERCASE(PARAMVALUE))>0 THEN
-          PARAMCOTA=YES
+          PARAMCOTA=TRUE
          ELSE
-          PARAMCOTA=NO
+          PARAMCOTA=FALSE
         END [ELSE IF PARAMNAME="COTA"]
 [* Debug mode. This is a hidden parameter setting which can override the default debug
 ** mode setting. Use this "DB:" parameter setting in the CFG Letter file with "ON"
@@ -1555,7 +1553,7 @@ PROCEDURE FMODTAMOUNT
   DO
    IF SDODTNEWSTATUS(TMPLOOP)=FALSE THEN
     DO
-     IF PARAMCOTA=YES THEN
+     IF PARAMCOTA=TRUE THEN
       DO
        NEWODTAMOUNT=$0.00
        BNODEBUGMSG="SETTING NEW ODT AMOUNT TO $0.00"
