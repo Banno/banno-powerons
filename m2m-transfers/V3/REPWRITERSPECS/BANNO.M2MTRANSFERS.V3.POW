@@ -74,7 +74,7 @@
 **   Ver. 3.2.3  09/04/2024 JuCarson - Banno
 **               * Fixed error where backslashes from share nickname or description
 **                 caused json error.
-**   Ver. 3.2.4  09/23/2024 T. Kainz -
+**   Ver. 3.2.4  10/04/2024 T. Kainz -
 **               * Modified logic used to determine transfer record editability.
 **                 * Program now matches the user number who created the transfer
 **                   record against the SymXchange user number and if it matches, then
@@ -385,7 +385,7 @@ END [DEFINE]
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.2.4"
- LASTMODDATE               = '09/19/2024'
+ LASTMODDATE               = '10/04/2024'
  LASTMODTIME               = "16:00 MT"
  PROGRAMUPDATENOTE1        = "Modified logic to determine Share Transfer record editability"
  PROGRAMUPDATENOTE2        = "Ext account rec only saved when directed to by member"
@@ -2083,8 +2083,6 @@ PROCEDURE BUILDSLTRANSFERLIST
          TMPNUM=0
          TRANCOUNT=TRANCOUNT+1
 
-
-
          TRANLOC(TRANCOUNT)=SHARE TRANSFER:LOCATOR
          TRANSOURCEACCT(TRANCOUNT)=ACCOUNT:NUMBER+"S"+SHARE:ID
 
@@ -2100,8 +2098,7 @@ PROCEDURE BUILDSLTRANSFERLIST
                     "   SHARE TRAN FREQ:"+
                      TRANSFERFREQCHR(TRANFREQALT,SHARE TRANSFER:FREQUENCY)+
                     FORMAT("  TRANSFERCREATEUSER:,###9+  ",TRANSFERCREATEUSER)+
-                    FORMAT("USERSWHOCANEDIT 9999",TRANSFERCREATEUSER)+
-                    FORMAT("=9",USERSWHOCANEDIT(TRANSFERCREATEUSER))
+                    FORMAT("USERSWHOCANEDIT 9999",USERSWHOCANEDIT(TRANSFERCREATEUSER))
          CALL BNODEBUGMSGADD
 
 [* Determine if existing transfer is editible or not
@@ -2116,7 +2113,7 @@ PROCEDURE BUILDSLTRANSFERLIST
 
          TRANACCOUNTNAME(TRANCOUNT)=SHARE:NICKNAME
          IF SHARE:NICKNAME="" THEN
-         TRANACCOUNTNAME(TRANCOUNT)=SHARE:DESCRIPTION
+          TRANACCOUNTNAME(TRANCOUNT)=SHARE:DESCRIPTION
          TRANXFERAMOUNT(TRANCOUNT)=SHARE TRANSFER:AMOUNT
          TRANRECIPNAME(TRANCOUNT)=RECIPNAME(EXTRECFOUND) [First three letters of last/business name]
          TRANRECIPMBRID(TRANCOUNT)=SHARE TRANSFER:ACCOUNTNUMBER
@@ -2141,7 +2138,8 @@ PROCEDURE BUILDSLTRANSFERLIST
           TRANRECIPACCTTYPE(TRANCOUNT)="share"
          TRANRECIPEXPIREDATE(TRANCOUNT)=RECIPLISTEXPIREDATE(EXTRECFOUND)
 
-         BNODEBUGMSG=FORMAT("SHARECODE TMPNUM:#9  ",TMPNUM)+"(TMPNUM):"+ TRANRECIPTYPECHR(TMPNUM)
+         BNODEBUGMSG=FORMAT("SHARECODE (TMPNUM) :#9  ",TMPNUM)+
+                    "TRANRECIPTYPECHR(TMPNUM):"+TRANRECIPTYPECHR(TMPNUM)
          CALL BNODEBUGMSGADD
 
          TRANRECIPACCTID(TRANCOUNT)=SHARE TRANSFER:ID
