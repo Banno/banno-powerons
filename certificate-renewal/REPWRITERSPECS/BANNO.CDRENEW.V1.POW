@@ -80,11 +80,13 @@
 **    Ver. 1.5.1  06/06/24 TKainz - Banno
 **                         Added Program Installation Date parameter
 **    Ver. 1.5.2  09/04/24 JuCarson - Banno
-**                Fixed error where backslashes and double quotes from share defaults 
+**                Fixed error where backslashes and double quotes from share defaults
 **                caused json error.
 **    Ver. 1.5.3  09/13/24 JuCarson - Banno
-**                Fixed error where backslashes and double quotes from transfer shares 
+**                Fixed error where backslashes and double quotes from transfer shares
 **                caused json error.
+**    Ver. 1.5.4  10/11/24 TKainz - Banno
+**                Corrected display format of renew term period
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -1655,10 +1657,13 @@ PROCEDURE RETURNJSON2
  NEWLINE
  PRINT INDENT(3)+Q+"renewName"+Q+": "+Q+SRENEWNAME+Q+","
  NEWLINE
+
+ TMPCHR=FORMAT("#,##9",SRENEWTERMPERIOD)
+ CALL NLTS
  PRINT INDENT(3)+Q+"renewTermPeriod"+Q+": "
- PRINT SRENEWTERMPERIOD
- PRINT ","
+ PRINT Q+TMPCHR+Q+","
  NEWLINE
+
  PRINT INDENT(3)+Q+"renewTermFrequency"+Q+": "+Q+SRENEWTERMFREQUENCY+Q+","
  NEWLINE
  PRINT INDENT(3)+Q+"transferSLId"+Q+": "+Q+TRANSFERACCOUNT+
@@ -1958,9 +1963,12 @@ PROCEDURE PRINTCURRENTSTATE
  NEWLINE
  PRINT INDENT(3)+Q+"renewName"+Q+": "+Q+SRENEWNAME+Q+","
  NEWLINE
+
+ TMPCHR=FORMAT("#,##9",SRENEWTERMPERIOD)
+ CALL NLTS
  PRINT INDENT(3)+Q+"renewTermPeriod"+Q+": "
- PRINT SRENEWTERMPERIOD
- PRINT ","
+ PRINT Q+TMPCHR+Q+","
+
  NEWLINE
  PRINT INDENT(3)+Q+"renewTermFrequency"+Q+": "+Q+SRENEWTERMFREQUENCY+Q+","
  NEWLINE
