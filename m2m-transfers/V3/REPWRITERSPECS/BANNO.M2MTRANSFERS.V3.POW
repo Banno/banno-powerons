@@ -74,7 +74,7 @@
 **   Ver. 3.2.3  09/04/2024 JuCarson - Banno
 **               * Fixed error where backslashes from share nickname or description
 **                 caused json error.
-**   Ver. 3.2.4  10/09/2024 T. Kainz -
+**   Ver. 3.2.4  10/14/2024 T. Kainz -
 **               * Modified logic used to determine transfer record editability.
 **                 * Program now matches the user number who created the transfer
 **                   record against the SymXchange user number and if it matches, then
@@ -387,7 +387,7 @@ END [DEFINE]
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.2.4"
- LASTMODDATE               = '10/04/2024'
+ LASTMODDATE               = '10/14/2024'
  LASTMODTIME               = "16:00 MT"
  PROGRAMUPDATENOTE1        = "Modified logic to determine Share Transfer record editability"
  PROGRAMUPDATENOTE2        = "Ext account rec only saved when directed to by member"
