@@ -73,6 +73,10 @@
 **              Fixed error where double quotes from share defaults caused json error.
 **  Ver. 1.4.2  09/04/24 JuCarson
 **              Fixed error where backslashes from share defaults caused json error.
+**  Ver. 1.4.3  10/16/24 TKainz
+**              Corrected incorrect source of opening deposit and/or opening fee
+**              to Share ID '0000' when the funding source and or fee source was a share
+**              with an alphanumeric ID (such as "ABCD")
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -577,12 +581,12 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.4.2"
- LASTMODDATE='09/04/24'
- LASTMODTIME="10:00 ET"
+ PROGRAMVERSION="1.4.3"
+ LASTMODDATE='10/16/24'
+ LASTMODTIME="10:30 MT"
 
- PROGRAMUPDATENOTE1="Fixed backslash json error"
- PROGRAMUPDATENOTE2=""
+ PROGRAMUPDATENOTE1="Corrected funding & fee source posting issue when source is"
+ PROGRAMUPDATENOTE2="an alphanumeric ID."
  CONFIGPROGRAMMINDATE='10/20/22'
 
 END [SETUP]
@@ -2258,15 +2262,12 @@ PROCEDURE GETPASSEDINFO
      IF BNODATAFIELDCOUNT>=2 THEN
       DO
        TRANSFERFROMID=BNODATALINEFIELD(2)
-       TRANSFERFROMID=FORMAT("9999",VALUE(TRANSFERFROMID))
       END
      IF BNODATAFIELDCOUNT>=3 THEN
       TRANSFERAMOUNT=MONEY(VALUE(BNODATALINEFIELD(3)))
      IF BNODATAFIELDCOUNT>=4 THEN
       DO
        FEEFROMID=BNODATALINEFIELD(4)
-       FEEFROMID=FORMAT("9999",VALUE(FEEFROMID))
-       FEEFROMID=SEGMENT(FEEFROMID,4-(IDLENGTH-1),4)
       END
     END
 
