@@ -86,6 +86,10 @@
 **                 to save the record (nickname field is not blank).
 **               * Added additional checks for invalid characters in Share/Loan Nicknames
 **                 and descriptions.
+**   Ver. 3.2.5  10/28/2024 T. Kainz - Banno
+**               * Modified displayed description of recipient S/L when existing transfer
+**                 references a saved account with an external account record which has
+**                 been expired or deleted.
 **
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
@@ -386,11 +390,11 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
- PROGRAMVERSION            = "3.2.4"
- LASTMODDATE               = '10/14/2024'
- LASTMODTIME               = "16:00 MT"
- PROGRAMUPDATENOTE1        = "Modified logic to determine Share Transfer record editability"
- PROGRAMUPDATENOTE2        = "Ext account rec only saved when directed to by member"
+ PROGRAMVERSION            = "3.2.5"
+ LASTMODDATE               = '10/28/2024'
+ LASTMODTIME               = "11:00 MT"
+ PROGRAMUPDATENOTE1        = "Modified recip share/loan description when referencing"
+ PROGRAMUPDATENOTE2        = "deleted or expired saved ext. acct."
 
  TRANRECIPTYPECHR(0)       = "savings"
  TRANRECIPTYPECHR(1)       = "checking"
@@ -2155,42 +2159,15 @@ PROCEDURE BUILDSLTRANSFERLIST
 
          TRANRECIPACCTID(TRANCOUNT)=SHARE TRANSFER:ID
          TRANRECIPNICKNAME(TRANCOUNT)=RECIPNICKNAME(EXTRECFOUND)
-[* If the recipient nickname is blank (not saved) then get the [SHARE/LOAN]:NICKNAME if available else
-** the [SHARE/LOAN]:DESCRIPTION
+[* Use 'x'+last 2 of member number+'L' or 'S'+S/L ID format instead of description/nickname
 *]
          IF TRANRECIPNICKNAME(TRANCOUNT)="" THEN
           DO
-           FOR ACCOUNT SHARE TRANSFER:ACCOUNTNUMBER
-            DO
-             IF TRANRECIPACCTTYPE(TRANCOUNT)="share" THEN
-              DO
-               FOR EACH SHARE WITH SHARE:ID=TRANRECIPACCTID(TRANCOUNT)
-                DO
-                 IF SHARE:NICKNAME<>"" THEN
-                  TRANRECIPNICKNAME(TRANCOUNT)=SHARE:NICKNAME
-                 ELSE
-                  TRANRECIPNICKNAME(TRANCOUNT)=SHARE:DESCRIPTION
-
-                 CHARCHECK=TRANRECIPNICKNAME(TRANCOUNT)
-                 CALL CHECKFORINVALIDCHARS
-                 TRANRECIPNICKNAME(TRANCOUNT)=CHARCHECKRETURN
-                END
-              END
-             ELSE [it's a loan]
-              DO
-               FOR EACH LOAN WITH LOAN:ID=TRANRECIPACCTID(TRANCOUNT)
-                DO
-                 IF LOAN:NICKNAME<>"" THEN
-                  TRANRECIPNICKNAME(TRANCOUNT)=LOAN:NICKNAME
-                 ELSE
-                  TRANRECIPNICKNAME(TRANCOUNT)=LOAN:DESCRIPTION
-
-                 CHARCHECK=TRANRECIPNICKNAME(TRANCOUNT)
-                 CALL CHECKFORINVALIDCHARS
-                 TRANRECIPNICKNAME(TRANCOUNT)=CHARCHECKRETURN
-                END
-              END
-            END
+           TRANRECIPNICKNAME(TRANCOUNT)="x"+SEGMENT(SHARE TRANSFER:ACCOUNTNUMBER,
+                                            LENGTH(SHARE TRANSFER:ACCOUNTNUMBER)-1,
+                                            LENGTH(SHARE TRANSFER:ACCOUNTNUMBER))+
+                                            UPPERCASE(SEGMENT(TRANRECIPACCTTYPE(TRANCOUNT),1,1))+
+                                            SHARE TRANSFER:ID
           END
 
          TRANSTARTDATE(TRANCOUNT)=SHARE TRANSFER:EFFECTIVEDATE
