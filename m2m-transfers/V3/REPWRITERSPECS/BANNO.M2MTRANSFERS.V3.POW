@@ -2111,7 +2111,7 @@ PROCEDURE BUILDSLTRANSFERLIST
                     FORMAT("USERSWHOCANEDIT 9999",USERSWHOCANEDIT(TRANSFERCREATEUSER))
          CALL BNODEBUGMSGADD
 
-[* Determine if existing transfer is editible or not
+[* Determine if existing transfer is editable or not
 *]
          IF TRANSFERFREQCHR(TRANFREQALT,SHARE TRANSFER:FREQUENCY)<>"" AND
            (PARAMALLOWEDIT=ALLOWEDITTRUE OR
