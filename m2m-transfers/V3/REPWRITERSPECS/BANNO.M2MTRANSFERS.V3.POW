@@ -393,10 +393,10 @@ END [DEFINE]
 SETUP
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.2.5"
- LASTMODDATE               = '10/28/2024'
- LASTMODTIME               = "11:00 MT"
- PROGRAMUPDATENOTE1        = "Modified recip share/loan description when referencing"
- PROGRAMUPDATENOTE2        = "deleted or expired saved ext. acct."
+ LASTMODDATE               = '12/11/2024'
+ LASTMODTIME               = "13:20 MST"
+ PROGRAMUPDATENOTE1        = "Corrected array index error when searching FM history"
+ PROGRAMUPDATENOTE2        = "for share transfer creation date when date not found"
 
  TRANRECIPTYPECHR(0)       = "savings"
  TRANRECIPTYPECHR(1)       = "checking"
