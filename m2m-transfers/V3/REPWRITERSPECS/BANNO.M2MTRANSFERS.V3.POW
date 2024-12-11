@@ -90,7 +90,9 @@
 **               * Modified displayed description of recipient S/L when existing transfer
 **                 references a saved account with an external account record which has
 **                 been expired or deleted.
-**
+**   Ver. 3.2.6  12/11/2024 T. Kainz - Banno
+**               * Corrected issue where program was erring when no transfer record FM
+**                 history was found indicating the record creation date
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -1167,7 +1169,7 @@ PROCEDURE FINDTRANCREATEDATE
 **  RETURN TRANSFERCREATEDATE         Record created date
 *]
  TRANSFERCREATEDATE=DATENULL
- TRANSFERCREATEUSER=-1
+ TRANSFERCREATEUSER=9999
  TRANCREATEDATEFOUND=FALSE
 
  FOR ACCOUNT ACCOUNT:NUMBER
