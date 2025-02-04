@@ -77,6 +77,9 @@
 **              Corrected incorrect source of opening deposit and/or opening fee
 **              to Share ID '0000' when the funding source and or fee source was a share
 **              with an alphanumeric ID (such as "ABCD")
+**  Ver. 1.4.4  02/04/24 JuCarson
+**              Corrected logic for dividend types using a "Fixed" rate selection in
+**              both share rate procedures.
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -581,12 +584,12 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.4.3"
- LASTMODDATE='10/16/24'
- LASTMODTIME="10:30 MT"
-
- PROGRAMUPDATENOTE1="Corrected funding & fee source posting issue when source is"
- PROGRAMUPDATENOTE2="an alphanumeric ID."
+ PROGRAMVERSION="1.4.4"
+ LASTMODDATE='02/04/24'
+ LASTMODTIME="11:00 ET"
+                      
+ PROGRAMUPDATENOTE1="Corrected logic for dividend types using a fixed"
+ PROGRAMUPDATENOTE2="rate selection."
  CONFIGPROGRAMMINDATE='10/20/22'
 
 END [SETUP]
@@ -1907,8 +1910,7 @@ PROCEDURE GETSHARERATE
    IF DIVDEFINDEXOPTION=0 AND
       ((DIVDEFRATESELECT=1 AND
        DIVDEFFILLINMETHOD=1) OR
-      (DIVDEFRATESELECT=0 OR
-       DIVDEFRATESELECT=2 OR
+      (DIVDEFRATESELECT=2 OR
        DIVDEFRATESELECT=3 OR
        DIVDEFRATESELECT=4 OR
        DIVDEFRATESELECT=5 OR
@@ -2020,6 +2022,7 @@ PROCEDURE GETSHARERATE
    [FILL IN FROM SHARE DEFAULTS]
    IF (DIVDEFRATESELECT=1 AND
        DIVDEFFILLINMETHOD=0) OR
+       DIVDEFRATESELECT=0 OR
        RATEPRINTED=FALSE THEN
     DO
      RATEPRINTED=TRUE
@@ -2503,13 +2506,9 @@ PROCEDURE GETNEWSHARERATE   [CMS FIXED AND TESTED]
       DO
        RATEDONE=TRUE
       END
-     ELSE IF NEWSHAREDIVDEFRATESELECT=0 THEN   [FIXED FILL IN FROM DIV DEFINITIONS]
-      DO
-       NEWSHARERATE=GETDATARATE(GETPARAMDIVDEFRATE,NEWSHAREDIVTYPE,1)           [GET RATE FROM FIRST SLOT]
-       RATEDONE=TRUE
-      END
-     ELSE IF NEWSHAREDIVDEFRATESELECT=1 AND   [FILL IN FROM SHARE DEFAULTS]
-             NEWSHAREDIVDEFFILLINMETHOD=0 THEN
+     ELSE IF NEWSHAREDIVDEFRATESELECT=0 OR
+            (NEWSHAREDIVDEFRATESELECT=1 AND   [FILL IN FROM SHARE DEFAULTS]
+             NEWSHAREDIVDEFFILLINMETHOD=0) THEN
       DO
        NEWSHARERATE=NEWSHAREDIVRATE
        RATEDONE=TRUE
@@ -4140,4 +4139,3 @@ PROCEDURE CHECKFORINVALIDCHARS
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
