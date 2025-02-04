@@ -5,7 +5,7 @@
 **  Letterfile Name:          BANNO.NEWSUBCREATE.FEEDISC.00-19
 **  Fee Display PowerOn Name: BANNO.NEWSUBCREATE.FEES.V1.POW (template)
 **
-**  Copyright 2020-2024 Jack Henry and Associates
+**  Copyright 2020-2025 Jack Henry and Associates
 **
 **  Ver. 1.0.0  08/19/2020: Added debug mode switch. When on, config file
 **              resides in LETTTERSPECS else in DATAFILES dir.
@@ -77,7 +77,7 @@
 **              Corrected incorrect source of opening deposit and/or opening fee
 **              to Share ID '0000' when the funding source and or fee source was a share
 **              with an alphanumeric ID (such as "ABCD")
-**  Ver. 1.4.4  02/04/24 JuCarson
+**  Ver. 1.4.4  02/04/25 JuCarson
 **              Corrected logic for dividend types using a "Fixed" rate selection in
 **              both share rate procedures.
 **
@@ -585,7 +585,7 @@ END
 
 SETUP
  PROGRAMVERSION="1.4.4"
- LASTMODDATE='02/04/24'
+ LASTMODDATE='02/04/25'
  LASTMODTIME="11:00 ET"
                       
  PROGRAMUPDATENOTE1="Corrected logic for dividend types using a fixed"
@@ -4139,3 +4139,4 @@ PROCEDURE CHECKFORINVALIDCHARS
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
+
