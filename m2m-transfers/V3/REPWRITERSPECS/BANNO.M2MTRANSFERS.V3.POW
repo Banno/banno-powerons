@@ -473,7 +473,6 @@ DEFINE
 
  CHRVALQUOTE=34
  CHRVALBACKSLASH=92
-
 END [DEFINE]
 
 SETUP
@@ -514,9 +513,9 @@ SETUP
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.3.0"
  LASTMODDATE               = '02/04/2025'
- LASTMODTIME               = "14:00 MST"
- PROGRAMUPDATENOTE1        = "Corrected array index error when searching FM history"
- PROGRAMUPDATENOTE2        = "for share transfer creation date when date not found"
+ LASTMODTIME               = "17:30 MST"
+ PROGRAMUPDATENOTE1        = "Support for error display message and memo mode restrict"
+ PROGRAMUPDATENOTE2        = ""
 
  TRANRECIPTYPECHR(0)       = "savings"
  TRANRECIPTYPECHR(1)       = "checking"
