@@ -93,8 +93,8 @@
 **   Ver. 3.2.6  12/11/2024 T. Kainz - Banno
 **               * Corrected issue where program was erring when no transfer record FM
 **                 history was found indicating the record creation date
-**   Ver. 3.3.0  02/04/2025 R. Robison - Banno
-**               * Adding support for errorDisplayMessage to accomodate memo mode message
+**   Ver. 3.3.0  02/18/2025 R. Robison - Banno
+**               * Adding support for errorDisplayMessage to accommodate memo mode message
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -506,8 +506,8 @@ SETUP
 
  INCLUDEPROGRAMINFO        = TRUE
  PROGRAMVERSION            = "3.3.0"
- LASTMODDATE               = '02/04/2025'
- LASTMODTIME               = "17:30 MST"
+ LASTMODDATE               = '02/18/2025'
+ LASTMODTIME               = "10:00 MST"
  PROGRAMUPDATENOTE1        = "Support for error display message and memo mode restrict"
  PROGRAMUPDATENOTE2        = ""
 
