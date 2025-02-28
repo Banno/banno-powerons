@@ -82,6 +82,8 @@
 **              both share rate procedures.
 **  Ver. 1.4.5  02/14/25 TKainz
 **              Reversed IRS/Share records order of creation for better error handling.
+**  Ver. 1.5.0  02/26/25 RRobison
+**              Display error if there are no shares or loans under the member account
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -210,6 +212,7 @@ DEFINE
  RATEDONE                  = NUMBER
  GETRATEERROR              = CHARACTER
  AVAILBALMIN               = MONEY
+ ONESHARELOANFOUND         = NUMBER
 
  SACSHAREGROUP             = NUMBER
  SACSHAREGROUPNAMES        = CHARACTER ARRAY(19)
@@ -570,7 +573,7 @@ DEFINE
  CNLSEX                    = 35
  CNLDUPLICATED             = 36
 
- MAXERRORCODE              = 514
+ MAXERRORCODE              = 515
  BNOPRINTDEBUGINFODAYS     = NUMBER
  CONFIGPROGRAMVER          = CHARACTER
  CONFIGPROGRAMDATE         = DATE
@@ -588,12 +591,12 @@ DEFINE
 END
 
 SETUP
- PROGRAMVERSION="1.4.5"
- LASTMODDATE='02/14/25'
- LASTMODTIME="16:00 MT"
+ PROGRAMVERSION="1.5.0"
+ LASTMODDATE='02/26/25'
+ LASTMODTIME="17:30 MT"
 
- PROGRAMUPDATENOTE1="Changed IRS record creation to occur before the share creation"
- PROGRAMUPDATENOTE2="Allowing for IRS rec error management"
+ PROGRAMUPDATENOTE1="New error condition when no shares or loans exist on account"
+ PROGRAMUPDATENOTE2=""
  CONFIGPROGRAMMINDATE='10/20/22'
 
 END [SETUP]
@@ -1376,6 +1379,35 @@ PROCEDURE QUALIFYMEMBER
      NEWLINE
      INELIGIBLEREASON="EXCLUDED ACCT TYPE"
      ERRORCODE=503
+     CALL ERRORHANDLER
+    END
+  END
+
+ [CHECK THE ACCOUNT TYPE]
+ IF INELIGIBLEREASON="" THEN
+  DO
+   ONESHARELOANFOUND=FALSE
+   FOR EACH SHARE
+    DO
+     ONESHARELOANFOUND=TRUE
+    END
+   UNTIL ONESHARELOANFOUND=TRUE
+
+   FOR EACH LOAN
+    DO
+     ONESHARELOANFOUND=TRUE
+    END
+   UNTIL ONESHARELOANFOUND=TRUE
+
+   IF ONESHARELOANFOUND=FALSE THEN
+    DO
+     INELIGIBLEREASON="NO SHARES OR LOANS"
+     PRINT "{"
+     NEWLINE
+     PRINT "  "+Q+"canOpenSubShare"+Q+": false,"
+     NEWLINE
+     CALL PRINTPROGRAMINFO
+     ERRORCODE=515
      CALL ERRORHANDLER
     END
   END
@@ -3443,6 +3475,7 @@ PROCEDURE ERRORHANDLER
 **  512 - Maximum share limit error
 **  513 - Error calculating fee
 **  514 - Error reading fee disclosure LF for group
+**  515 - No existing open Shares/Loans on the account
 *]
 
  IF ERRORCODE>=500 AND ERRORCODE<=MAXERRORCODE THEN
@@ -3980,6 +4013,9 @@ PROCEDURE SETUPERRORCODES
 
  ERRORCODEDESCR(ECDEFAULT,14)="Error reading Share group fee disclosure file"
  ERRORCODEDESCR(ECCUSTOM,14)=""
+
+ ERRORCODEDESCR(ECDEFAULT,15)="No existing open Shares/Loans on the account"
+ ERRORCODEDESCR(ECCUSTOM,15)=""
 END [PROCEDURE]
 
 PROCEDURE GETSACFEEINFO
