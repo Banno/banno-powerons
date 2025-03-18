@@ -1166,7 +1166,7 @@ PROCEDURE CLEANUPTEXT
 END [PROCEDURE]
 
 PROCEDURE VALIDATERGDATA
-[* Check the member's new street or new extra address to see if it
+[* Check the member's new street and new extra address to see if it
 ** contains a PO Box address per the CU's configuration settings.
 ** PO Box address is found, set an error code and create a
 ** If a note record on the member's account. Also validates
