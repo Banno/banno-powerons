@@ -35,7 +35,7 @@
 **    Ver. 1.2.2  12/13/23 J. Carson - Added member's input address to account level note when host is in
 **                                     memo mode or a config file error occurs.
 **    Ver. 1.3.0  05/16/24 T. Kainz - Added Program Installation Date parameter setting
-**    Ver. 1.3.1  03/18/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
+**    Ver. 1.3.1  03/19/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
 *]
 SYMCONNECT
 STATELESS
@@ -244,7 +244,7 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.3.1"
- LASTMODDATE='03/18/25'
+ LASTMODDATE='03/19/25'
  LASTMODTIME="17:30 PT"
  PROGRAMUPDATENOTE1="If PO BOX RESTRICT is set to yes, check"
  PROGRAMUPDATENOTE2="both Street1 and Street2(extra) address"
@@ -1168,15 +1168,17 @@ END [PROCEDURE]
 PROCEDURE VALIDATERGDATA
 [* Check the member's new street and new extra address to see if it
 ** contains a PO Box address per the CU's configuration settings.
-** PO Box address is found, set an error code and create a
-** If a note record on the member's account. Also validates
-** NEWSTREET, NEWCITY, NEWSTATE and NEWZIPCODE are completed.
+** If a PO Box address is found, set an error code and create a
+** note record on the member's account. Also validates NEWSTREET,
+** NEWCITY, NEWSTATE and NEWZIPCODE are completed.
 ** PASS    NEWSTREET
+** PASS    NEWEXTRAADDR
 ** PASS    NEWCITY
 ** PASS    NEWSTATE
 ** PASS    NEWZIPCODE
-** PASS    PARAMPORESTRICT Boolean flag: should the street and extra
-**         be checked for a PO Box address
+** PASS    PARAMPORESTRICT Boolean flag: should the street address
+**                         and extra address be checked for a
+**                         PO Box address
 ** RETURN  POBOXFOUND  Boolean flag
 ** RETURN  MISSINGDATA Boolean flag
 ** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
