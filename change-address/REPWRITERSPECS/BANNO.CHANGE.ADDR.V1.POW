@@ -2,7 +2,7 @@
 **  PowerOn Name:       BANNO.CHANGE.ADDR.V1.POW
 **  Letterfile Name:    BANNO.CHANGE.ADDR.V1.CFG
 **
-**  Copyright 2021-2024 Jack Henry
+**  Copyright 2021-2025 Jack Henry
 **
 **  This Banno PowerOn allows the member to update their
 **  address (Street, Extra Address, City, State, Zipcode, member note).
@@ -1510,17 +1510,19 @@ PROCEDURE CLEANUPTEXT
 END [PROCEDURE]
 
 PROCEDURE VALIDATERGDATA
-[* Check the member's new street address to see if it contains
-** a PO Box address per the CU's configuration settings. If a
-** PO Box address is found, set an error code and create a
+[* Check the member's new street and new extra address to see if it
+** contains a PO Box address per the CU's configuration settings.
+** If a PO Box address is found, set an error code and create a
 ** note record on the member's account. Also validates NEWSTREET,
 ** NEWCITY, NEWSTATE and NEWZIPCODE are completed.
 ** PASS    NEWSTREET
+** PASS    NEWEXTRAADDR
 ** PASS    NEWCITY
 ** PASS    NEWSTATE
 ** PASS    NEWZIPCODE
-** PASS    PARAMPORESTRICT Boolean flag: should the street be
-**         checked for a PO Box address
+** PASS    PARAMPORESTRICT Boolean flag: should the street address
+**                         and extra address be checked for a
+**                         PO Box address
 ** RETURN  POBOXFOUND  Boolean flag
 ** RETURN  MISSINGDATA Boolean flag
 ** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
@@ -1553,6 +1555,8 @@ PROCEDURE VALIDATERGDATA
     DO
      BNODEBUGMSG="Validating street ("+NEWSTREET+") for PO Box"
      CALL BNODEBUGMSGADD
+     BNODEBUGMSG="Also validating street2 ("+NEWEXTRAADDR+") for PO Box"
+     CALL BNODEBUGMSGADD
 
      FOR TMPLOOP=1 TO POBOXLISTMAX
       DO
@@ -1561,7 +1565,8 @@ PROCEDURE VALIDATERGDATA
         DO
          BNODEBUGMSG="Evaluating: '"+TMPCHR+"'"
          CALL BNODEBUGMSGADD
-         IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 THEN
+         IF CHARACTERSEARCH(NEWSTREET,TMPCHR)>0 OR
+            CHARACTERSEARCH(NEWEXTRAADDR,TMPCHR)>0 THEN
           DO
            POBOXFOUND=TRUE
            TMPLOOP=POBOXLISTMAX
@@ -1575,8 +1580,8 @@ PROCEDURE VALIDATERGDATA
      CALL JSONOPEN
      CALL PRINTPROGRAMINFO
      RESPONSECODE=503
-     ERROR503CHR="Attempt to enter PO Box as street addr."
-     PARSEDTEXT(1)="Attempt to enter PO Box as street addr."
+     ERROR503CHR="Attempt to enter PO Box as street 1 or 2"
+     PARSEDTEXT(1)="Attempt to enter PO Box as street 1 or 2"
 
      CALL ERRORHANDLER
      CALL CREATENOTERECORD
