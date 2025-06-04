@@ -27,10 +27,14 @@ To which the poweron should respond with:
   "results": {
     "loanEligible": true,
     "maxDays": 30,
-    "disclaimerText": "FI provided disclaimer text."
+    "disclaimerText": ["FI provided disclaimer text."],
+    "summaryText": ["FI provided summary text."]
   }
 }
 ```
+summaryText: If provided, text is displayed on final screen, if not provided, 
+             "This payoff amount is only an estimate. Please contact us for an
+              exact payoff amount." is displayed. Up to 40 lines.
 
 When the client wishes to submit the loan payoff calculation request, it will send:
 
