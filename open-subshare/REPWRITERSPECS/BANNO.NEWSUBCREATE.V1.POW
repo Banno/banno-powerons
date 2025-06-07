@@ -84,7 +84,7 @@
 **              Reversed IRS/Share records order of creation for better error handling.
 **  Ver. 1.5.0  02/26/25 RRobison
 **              Display error if there are no shares or loans under the member account
-**  Ver. 1.5.1  05/23/25 JuCarson and JKeenan
+**  Ver. 1.5.1  06/06/25 JuCarson and JKeenan
 **              Added custom version of APY calculation for display.
 **
 **  This Banno service PowerOn allows the user to open a new
@@ -595,7 +595,7 @@ DEFINE
  SACDISPLAYAPYFLAG         = CHARACTER
  APYCALCERROR              = NUMBER
  APYCALCERORCHR            = CHARACTER
- PARAMSENDEMAIL            = NUMBER
+ PARAMSENDAPYERROREMAIL    = NUMBER
  PARAMEMAILTYPE            = NUMBER
    EMAILTYPETEXT           = 0
    EMAILTYPEHTML           = 1
@@ -620,12 +620,12 @@ END
 
 SETUP
  PROGRAMVERSION="1.5.1"
- LASTMODDATE='05/23/25'
+ LASTMODDATE='06/06/25'
  LASTMODTIME="17:30 PT"
 
  PROGRAMUPDATENOTE1="Added APY calculations"
  PROGRAMUPDATENOTE2="for display"
- CONFIGPROGRAMMINDATE='05/23/25'
+ CONFIGPROGRAMMINDATE='06/06/25'
 
 END [SETUP]
 
@@ -1143,7 +1143,7 @@ PROCEDURE INITIALIZATIONS
 [* Parameters for APY display
 **]
  SACDISPLAYAPYFLAG="0"
- PARAMSENDEMAIL=TRUE
+ PARAMSENDAPYERROREMAIL=TRUE
  PARAMEMAILTYPE=EMAILTYPETEXT
  PARAMEMAILSUBJECT="Banno NewSub Create APY Calc Error" [Default value]
 END [PROCEDURE]
@@ -1371,8 +1371,8 @@ PROCEDURE READCONFIGFILESETTINGS
    CALL BNODEBUGMSGADD
   END
  IF EMAILLINECOUNT>0 AND
-    PARAMSENDEMAIL=TRUE THEN
-  CALL SENDEMAIL
+    PARAMSENDAPYERROREMAIL=TRUE THEN
+  CALL SENDAPYERROREMAIL
    BNODEBUGMSG="Email line count: "+FORMAT("999",EMAILLINECOUNT)
    CALL BNODEBUGMSGADD
 END [PROCEDURE READ CONFIG FILE]
@@ -2116,13 +2116,28 @@ PROCEDURE GETSHARERATE
           END
 
          PRINT "         {"
-        NEWLINE
+         NEWLINE
          PRINT "           "+Q+"rate"+Q+": "+Q
          TMPCHR=FORMAT("###9.999",RATEDATARATE(RATEDATALOOP))
          CALL NLS
          PRINT TMPCHR
          PRINT Q+","
          NEWLINE
+         IF SACDISPLAYAPYFLAG="1" THEN
+          DO
+           PRINT "           "+Q+"apy"+Q+": "+Q
+           TMPCHR=FORMAT("###9.999",RATEDATAAPY(RATEDATALOOP))
+           CALL NLS
+           PRINT TMPCHR
+           PRINT Q+","
+           NEWLINE
+
+           PRINT "           "+Q+"apyCalcError"+Q+": "+Q
+           PRINT RATEDATAAPYERROR(RATEDATALOOP)
+
+           PRINT Q+","
+           NEWLINE
+          END
          PRINT "           "+Q+"minBalance"+Q+": "+Q
          TMPCHR=FORMAT("######9.99",RATEDATAMINBAL(RATEDATALOOP))
          CALL NLS
@@ -4366,8 +4381,8 @@ PROCEDURE CHECKFORINVALIDCHARS
   END
 END [PROCEDURE]
 
-PROCEDURE SENDEMAIL
-[* Send email to user's email address.
+PROCEDURE SENDAPYERROREMAIL
+[* Send APY calculation error email to user's email address.
 *]
  IF SACCUSTAFFEMAILSUBJECT<>"" THEN
     PARAMEMAILSUBJECT=SACCUSTAFFEMAILSUBJECT
