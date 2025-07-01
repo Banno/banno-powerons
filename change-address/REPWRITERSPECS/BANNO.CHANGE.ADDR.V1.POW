@@ -36,8 +36,9 @@
 **                                     memo mode or a config file error occurs.
 **    Ver. 1.3.0  05/16/24 T. Kainz - Added Program Installation Date parameter setting
 **    Ver. 1.3.1  03/19/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
-**    Ver. 1.4.0  04/21/25 T. Kainz - Allow for a targeted address change by locator code as opposed to
-**                                    only a change of address based off the primary name record on the account.
+**    Ver. 1.4.0  07/01/25 T. Kainz - CUS-3636: Allow for a targeted address change by locator code as
+**                                    opposed to only a change of address based off the primary name record
+**                                    on the account.
 *]
 SYMCONNECT
 STATELESS
@@ -253,8 +254,8 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.4.0"
- LASTMODDATE='04/21/25'
- LASTMODTIME="16:00 MT"
+ LASTMODDATE='07/01/25'
+ LASTMODTIME="09:00 MT"
  PROGRAMUPDATENOTE1="Added ability to target name record to change by locator"
  PROGRAMUPDATENOTE2="passed back by the UX in @RGUSERNUM1"
  DEBUGMODEDAYS=90 [If revising this value, make sure the CFG Letter file's
@@ -564,6 +565,7 @@ PROCEDURE GETCURRENTADDRESS
 *]
      FOR EACH IRS
       DO
+       TARGETNAMELEVELLOC=IRS:LOCATOR
        FOR EACH IRS NAME WITH(IRS NAME:LOCATOR=TARGETEDNAMELOC)
         DO
          TARGETNAMEFOUND=TRUE
@@ -601,6 +603,7 @@ PROCEDURE GETCURRENTADDRESS
 *]
          FOR EACH LOAN PLEDGE
           DO
+           TARGETNAMELEVELLOC=LOAN PLEDGE NAME:LOCATOR
            FOR EACH LOAN PLEDGE NAME WITH(LOAN PLEDGE NAME:LOCATOR=TARGETEDNAMELOC)
             DO
              TARGETNAMEFOUND=TRUE
