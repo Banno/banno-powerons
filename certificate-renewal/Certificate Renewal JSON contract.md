@@ -15,6 +15,17 @@
 - userCharList[1]: 10-digit account number, 'S' and 4-digit share ID
   - Represents the certificate or club share being updated by the member
 
+## Memo Mode Response:
+
+```json
+{
+  "memoMode": "true",
+  "memoModeMessage":["an","array","of","lines"]
+}
+```
+- **_memoMode_**: Set to true if "Allow maturity option changes in memo mode" in CFG is true.
+- **_memoModeMessage_**: CU customizable memo mode message.
+
 ## Successful Response:
 
 ```json
@@ -245,6 +256,7 @@
 ```json
 {
   "results": "success",
+  "successMessage":["an","array","of","lines"],
   "updatedState": {
     "name": "My Wonderful CD",
     "maturityDate": "01/01/21",
@@ -259,6 +271,7 @@
 }
 ```
 
+- **_successMessage_**: CU customizable success message.
 - **_updatedState_**
   - **name**: Share nickname of targeted certificate/club share. If no nickname, share description.
   - **maturityDate**: The current maturity date of the targeted certificate/club.
