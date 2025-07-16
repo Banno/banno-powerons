@@ -92,7 +92,7 @@
 **                Modified share note expiration date to the share maturity date.
 **                Removed deletion of existing share transfer records when 'increase and renew'
 **                  option is selected.
-**    Ver. 1.6.0  07/07/25 JKeenan - Banno
+**    Ver. 1.6.0  07/16/25 JKeenan - Banno
 **                Added the parameter settings to allow maturity option changes during
 **                memo mode, memo mode message configurable soft text, 
 **                and success message configurable soft text.
@@ -372,17 +372,18 @@ DEFINE
  PARAMINSTALLDATE               = DATE
  PARAMDEBUGMODE                 = NUMBER
 
-[* JKeenan - added 07/07/25
+[* JKeenan - added 07/16/25
 *]
- PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(99)
+ PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(5)
  PARAMMEMOMODESUCCESSLINES      = NUMBER
  PARAMMEMOMODESUCCESSLINESMAX   = 5
+ MEMOSUCCESSMSGSETFLAG          = NUMBER
 
- PARAMSUCCESSMSG                = CHARACTER ARRAY(99)
+ PARAMSUCCESSMSG                = CHARACTER ARRAY(5)
  PARAMSUCCESSMSGLINES           = NUMBER
  PARAMSUCCESSMSGLINESMAX        = 5
 
- PARAMMEMOMODEMSG               = CHARACTER ARRAY(99)
+ PARAMMEMOMODEMSG               = CHARACTER ARRAY(5)
  PARAMMEMOMODEMSGLINES          = NUMBER
  PARAMMEMOMODEMSGLINESMAX       = 5
 
@@ -397,8 +398,8 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='07/07/25'
- BNOLASTMODTIME="12:30 PT"
+ BNOLASTMODDATE='07/16/25'
+ BNOLASTMODTIME="17:30 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
  BNOPROGRAMVERSION="1.6.0"
@@ -449,12 +450,6 @@ PRINT TITLE="BANNO.CDRENEW.V1.POW"
 
  CALL INITIALIZATIONS
  CALL READCONFIGFILESETTINGS
- IF PARAMMEMOMODESUCCESSLINES=0 THEN [If "CMMS:" is not used in CFG, provide default value]
-  DO
-   PARAMMEMOMODESUCCESSLINES=2
-   PARAMMEMOMODESUCCESS(1)="Nightly processing is underway. Your maturity option change has been processed"
-   PARAMMEMOMODESUCCESS(2)="and will be reflected the next business day."
-  END
 
  IF ALLOWINMEMOMODE=FALSE THEN
   CALL VALIDATESYSMEMOMODE
@@ -990,6 +985,13 @@ PROCEDURE READCONFIGFILESETTINGS
 *]
        ELSE IF PARAMNAME="CMMS" THEN
         DO
+         IF MEMOSUCCESSMSGSETFLAG=FALSE THEN
+          DO
+           MEMOSUCCESSMSGSETFLAG=TRUE
+           PARAMMEMOMODESUCCESSLINES=0 [Blank the defalut values, as "CMMS:" is set in the CFG]
+           PARAMMEMOMODESUCCESS(1)=""
+           PARAMMEMOMODESUCCESS(2)=""         
+          END
          IF PARAMMEMOMODESUCCESSLINES<PARAMMEMOMODESUCCESSLINESMAX THEN
           DO
            IF PARAMVALUE<>"" THEN
@@ -1415,9 +1417,12 @@ PROCEDURE INITIALIZATIONS
  PARAMXFER3HANDLING=1 [Do nothing]
  PARAMINSTALLDATE=DATENULL
  ALLOWINMEMOMODE=FALSE
- PARAMMEMOMODESUCCESSLINES=0
  PARAMSUCCESSMSGLINES=0
  PARAMMEMOMODEMSGLINES=0
+ MEMOSUCCESSMSGSETFLAG=FALSE
+ PARAMMEMOMODESUCCESSLINES=2 [In case "CMMS:" is not used in CFG, provide default value]
+ PARAMMEMOMODESUCCESS(1)="Nightly processing is underway. Your maturity option change has been processed"
+ PARAMMEMOMODESUCCESS(2)="and will be reflected the next business day."
 
  FOR TMPLOOP=0 TO USEROPTIONSMAX
   DO
