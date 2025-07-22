@@ -92,7 +92,7 @@
 **                Modified share note expiration date to the share maturity date.
 **                Removed deletion of existing share transfer records when 'increase and renew'
 **                  option is selected.
-**    Ver. 1.6.0  07/16/25 JKeenan - Banno
+**    Ver. 1.6.0  07/22/25 JKeenan - Banno
 **                Added the parameter settings to allow maturity option changes during
 **                memo mode, memo mode message configurable soft text, 
 **                and success message configurable soft text.
@@ -122,7 +122,6 @@ DEFINE
  LFLINE                         = CHARACTER
  READCONFIGERROR                = NUMBER
  READCONFIGERRORMSG             = CHARACTER
- PARAMCHR                       = CHARACTER
  PARAMINELIGIBLEACCTS           = CHARACTER
  PARAMWARNINGSACCT              = CHARACTER
  PARAMWARNINGSSHARE             = CHARACTER
@@ -153,12 +152,9 @@ DEFINE
  PARAMINELIGXACCOUNTMSGLINES    = NUMBER
  PARAMINELIGXACCOUNTMSGLINESMAX = 999
 
- PARAMLOCFOUND                  = NUMBER
-
  PARAMNAME                      = CHARACTER
  PARAMVALUE                     = CHARACTER
  PARAMVALIDATIONERROR           = NUMBER
- PARAMVALIDATIONERRORCHR        = CHARACTER
  INVALIDACCTYPES                = NUMBER ARRAY(9999)
  WARNINGSACCT                   = NUMBER ARRAY(999)
  WARNINGSSHARE                  = NUMBER ARRAY(999)
@@ -167,28 +163,18 @@ DEFINE
  ELIGIBLEIRSCODES               = NUMBER ARRAY(99)
  MAXIRSCODES                    = 99
 
- ACCTFOUND                      = NUMBER
  SHAREFOUND                     = NUMBER
  SHARETRANSFERFOUND             = NUMBER
  TRANSFERAMTTOTAL               = MONEY
- ACCTWARNINGFOUND               = NUMBER
  INVALIDACCTTYPEFOUND           = NUMBER
  INELIGIBLEIRSCODE              = NUMBER
  TMPLOOP                        = NUMBER
  TMPLOOP1                       = NUMBER
  TMPCHR                         = CHARACTER
  POS                            = NUMBER
- POS1                           = NUMBER
  Q                              = CHARACTER
  BACKSLASH                      = CHARACTER
- MEMBERNUM                      = CHARACTER
- SLTYPE                         = CHARACTER
- SLID                           = CHARACTER
- SLDESCRIPTION                  = CHARACTER
- VALIDACCT                      = NUMBER
  FOUND                          = NUMBER
- TMPINDEX                       = NUMBER
- TRANERROR                      = CHARACTER
  ERRORCODE                      = NUMBER
  ERRORMSG                       = CHARACTER
  ERRORDETAIL                    = CHARACTER ARRAY(99)
@@ -199,41 +185,23 @@ DEFINE
 
  TMPTEXT                        = CHARACTER
  TMPTEXTLOOP                    = NUMBER
- CHR                            = NUMBER
  SYSTEMMEMOMODE                 = NUMBER
- COMMAPOS                       = NUMBER
- SLIDLEN                        = NUMBER
  FMERROR                        = CHARACTER
- NEWSTATUS                      = NUMBER
- FMTRACKINGLOCATOR              = NUMBER
- TEMPLOC                        = NUMBER
  INVALIDCONFIGPARAMS            = NUMBER
- TMPNUM                         = NUMBER
  BOOLEANCHR                     = CHARACTER ARRAY(1)
  CHRVAL                         = NUMBER
- FMRESULTSCHR                   = CHARACTER ARRAY(3)
  VALIDCHRINPUT1                 = CHARACTER
  VALIDCHARS                     = NUMBER ARRAY(999)
  MAXCHRVALUE                    = 255
  WARNINGFOUND                   = NUMBER
- FMUPDATEERRORTRACKING          = NUMBER
  VALIDPARAMS                    = NUMBER
  VALIDACCOUNT                   = NUMBER
 
- INDENTMAX                      = 9
  INDENT                         = CHARACTER ARRAY(9)
  TERMSLOOP                      = NUMBER
- PROCESSINGLOOP                 = NUMBER
- TRACKINGLOOP                   = NUMBER
- UNBLOCKCOUNT                   = NUMBER
- DONE                           = NUMBER
 
- TMPCODE                        = NUMBER
  TMPDATE                        = DATE
 
- UPDATEDDISPLAY                 = NUMBER
- DISPLAYCHANGES                 = 0
- DISPLAYALL                     = 1
  TCFOUND                        = NUMBER
 
  USEROPTIONSCHR                 = CHARACTER ARRAY(9)
@@ -243,7 +211,6 @@ DEFINE
  OPTIONFOUND                    = NUMBER
  TERMFREQCHR                    = CHARACTER ARRAY(1)
  TERMFREQSINGULARCHR            = CHARACTER ARRAY(1)
- MATURITYPOSTCODECHR            = CHARACTER(7)
 
  TRANSFERLISTCHR                = CHARACTER ARRAY(99)
  TRANSFERLISTAMTCHR             = CHARACTER ARRAY(99)
@@ -281,7 +248,6 @@ DEFINE
  SLTRANSFERLISTFROMMAX          = 99
 
  USEROPTIONINCREASE             = 1
- USEROPTIONCHANGE               = 2
  USEROPTIONTRANSFER             = 3
  USEROPTIONRENEW                = 4
  USEROPTIONDISBURSE             = 5
@@ -307,7 +273,6 @@ DEFINE
  SXFEREXPIREDATE                = DATE ARRAY(99)
  SXFERLOC                       = NUMBER ARRAY(99)
  SHARENOTEFOUND                 = NUMBER
- NOTEFMERROR                    = CHARACTER
  TMPXFERACCT                    = CHARACTER
  TMPXFERSLTYPE                  = NUMBER
  TMPXFERSLID                    = CHARACTER
@@ -336,7 +301,6 @@ DEFINE
  BNOLASTMODDATE                 = DATE
  BNOLASTMODTIME                 = CHARACTER
  BNOLOCALLOOP                   = NUMBER
- BNOPRINTDEBUGDAYS              = NUMBER
  BNOPRINTDEBUGINFODAYS          = NUMBER
  BNOPROGRAMNAME                 = CHARACTER
  BNOPROGRAMVERSION              = CHARACTER
@@ -344,13 +308,6 @@ DEFINE
  BNOSLTYPESMAX                  = NUMBER
  BNOTRUEFALSECHR                = CHARACTER ARRAY(2)
  INCLUDEPROGRAMINFO             = NUMBER
- OPTIONTYPELOOP                 = NUMBER
- PARAMOPTION1                   = CHARACTER
- PARAMOPTION2                   = CHARACTER
- PARAMOPTION3                   = CHARACTER
- PARAMOPTION4                   = CHARACTER
- PARAMOPTION5                   = CHARACTER
- PARAMOPTION6                   = CHARACTER
  PARAMOPTIONINPUT               = CHARACTER ARRAY(6)
  PARAMSHARETYPESBYOPTION        = NUMBER ARRAY(6,9999)
  SHARETYPELOOP                  = NUMBER
@@ -372,7 +329,14 @@ DEFINE
  PARAMINSTALLDATE               = DATE
  PARAMDEBUGMODE                 = NUMBER
 
-[* JKeenan - added 07/16/25
+[* Added for Ver. 1.5.2
+*]
+ CHARCHECK                      = CHARACTER
+ CHARCHECKRETURN                = CHARACTER
+ CHARCHECKTMP                   = CHARACTER
+ CHARCHECKNUM                   = NUMBER
+
+[* JKeenan - added 07/22/25
 *]
  PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(5)
  PARAMMEMOMODESUCCESSLINES      = NUMBER
@@ -387,18 +351,11 @@ DEFINE
  PARAMMEMOMODEMSGLINES          = NUMBER
  PARAMMEMOMODEMSGLINESMAX       = 5
 
-[* Added for Ver. 1.5.2
-*]
- CHARCHECK                      = CHARACTER
- CHARCHECKRETURN                = CHARACTER
- CHARCHECKTMP                   = CHARACTER
- CHARCHECKNUM                   = NUMBER
-
 END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='07/16/25'
+ BNOLASTMODDATE='07/22/25'
  BNOLASTMODTIME="17:30 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
@@ -2696,11 +2653,13 @@ PROCEDURE EXPIREORDELETETYPE3XFERS
 END [PROCEDURE]
 
 PROCEDURE VALIDATESYSMEMOMODE
-[* Check to see if system is in MemoMode and if so, return
-** memoMode: true
-** And if is filled in in the CFG then return
-** ,
-** memoModeMessage:["an","array","of","lines"].
+[* The design is to only call VALIDATESYSMEMOMODE if in the CFG 
+** "ALLOW MATURITY OPTION CHANGES IN MEMO MODE" is set to "FALSE" or isn't set.
+** Check to see if the system is in MemoMode and if so, return JSON line
+** "memoMode: true" .
+** And if in the CFG "CMMM" is filled in, then return JSON lines
+** ","
+** "memoModeMessage:["an","array","of","lines"]".
 *]
  SYSTEMMEMOMODE=SYSMEMOMODE
  IF SYSTEMMEMOMODE=TRUE THEN
@@ -2709,27 +2668,27 @@ PROCEDURE VALIDATESYSMEMOMODE
    CALL JSONOPEN
    PRINT Q+"memoMode"+Q+": true"
    NEWLINE
-  IF PARAMMEMOMODEMSGLINES>0 THEN
-   DO
-    PRINT ","
-    NEWLINE  
-    PRINT INDENT(1)+Q+"memoModeMessage"+Q+": ["
-    FOR TERMSLOOP=1 TO PARAMMEMOMODEMSGLINES
-     DO
-      NEWLINE
-      PRINT INDENT(2)+Q
-      IF TERMSLOOP>1 AND
-         PARAMMEMOMODEMSG(TERMSLOOP)<>"" AND
-         PARAMMEMOMODEMSG(TERMSLOOP-1)<>"" THEN
+   IF PARAMMEMOMODEMSGLINES>0 THEN
+    DO
+     PRINT ","
+     NEWLINE  
+     PRINT INDENT(1)+Q+"memoModeMessage"+Q+": ["
+     FOR TERMSLOOP=1 TO PARAMMEMOMODEMSGLINES
+      DO
+       NEWLINE
+       PRINT INDENT(2)+Q
+       IF TERMSLOOP>1 AND
+          PARAMMEMOMODEMSG(TERMSLOOP)<>"" AND
+          PARAMMEMOMODEMSG(TERMSLOOP-1)<>"" THEN
         PRINT " "
        PRINT PARAMMEMOMODEMSG(TERMSLOOP)+Q
-      IF TERMSLOOP<PARAMMEMOMODEMSGLINES THEN
-       PRINT ","
-     END
-    NEWLINE
-    PRINT INDENT(1)+"]"
-    NEWLINE      
-   END  
+       IF TERMSLOOP<PARAMMEMOMODEMSGLINES THEN
+        PRINT ","
+      END
+     NEWLINE
+     PRINT INDENT(1)+"]"
+     NEWLINE      
+    END  
    CALL JSONCLOSE
    @RGSTATE=STATEEND
   END
