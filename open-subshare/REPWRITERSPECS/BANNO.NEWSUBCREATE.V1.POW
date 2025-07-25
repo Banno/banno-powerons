@@ -84,6 +84,8 @@
 **              Reversed IRS/Share records order of creation for better error handling.
 **  Ver. 1.5.0  02/26/25 RRobison
 **              Display error if there are no shares or loans under the member account
+**  Ver. 1.6.0  07/25/25 TKainz
+**              Set up foundation for custom error codes starting at error code 600
 **
 **  This Banno service PowerOn allows the user to open a new
 **  share on the main account, add a joint, fund.
@@ -524,7 +526,12 @@ DEFINE
  BNODELIMPIPE              = 124
  BNODELIMSEMICOLON         = 59
 
- ERRORCODEDESCR            = CHARACTER ARRAY(1,19)
+[* The ERRORCODEDESCR second array index should equal the MAXERRORCODE value
+** minus 500 as set in the SETUP division. I.E: If the MAXERRORCODE value is
+** 602 (due to the utilization of custom error codes), then the ERRORCODEDESCR
+** array should be sized to (1,102)
+*]
+ ERRORCODEDESCR            = CHARACTER ARRAY(1,102)
  ECDEFAULT                 = 0
  ECCUSTOM                  = 1
 
@@ -573,7 +580,7 @@ DEFINE
  CNLSEX                    = 35
  CNLDUPLICATED             = 36
 
- MAXERRORCODE              = 515
+ MAXERRORCODE              = NUMBER
  BNOPRINTDEBUGINFODAYS     = NUMBER
  CONFIGPROGRAMVER          = CHARACTER
  CONFIGPROGRAMDATE         = DATE
@@ -588,16 +595,26 @@ DEFINE
  CHARCHECKNUM              = NUMBER
 
  NEWIRSLOC                 = NUMBER
+
+[* TEK 07/25/25]
+ USECUSTOMERRORCODES       = NUMBER
 END
 
 SETUP
- PROGRAMVERSION="1.5.0"
- LASTMODDATE='02/26/25'
- LASTMODTIME="17:30 MT"
+ PROGRAMVERSION="1.6.0"
+ LASTMODDATE='07/25/25'
+ LASTMODTIME="12:00 MT"
 
- PROGRAMUPDATENOTE1="New error condition when no shares or loans exist on account"
- PROGRAMUPDATENOTE2=""
- CONFIGPROGRAMMINDATE='10/20/22'
+ PROGRAMUPDATENOTE1="Set up foundation for using custom error codes"
+ PROGRAMUPDATENOTE2="starting at error code 600"
+ CONFIGPROGRAMMINDATE='07/07/25'
+
+[* System error codes are 500-599. Custom error codes are 600 plus. If using
+** custom error codes, set the USECUSTOMERRORCODES value to TRUE and adjust the
+** ERRORCODEDESCR(1,xxx) array size in the DEFINE division as needed as well as
+** the MAXERRORCODE value in the INITIALIZATIONS procedure.
+*]
+ USECUSTOMERRORCODES=TRUE
 
 END [SETUP]
 
@@ -617,7 +634,15 @@ PRINT TITLE="BANNO.NEWSUBCREATE.V1.POW"
    ERRORCODE=500
    CALL ERRORHANDLER
   END
-
+ ELSE IF TESTERRORCODE=600 OR
+         TESTERRORCODE=601 OR
+         TESTERRORCODE=602 THEN
+  DO
+   ERRORCODE=TESTERRORCODE
+   PRINT "{"
+   NEWLINE
+   CALL ERRORHANDLER
+  END
  ELSE [SYSTEM IS NOT IN MEMO MODE]
   DO
 
@@ -1108,8 +1133,15 @@ PROCEDURE INITIALIZATIONS
    INDENT(TMPLOOP)=REPEATCHR(" ",TMPLOOP*2)
   END
 
- CALL SETUPERRORCODES
+[* System error codes are 500-599. Custom error codes are 600 plus. The MAXERRORCODE
+** value should be set to the highest number error code being used.
+*]
+ IF USECUSTOMERRORCODES=TRUE THEN
+  MAXERRORCODE=602
+ ELSE
+  MAXERRORCODE=515
 
+ CALL SETUPERRORCODES
 END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
@@ -3476,6 +3508,9 @@ PROCEDURE ERRORHANDLER
 **  513 - Error calculating fee
 **  514 - Error reading fee disclosure LF for group
 **  515 - No existing open Shares/Loans on the account
+**  600 - Default error code 600 description
+**  601 - Default error code 601 description
+**  602 - Default error code 602 description
 *]
 
  IF ERRORCODE>=500 AND ERRORCODE<=MAXERRORCODE THEN
@@ -3509,6 +3544,7 @@ PROCEDURE ERRORHANDLER
  NEWLINE
  PRINT "    "+Q+"loggingErrorMessage"+Q+": "+
             Q+ERRORDETAIL+Q
+
  IF ERRORCODEDESCR(ECCUSTOM,TMPNUM)<>"" THEN
   TMPCHR=ERRORCODEDESCR(ECCUSTOM,TMPNUM)
  ELSE
@@ -4016,6 +4052,20 @@ PROCEDURE SETUPERRORCODES
 
  ERRORCODEDESCR(ECDEFAULT,15)="No existing open Shares/Loans on the account"
  ERRORCODEDESCR(ECCUSTOM,15)=""
+
+[* Custom error codes (600+) start at index 100
+*]
+ IF USECUSTOMERRORCODES=TRUE THEN
+  DO
+   ERRORCODEDESCR(ECDEFAULT,100)="Default error code 600 description"
+   ERRORCODEDESCR(ECCUSTOM,100)=""
+
+   ERRORCODEDESCR(ECDEFAULT,101)="Default error code 601 description"
+   ERRORCODEDESCR(ECCUSTOM,101)=""
+
+   ERRORCODEDESCR(ECDEFAULT,102)="Default error code 602 description"
+   ERRORCODEDESCR(ECCUSTOM,102)=""
+  END
 END [PROCEDURE]
 
 PROCEDURE GETSACFEEINFO
