@@ -92,7 +92,7 @@
 **                Modified share note expiration date to the share maturity date.
 **                Removed deletion of existing share transfer records when 'increase and renew'
 **                  option is selected.
-**    Ver. 1.6.0  07/22/25 JKeenan - Banno
+**    Ver. 1.6.0  08/04/25 JKeenan - Banno
 **                Added the parameter settings to allow maturity option changes during
 **                memo mode, memo mode message configurable soft text, 
 **                and success message configurable soft text.
@@ -336,7 +336,7 @@ DEFINE
  CHARCHECKTMP                   = CHARACTER
  CHARCHECKNUM                   = NUMBER
 
-[* JKeenan - added 07/22/25
+[* JKeenan - added 08/04/25
 *]
  PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(5)
  PARAMMEMOMODESUCCESSLINES      = NUMBER
@@ -355,7 +355,7 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='07/22/25'
+ BNOLASTMODDATE='08/04/25'
  BNOLASTMODTIME="17:30 PT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
@@ -2688,8 +2688,7 @@ PROCEDURE VALIDATESYSMEMOMODE
      NEWLINE
      PRINT INDENT(1)+"]"
      NEWLINE      
-    END  
-   CALL JSONCLOSE
+    END
    @RGSTATE=STATEEND
   END
 END [PROCEDURE]

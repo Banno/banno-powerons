@@ -19,7 +19,7 @@
 
 ```json
 {
-  "memoMode": "true",
+  "memoMode": true,
   "memoModeMessage":["an","array","of","lines"]
 }
 ```
