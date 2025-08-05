@@ -20,7 +20,8 @@
 
 ```json
 {
-  "memoMode": true
+  "memoMode": true,
+  "memoModeMessage":["an","array","of","lines"]
 }
 ```
 
@@ -29,7 +30,8 @@
 ```json
 {
   "errorCode": "xxx",
-  "loggingErrorMessage": "[error message detail]"
+  "loggingErrorMessage": "[error message detail]",
+  "errorMessage": ["an,array,of,lines"]
 }
 ```
 
@@ -40,6 +42,7 @@
   "memoMode": false,
   "results": {
     "maxSharesExceeded": false,
+    "successMessage":["an","array","of","lines"],
     "shareDetail": [
       {
         "SID": "0000",
@@ -92,9 +95,12 @@
 
 **Response detail:**
 
-- memoMode: boolean - true/false. Is the system in memo mode?
+- memoMode: boolean - true/false. Is the system in memo mode? Memo only sent as true if FI doesn't want to allow changes.
+  If FI does allow changes in memo mode, memo mode is sent as false and a unique message will be sent in the success message.
+- memoModeMessage: CU customizable memo mode message.
 - results
   - maxSharesExceeded: boolean - true/false. Did the program find more than 13 eligible shares for this member?
+  - successMessage: CU customizable success message.
   - shareDetail
     - SID: Share ID [SHARE:ID]
     - name: Share description [SHARE:DESCRIPTION]
@@ -138,7 +144,8 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 ```json
 {
   "errorCode": "xxx",
-  "loggingErrorMessage": "[error message detail]"
+  "loggingErrorMessage": "[error message detail]",
+  "errorMessage": ["an,array,of,lines"]
 }
 ```
 
@@ -195,3 +202,4 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 
 - Individual error codes are for ease of researching issues.
 - All error codes except for '503' will be returned to the UX as '500'
+- errorMessage: Message about error to display to the member
