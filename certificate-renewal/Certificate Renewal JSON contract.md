@@ -24,7 +24,8 @@
 }
 ```
 - **_memoMode_**: Set to true if "Allow maturity option changes in memo mode" in CFG is false or not set and system is in memo mode.
-- **_memoModeMessage_**: CU customizable memo mode message.
+- **_memoModeMessage_**: CU customizable memo mode message. Only display if "Allow maturity option changes in memo mode" in CFG
+  is false or not set, and system is in memo mode
 
 ## Successful Response:
 
