@@ -42,7 +42,6 @@
   "memoMode": false,
   "results": {
     "maxSharesExceeded": false,
-    "successMessage":["an","array","of","lines"],
     "shareDetail": [
       {
         "SID": "0000",
@@ -95,12 +94,12 @@
 
 **Response detail:**
 
-- memoMode: boolean - true/false. Is the system in memo mode? Memo only sent as true if FI doesn't want to allow changes.
+- memoMode: boolean - true/false. Is the system in memo mode? Memo only sent as true if FI doesn't want to allow changes (meaning
+  "Allow overdraft settings changes in memo mode" in CFG is false).
   If FI does allow changes in memo mode, memo mode is sent as false and a unique message will be sent in the success message.
 - memoModeMessage: CU customizable memo mode message.
 - results
   - maxSharesExceeded: boolean - true/false. Did the program find more than 13 eligible shares for this member?
-  - successMessage: CU customizable success message.
   - shareDetail
     - SID: Share ID [SHARE:ID]
     - name: Share description [SHARE:DESCRIPTION]
@@ -156,6 +155,7 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
   "memoMode": false,
   "results": {
     "maxSharesExceeded": false, //'true' if the number of shares found exceeds processing capabilities (130 shares)
+    "successMessage":["an","array","of","lines"],
     "shareDetailUpdated": [
       {
         "SID": "0000",
@@ -177,6 +177,7 @@ UX returns updated state of each share. Share IDs listed are to be enrolled into
 **Response Detail:**
 
 - Response detail will duplicate PRELOADDATA state response detail but with updated values
+- successMessage: CU customizable success message.
 
 ## Error Codes
 
