@@ -37,13 +37,13 @@
 **                         Added parameter option to clear/not clear the ODT amount
 **                         upon opt-out:
 **                           CLEAR OVERDRAFT TOLERANCE AMOUNT ON OPT-OUT
-**    Ver. 1.5.0  08/22/25 JKeenan - Banno
+**    Ver. 1.5.0  08/27/25 JKeenan - Banno
 **                         Added the parameter settings to allow overdraft settings
 **                         changes during memo mode, memo mode message configurable 
 **                         soft text, and success message configurable soft text.
-**                         Added support for a display to client errorMessage, which
-**                         will start being used for error code 503 no eligible shares
-**                         soft text.
+**                         Added support for a display to client errorMessage.
+**                         The configuration file is prefilled with suggested
+**                         error code 503 no eligible shares soft text.
 **
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 *]
@@ -214,7 +214,7 @@ DEFINE
  DEFAULTOTAVALUECHR           = CHARACTER
  BNOTRUEFALSECHR              = CHARACTER ARRAY(1)
 
-[* Added 08/22/25 begin *]
+[* Added 08/27/25 begin *]
  ALLOWINMEMOMODE                = NUMBER
  PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(5)
  PARAMMEMOMODESUCCESSLINES      = NUMBER
@@ -240,7 +240,7 @@ DEFINE
  PARAMERRDISPLAYLINES           = CHARACTER ARRAY(10,5)
  PARAMERRDISPLAYMAX             = 10
  PARAMERRDISPLAYLINESMAX        = 5
- PARAMERRDISPLAYERRLIST         = "503" [* Possible Future use 501,502 etc. *]
+ PARAMERRDISPLAYERRLIST         = "501,502,503,504,505,506,507,508"
  ERRCODE                        = NUMBER
  ERRCOUNT                       = NUMBER
  ERRTMPCOUNT                    = NUMBER
@@ -252,13 +252,15 @@ DEFINE
  ERRDISPLAYMSGS                 = CHARACTER ARRAY(99,5)
  ERRDISPLAYMSGSCOUNT            = NUMBER ARRAY(99)
  ERRDISPLAYMSGSMAX              = 5
- [* Added 08/22/25 end *]
+ GENERICERRDISPLAYMSGCOUNT      = NUMBER
+ GENERICERRDISPLAYMSG           = CHARACTER ARRAY(4)
+ [* Added 08/27/25 end *]
 END [DEFINE]
 
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
  PROGRAMVERSION="1.5.0"
- LASTMODDATE='08/22/25'
+ LASTMODDATE='08/27/25'
  LASTMODTIME="17:30 PT"
 
  Q=CTRLCHR(34)
@@ -302,6 +304,11 @@ SETUP
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
  ERRCOUNT=9 [* Currently there are 9 Error Codes *]
  ERRDISPLAYMSGCOUNT=0
+ GENERICERRDISPLAYMSGCOUNT=4
+ GENERICERRDISPLAYMSG(1)="<b>Your account needs attention</b><br>"
+ GENERICERRDISPLAYMSG(2)="Something in your account needs to be corrected or updated."
+ GENERICERRDISPLAYMSG(3)="At this time a staff member is required to assist you."
+ GENERICERRDISPLAYMSG(4)="Please contact us to correct your account."
 END [SETUP]
 
 PRINT TITLE="BANNO.TEMPLATE.V1.POW"
@@ -1570,8 +1577,8 @@ PROCEDURE ERRDISPLAYUPDATE
  WHILE ERRTMPCOUNT<=ERRCOUNT AND 
        ERRFOUND=FALSE
   DO
-   IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE=503 THEN [* Possible Future Use AND ERRCODE>=501 AND ERRCODE <=508 *]
-    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code allowed is 503 *]
+   IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE>=501 AND ERRCODE <=508 THEN
+    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code is between 501-508 *]
      ERRFOUND=TRUE
      ERRDISPLAYMSGSCOUNT(ERRTMPCOUNT)=ERRDISPLAYMSGCOUNT
      FOR ERRTMPCOUNT2=1 TO ERRDISPLAYMSGCOUNT
@@ -1595,8 +1602,8 @@ PROCEDURE ERRDISPLAYMSGGET
  ERRTMPCOUNT=1
  WHILE ERRTMPCOUNT<=ERRCOUNT
   DO
-   IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE=503 THEN [* Possible Future Use AND ERRCODE>=501 AND ERRCODE <=508 *]
-    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code allowed is 503 *]
+   IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE>=501 AND ERRCODE <=508 THEN
+    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code is between 501-508 *]
      ERRDISPLAYMSGCOUNT=ERRDISPLAYMSGSCOUNT(ERRTMPCOUNT)
      FOR ERRTMPCOUNT2=1 TO ERRDISPLAYMSGCOUNT
       DO
@@ -1640,35 +1647,43 @@ PROCEDURE ERRORHANDLER
  ERRCODE=ERRORCODE
  CALL ERRDISPLAYMSGGET
 
-[* 7/1-TEK: Force all error codes to 500 except for 503
-*]
- IF ERRORCODE<>503 THEN
-  ERRORCODE=500
-
  PRINT "    "+Q+"errorCode"+Q+": "+FORMAT(Q+"999"+Q,ERRORCODE)+","
  NEWLINE
  PRINT "    "+Q+ERRORMSG+Q+": "+
             Q+ERRORDETAIL(ERRORDETAILOFFSET)+Q
  NEWLINE
 
- IF ERRDISPLAYMSGCOUNT>0 THEN
-  DO
+ IF ERRORCODE<>500 THEN
+  DO [* 8/27/25-JPK: Non 500 Error Codes now require Error Display Message, as previously ECs were forced to 500 *]
    PRINT ","
    NEWLINE
    PRINT "    "+Q+"errorMessage"+Q+": ["
    NEWLINE
-   FOR TMPLOOP=1 TO ERRDISPLAYMSGCOUNT
+   IF ERRDISPLAYMSGCOUNT>0 THEN [* Soft coded Error Display Message filled in in configuration file *]
     DO
-     TMPCHR=ERRDISPLAYMSG(TMPLOOP)
-     CALL NTS
-     PRINT Q+TMPCHR+Q
-     IF TMPLOOP<ERRDISPLAYMSGCOUNT THEN
-      PRINT ","
-     NEWLINE
+     FOR TMPLOOP=1 TO ERRDISPLAYMSGCOUNT
+      DO
+       TMPCHR=ERRDISPLAYMSG(TMPLOOP)
+       CALL NTS
+       PRINT Q+TMPCHR+Q
+       IF TMPLOOP<ERRDISPLAYMSGCOUNT THEN
+        PRINT ","
+       NEWLINE
+      END
+    END
+   ELSE 
+    DO [* Use same generic Error Display Message that non Memo Mode EC 500 had hard coded, for non 500 EC *]
+     FOR TMPLOOP=1 TO GENERICERRDISPLAYMSGCOUNT
+      DO
+       PRINT Q+GENERICERRDISPLAYMSG(TMPLOOP)+Q
+       IF TMPLOOP<GENERICERRDISPLAYMSGCOUNT THEN
+        PRINT ","
+       NEWLINE
+      END
     END
    PRINT "]"
    NEWLINE
-  END
+  END [ IF ERRORCODE<>500 ]
 END [PROCEDURE]
 
 PROCEDURE JSONOPEN
