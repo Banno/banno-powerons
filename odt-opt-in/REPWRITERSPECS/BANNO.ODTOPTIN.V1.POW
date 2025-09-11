@@ -37,7 +37,7 @@
 **                         Added parameter option to clear/not clear the ODT amount
 **                         upon opt-out:
 **                           CLEAR OVERDRAFT TOLERANCE AMOUNT ON OPT-OUT
-**    Ver. 1.5.0  08/27/25 JKeenan - Banno
+**    Ver. 1.5.0  09/12/25 JKeenan - Banno
 **                         Added the parameter settings to allow overdraft settings
 **                         changes during memo mode, memo mode message configurable 
 **                         soft text, and success message configurable soft text.
@@ -214,7 +214,7 @@ DEFINE
  DEFAULTOTAVALUECHR           = CHARACTER
  BNOTRUEFALSECHR              = CHARACTER ARRAY(1)
 
-[* Added 08/27/25 begin *]
+[* Added 09/12/25 begin *]
  ALLOWINMEMOMODE                = NUMBER
  PARAMMEMOMODESUCCESS           = CHARACTER ARRAY(5)
  PARAMMEMOMODESUCCESSLINES      = NUMBER
@@ -254,13 +254,13 @@ DEFINE
  ERRDISPLAYMSGSMAX              = 5
  GENERICERRDISPLAYMSGCOUNT      = NUMBER
  GENERICERRDISPLAYMSG           = CHARACTER ARRAY(4)
- [* Added 08/27/25 end *]
+ [* Added 09/12/25 end *]
 END [DEFINE]
 
 SETUP
  PROGRAMNAME="BANNO.ODTOPTIN.V1.POW"
  PROGRAMVERSION="1.5.0"
- LASTMODDATE='08/27/25'
+ LASTMODDATE='09/12/25'
  LASTMODTIME="17:30 PT"
 
  Q=CTRLCHR(34)
@@ -1533,7 +1533,10 @@ PROCEDURE INITIALIZEDATA
 END [PROCEDURE]
 
 PROCEDURE PARAMERRDISPLAYADD
-
+[* Adds the lines of custom display soft text for Error Messages that are filled in
+** in the configuration file to the initial PARAMERRDISPLAY arrays. And the data is later
+** reorganized in the ERRDISPLAYUPDATE arrays in another procedure.
+*]
  FOUNDINDEX=1
  FOUND=FALSE
  WHILE FOUNDINDEX<=PARAMERRDISPLAYCOUNT AND FOUND=FALSE
@@ -1562,7 +1565,9 @@ PROCEDURE PARAMERRDISPLAYADD
 END [PROCEDURE]
 
 PROCEDURE ERRDISPLAYAPPEND
-
+[* Pre-store up to 5 lines of custom display soft text for Error Messages
+** in the ERRORDISPLAYMSG arrays for later use.
+*] 
  IF ERRDISPLAYMSGCOUNT<ERRDISPLAYMSGSMAX THEN
   DO
    ERRDISPLAYMSGCOUNT=ERRDISPLAYMSGCOUNT+1
@@ -1571,14 +1576,18 @@ PROCEDURE ERRDISPLAYAPPEND
 END [PROCEDURE]
 
 PROCEDURE ERRDISPLAYUPDATE
-
+[* For each error code other than EC 500, retrieve up to 5 lines of custom display soft text
+** from the ERRORDISPLAYMSG array and populate the ERRDISPLAYMSGS array.
+** This applies to all error codes that have custom display text defined 
+** either in the configuration file or through other means. 
+*]
  ERRTMPCOUNT=1
  ERRFOUND=FALSE
  WHILE ERRTMPCOUNT<=ERRCOUNT AND 
        ERRFOUND=FALSE
   DO
    IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE>=501 AND ERRCODE <=508 THEN
-    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code is between 501-508 *]
+    DO [* Error Codes start at 500, but counter starts at 1. And Custom Display Error Code is between 501-508 *]
      ERRFOUND=TRUE
      ERRDISPLAYMSGSCOUNT(ERRTMPCOUNT)=ERRDISPLAYMSGCOUNT
      FOR ERRTMPCOUNT2=1 TO ERRDISPLAYMSGCOUNT
@@ -1603,7 +1612,7 @@ PROCEDURE ERRDISPLAYMSGGET
  WHILE ERRTMPCOUNT<=ERRCOUNT
   DO
    IF ERRTMPCOUNT+499=ERRCODE AND ERRCODE>=501 AND ERRCODE <=508 THEN
-    DO [* Error Codes start at 500, but counter stats at 1. And Custom Display Error Code is between 501-508 *]
+    DO [* Error Codes start at 500, but counter starts at 1. And Custom Display Error Code is between 501-508 *]
      ERRDISPLAYMSGCOUNT=ERRDISPLAYMSGSCOUNT(ERRTMPCOUNT)
      FOR ERRTMPCOUNT2=1 TO ERRDISPLAYMSGCOUNT
       DO
@@ -1654,7 +1663,7 @@ PROCEDURE ERRORHANDLER
  NEWLINE
 
  IF ERRORCODE<>500 THEN
-  DO [* 8/27/25-JPK: Non 500 Error Codes now require Error Display Message, as previously ECs were forced to 500 *]
+  DO [* 9/12/25-JPK: Non 500 Error Codes now require Error Display Message, as previously ECs were forced to 500 *]
    PRINT ","
    NEWLINE
    PRINT "    "+Q+"errorMessage"+Q+": ["
