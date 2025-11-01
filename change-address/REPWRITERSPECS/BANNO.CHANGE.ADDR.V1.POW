@@ -36,6 +36,8 @@
 **                                     memo mode or a config file error occurs.
 **    Ver. 1.3.0  05/16/24 T. Kainz - Added Program Installation Date parameter setting
 **    Ver. 1.3.1  03/19/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
+**    Ver. 1.4.0  10/28/25 J. Keenan - Added the parameter settings to allow address information
+**                                     changes during memo mode.
 *]
 SYMCONNECT
 STATELESS
@@ -229,6 +231,10 @@ DEFINE
  PARAMINSTALLDATE          = DATE
  PARAMDEBUGMODE            = NUMBER
  PARAMDEBUGMODEFOUND       = NUMBER
+[* Added 10/28/25 begin *]
+ ALLOWINMEMOMODE           = NUMBER
+ MMEBEMAILLINECOUNT        = NUMBER
+[* Added 10/28/25 end *]
 END [DEFINE]
 
 SETUP
@@ -243,11 +249,11 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.3.1"
- LASTMODDATE='03/19/25'
+ PROGRAMVERSION="1.4.0"
+ LASTMODDATE='10/28/25'
  LASTMODTIME="17:30 PT"
- PROGRAMUPDATENOTE1="If PO BOX RESTRICT is set to yes, check"
- PROGRAMUPDATENOTE2="both Street1 and Street2(extra) address"
+ PROGRAMUPDATENOTE1="Added the parameter settings to Allow"                   
+ PROGRAMUPDATENOTE2="address info changes in memo mode"
  DEBUGMODEDAYS=90 [If revising this value, make sure the CFG Letter file's
                    references to this value are updated as needed]
 
@@ -263,7 +269,11 @@ PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
  IF RESPONSECODE=0 THEN
   CALL READCONFIGFILESETTINGS
 
- IF RESPONSECODE=0 THEN
+[* Memo mode allowed only if ALLOWINMEMOMODE and PARAMSENDEMAIL are true,
+** so members get notified by email that the changes will be made the next-day.
+*]
+ IF RESPONSECODE=0 AND
+    ALLOWINMEMOMODE=FALSE OR PARAMSENDEMAIL=FALSE THEN 
   CALL CHECKFORMEMOMODE
 
  IF RESPONSECODE=0 THEN
@@ -321,6 +331,9 @@ PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
            RESPONSECODE=503
            ERROR503CHR="Banno Chg Addr Err: FM-"+FMERROR
            PARSEDTEXT(1)="Banno Chg Addr Err: FM-"+FMERROR
+           IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+              PARAMSENDEMAIL=TRUE THEN
+            PARSEDTEXT(2)="Not related, but System was in Memo Mode"
            CALL CREATENOTERECORD
           END
          ELSE
@@ -386,6 +399,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - Nm LOC #####9",ACCTLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - Nm LOC #####9",ACCTLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -426,6 +442,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - Shr Nm LOC #####9",SHARELVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - Shr Nm LOC #####9",SHARELVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -466,6 +485,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - IRS Nm LOC #####9",IRSLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - IRS Nm LOC #####9",IRSLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -506,6 +528,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - Ln Nm LOC #####9",LOANLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - Ln Nm LOC #####9",LOANLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -546,6 +571,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - Pldg Nm LOC #####9",PLEDGELVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - Pldg Nm LOC #####9",PLEDGELVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -586,6 +614,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - EFT Nm LOC #####9",EFTLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - EFT Nm LOC #####9",EFTLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -626,6 +657,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - Card Nm LOC #####9",CARDLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - Card Nm LOC #####9",CARDLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -666,6 +700,9 @@ PROCEDURE NAMEFMBYLEVEL
        ERROR503CHR=FORMAT("Banno Chg Addr Err - X Ln Nm LOC #####9",EXTERNALLVLLOCS(TMPLOOP))+" FM-"+FMERROR
        PARSEDTEXT(1)=FORMAT("Banno Chg Addr Err - X Ln Nm LOC #####9",EXTERNALLVLLOCS(TMPLOOP))
        PARSEDTEXT(2)="FM-"+FMERROR
+       IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+          PARAMSENDEMAIL=TRUE THEN
+        PARSEDTEXT(3)="Not related, but System was in Memo Mode"
        CALL CREATENOTERECORD
       END
      TMPLOOP=TMPLOOP+1
@@ -685,6 +722,9 @@ PROCEDURE POSTFMPROCESS
 ** confirmation email to member.
 *]
  PARSEDTEXT(1)="Banno Successful Address Change"
+ IF ALLOWINMEMOMODE=TRUE AND SYSMEMOMODE=TRUE AND
+    PARAMSENDEMAIL=TRUE THEN
+  PARSEDTEXT(2)="FM was during Memo Mode"
  CALL CREATENOTERECORD
 
  IF WARNINGTOCLEAR>0 THEN
@@ -1572,6 +1612,7 @@ PROCEDURE READCONFIGFILESETTINGS
 **  PR     PARAMPORESTRICT       Should the program check for and restrict a PO box entry?
 **  DB     DEBUGMODE             Debug mode on or off
 **  PID    PARAMINSTALLDATE      Program installation date
+**  MMAIC  ALLOWINMEMOMODE       Allow address information changes when the system is in memo mode?
 **
 ** PASS    CONFIGFILENAME   Configuration Letter file name
 ** RETURN  INVALIDACCTYPES()  Array of ineligible account types
@@ -1582,6 +1623,8 @@ PROCEDURE READCONFIGFILESETTINGS
 ** RETURN  PARAMPORESTRICT  Boolean flag: test for PO Box address?
 ** RETURN  POBOXLIST()  Array of PO Box Text strings tp test for
 ** RETURN  DEBUGMODE  Boolean: Debug mode on or off
+** RETURN  PARAMINSTALLDATE Date: Program installation date
+** RETURN  ALLOWINMEMOMODE  Boolean flag: Allow address information changes in memo mode?
 *]
  INVALIDCONFIGPARAMS=FALSE
  PARAMLOCFOUND=FALSE
@@ -1605,6 +1648,9 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMDEBUGMODE=DEBUGMODEOFF
  PARAMDEBUGMODEFOUND=FALSE
  PARAMINSTALLDATE=DATENULL
+ ALLOWINMEMOMODE=FALSE
+ EMAILLINECOUNT=0
+ MMEBEMAILLINECOUNT=0
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -1749,6 +1795,15 @@ PROCEDURE READCONFIGFILESETTINGS
                PARAMVALUE<>"" THEN
         PARAMINSTALLDATE=DATEVALUE(PARAMVALUE)
 
+[* Allow address information changes in memo mode?
+*]
+       ELSE IF PARAMNAME="MMAIC" AND
+               PARAMVALUE<>"" THEN
+        DO
+         IF CHARACTERSEARCH("1ONYESTRUE",UPPERCASE(PARAMVALUE))>0 THEN
+          ALLOWINMEMOMODE=TRUE
+        END
+
 [* Load an array of targeted PO Box text entries to check against
 *]
        IF PARAMPORESTRICT=TRUE THEN
@@ -1774,7 +1829,27 @@ PROCEDURE READCONFIGFILESETTINGS
          EMAILLINECOUNT=EMAILLINECOUNT+1
          PARAMEMAILTEXT(EMAILLINECOUNT)=PARAMVALUE
         END
-      END
+
+[* If sending an email confirmation and allow address info changes in memo mode
+** is enabled, load an array of memo mode email body lines
+*]
+       IF PARAMSENDEMAIL=TRUE AND
+          SEGMENT(PARAMNAME,1,4)="MMEB" AND
+          EMAILLINECOUNT<EMAILLINESMAX THEN
+        DO
+         IF  (SYSMEMOMODE=TRUE AND ALLOWINMEMOMODE=TRUE AND
+              (PARAMVALUE<>"" AND MMEBEMAILLINECOUNT=0) OR
+               MMEBEMAILLINECOUNT>0) THEN
+          DO [Only add if memo allowed and in memo mode. First line of email body memo mode can't be blank]
+           MMEBEMAILLINECOUNT=MMEBEMAILLINECOUNT+1
+           IF MMEBEMAILLINECOUNT>0 THEN
+            DO
+             EMAILLINECOUNT=EMAILLINECOUNT+1
+             PARAMEMAILTEXT(EMAILLINECOUNT)=PARAMVALUE
+            END
+          END        
+        END
+      END [IF PARAMNAME<>""]
 
      PARAMNAME=""
      PARAMVALUE=""
@@ -1832,6 +1907,8 @@ PROCEDURE READCONFIGFILESETTINGS
  BNODEBUGMSG="DB:"+FORMAT("9",DEBUGMODE)
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="PID:"+FORMAT("99/99/9999",PARAMINSTALLDATE)
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="ALLOWINMEMOMODE:"+FORMAT("9",ALLOWINMEMOMODE)
  CALL BNODEBUGMSGADD
 
  IF PARAMPORESTRICT=TRUE THEN
@@ -2060,6 +2137,16 @@ PROCEDURE VALIDATECONFIG
        PARAMVALIDATIONERROR=TRUE
        PARAMVALIDATIONERRORCHR="No email detail lines specified for member email."
       END
+     ELSE IF SYSMEMOMODE=TRUE AND ALLOWINMEMOMODE=TRUE AND
+             PARAMSENDEMAIL=TRUE AND MMEBEMAILLINECOUNT=0 AND
+             EMAILLINECOUNT+3<EMAILLINESMAX THEN
+      DO [Add default memo email body lines if memo is allowed and configuration lines are blank and fit the array.]
+       PARAMEMAILTEXT(EMAILLINECOUNT+1)="Nightly processing is underway. Your financial institution address information has been updated"
+       PARAMEMAILTEXT(EMAILLINECOUNT+2)="and will be reflected the next business day."
+       PARAMEMAILTEXT(EMAILLINECOUNT+3)="Please contact us immediately if you did not make these changes: (xxx) xxx-xxxx"
+       EMAILLINECOUNT=EMAILLINECOUNT+3
+       MMEBEMAILLINECOUNT=3
+      END
 
      ELSE IF PARAMEMAILFROM<>MEMBEREMAIL THEN
       DO
@@ -2091,6 +2178,7 @@ PROCEDURE VALIDATECONFIG
         PARAMVALIDATIONERRORCHR="Invalid email address specified for Conversations override."
        END
      END
+
   END
 
  IF PARAMVALIDATIONERROR=TRUE THEN
@@ -2439,4 +2527,3 @@ PROCEDURE SENDEMAIL
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
-
