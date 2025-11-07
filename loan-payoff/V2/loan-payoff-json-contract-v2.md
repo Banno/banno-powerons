@@ -9,7 +9,7 @@
   "rgState": "GETPRELOADDATA",
   "powerOnFilename": "BANNO.LOAN.PAYOFF.V2.POW",
   "userCharList": [
-    { "id": 1, "value": "0123456789" } //10-digit member number
+    { "id": 1, "value": "0123456789L0001" } //10-digit member number + L + loan ID
   ],
   "userNumList": [],
   "rgSession": 1
@@ -18,7 +18,7 @@
 
 **Request Detail:**
 
-- userCharList[1]: Member number associated with the selected account (10 digits)
+- userCharList[1]: Member number and loan ID associated with the selected account
 
 ### PowerOn Response (GETPRELOADDATA)
 
@@ -73,7 +73,7 @@
   "rgState": "PERFORMLOANPAYOFFCALC",
   "powerOnFilename": "BANNO.LOAN.PAYOFF.V2.POW",
   "userCharList": [
-    { "id": 1, "value": "0123456789" }, // 10-digit member number
+    { "id": 1, "value": "0123456789L0001" }, //10-digit member number + L + loan ID
     { "id": 2, "value": "yyyy-mm-dd" },
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
@@ -86,7 +86,7 @@
 
 **Request Detail:**
 
-- userCharList[1]: Member number associated with the selected account (10 digits)
+- userCharList[1]: Member number and loan ID associated with the selected account
 - userCharList[2]: Payoff date in yyyy-mm-dd format
 
 ### PowerOn Response (PERFORMLOANPAYOFFCALC)
@@ -199,13 +199,16 @@ Possible error codes include:
 
 ## Error Codes
 
-| Error Code | Logging Error Message        | Modifier                                                                                 | Additional Notes                                                                           |
-| ---------- | ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 500        | Config file open/read error  | [configuration file name] open error - [system generated letter file read error message] | This set of errors represents issues with the configuration letter file                    |
-|            |                              | [configuration file name] read error - [system generated letter file read error message] |                                                                                            |
-| 501        | Config file validation error | Invalid Param Value([parameter name])                                                    |                                                                                            |
-| 502        | Duplicate loan type in CFG   | [param] [4-digit loan type]                                                              | Has a duplicate loan type that is already in home, vehicle or secured loan type parameters |
-| 503        | Ineligible Loan Type         | [4-digit loan type]                                                                      | This set of errors is for ineligible loans                                                 |
-| 504        | Account Warning Found        | [3-digit comma separated account warning list]                                           |                                                                                            |
-| 505        | Loan Projection Error        | [system generated PowerOn function LOANPROJECTCALC error message]                        | This set of errors is for loan payoff processing errors                                    |
-| 506        | Fee Specfile Error           | [Banno loan payoff fees PowerOn generated error message]                                 |                                                                                            |
+| Error Code | Logging Error Message               | Modifier                                                                                 | Additional Notes                                                                           |
+| ---------- | ----------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 500        | Config file open/read error         | [configuration file name] open error - [system generated letter file read error message] | This set of errors represents issues with the configuration letter file                    |
+|            |                                     | [configuration file name] read error - [system generated letter file read error message] |                                                                                            |
+| 501        | Config file validation error        | Invalid Param Value([parameter name])                                                    |                                                                                            |
+| 502        | Duplicate loan type in CFG          | Loan Type [4-digit loan type] ([parameter name])                                         | Has a duplicate loan type that is already in home, vehicle or secured loan type parameters |
+| 503        | Ineligible Loan Type                | [4-digit loan type]                                                                      | This set of errors is for ineligible loans                                                 |
+| 504        | Account Warning Found               | [3-digit comma separated account warning list]                                           |                                                                                            |
+| 505        | Loan Warning Found                  | [3-digit comma separated loan warning list]                                              |                                                                                            |
+| 506        | Loan Projection Error               | [system generated PowerOn function LOANPROJECTCALC error message]                        | This set of errors is for loan payoff processing errors                                    |
+| 507        | Fee Specfile Error                  | [Banno loan payoff fees PowerOn generated error message]                                 |                                                                                            |
+| 508        | Payoff date too many days in future |                                                                                          |                                                                                            |
+| 509        | Invalid                             |                                                                                          |                                                                                            |
