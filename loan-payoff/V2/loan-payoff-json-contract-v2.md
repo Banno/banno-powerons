@@ -74,7 +74,7 @@
   "powerOnFilename": "BANNO.LOAN.PAYOFF.V2.POW",
   "userCharList": [
     { "id": 1, "value": "0123456789L0001" }, //10-digit member number + L + loan ID
-    { "id": 2, "value": "yyyy-mm-dd" },
+    { "id": 2, "value": "mm/dd/yyyy" },
     { "id": 3, "value": "" },
     { "id": 4, "value": "" },
     { "id": 5, "value": "" }
@@ -87,7 +87,7 @@
 **Request Detail:**
 
 - userCharList[1]: Member number and loan ID associated with the selected account
-- userCharList[2]: Payoff date in yyyy-mm-dd format
+- userCharList[2]: Payoff date in mm/dd/yyyy format
 
 ### PowerOn Response (PERFORMLOANPAYOFFCALC)
 
@@ -108,13 +108,13 @@
       }
     },
     "totalPayoffAmount": "5,774.60",
-    "payoffDate": "yyyy-mm-dd",
+    "payoffDate": "mm/dd/yy",
     "accountDetails": {
       "principalBalance": "4,814.76",
       "interestType": "Daily Billed 360 (configurable by FI, optional display, maybe remove completely)",
       "interestRate": "3.400% (optional. not supplied for credit cards)",
       "interestDue": "1.43 (not in design spec currently)",
-      "dueDate": "yyyy-mm-dd",
+      "dueDate": "mm/dd/yy",
       "amountPastDueByPayoffDate": "0.00",
       "pastDuePayoffCount": "0",
       "lateChargeDue": "5.00"
@@ -147,13 +147,13 @@
 - errorCode: Error code if error condition exists
 - errorMessage: Error message if error condition exists
 - totalPayoffAmount: Total payoff amount
-- payoffDate:
+- payoffDate: Payoff date in mm/dd/yy format
 - accountDetails: account details object
   - principalBalance
   - interestType
   - interestRate
   - interestDue
-  - dueDate
+  - dueDate: loan due date in mm/dd/yy format
   - amountPastDueByPayoffDate
   - pastDuePayoffCount
   - lateChargeDue
