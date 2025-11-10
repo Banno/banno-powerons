@@ -159,6 +159,10 @@
   - lateChargeDue
 - associatedCollateral: associated collateral object
   - label: collateral label
+    - `Address`
+    - `Boat`
+    - `Vehicle`
+    - `Secured against`
   - info: array of info strings
 - payoffFees: array of fees
   - feeAmount: fee amount
