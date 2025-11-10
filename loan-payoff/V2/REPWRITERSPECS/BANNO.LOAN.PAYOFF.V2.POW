@@ -54,7 +54,7 @@
 **
 **  --------------------------------------------------------------------
 **  Modification History
-**    Ver. 2.0.0  11/07/2025 R. Robison: Original V2 version of loan payoff PO
+**    Ver. 2.0.0  11/10/2025 R. Robison: Original V2 version of loan payoff PO
 **                           Feature set based on: BANNO.LOAN.PAYOFF.V1.POW Ver. 1.1.1  06/19/24
 **    
 *]
@@ -67,12 +67,12 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '11/07/25'
+ BNOLASTMODDATE            = '11/10/25'
  BNOLASTMODTIME            = "17:00 MT"
  BNOPROGRAMNAME            = "BANNO.LOAN.PAYOFF.V2.POW"
  BNOCFGFILENAME            = "BANNO.LOAN.PAYOFF.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
- BNOPROGRAMNOTE1           = "New PowerOn"
+ BNOPROGRAMNOTE1           = "New v2 version of PowerOn"
  BNOPROGRAMNOTE2           = ""
 
  BNODEBUGPRINTINFODAYS     = 60
@@ -111,7 +111,7 @@ DEFINE
  RGSLID=CHARACTER
  RGPAYOFFDATE=DATE
 
-[* Main data structures for PowerOn data/json
+[* Main PowerOn variables and data structures for json
 *]
  INTERESTDESC=CHARACTER(12) ARRAY(8) 
  INVALIDWARNLIST=CHARACTER
