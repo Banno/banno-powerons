@@ -49,14 +49,14 @@ When the client wishes to submit the skip payment request, it will send:
   "powerOnFileName":"BANNO.LOANPAYMENT.SKIP.POWERON",
   "userChrList":[
     {"id": 1, "value": "4CharLoanId, 4CharLoanId..."},
-    {"id": 2, "value": "4CharLoanId, 4CharLoanId..."},
-    {"id": 3, "value": "4CharLoanId, 4CharLoanId..."},
-    {"id": 4, "value": "4CharLoanId, 4CharLoanId..."},
-    {"id": 5, "value": "selectedShareId"}],
+    {"id": 2, "value": "selectedShareId"}],
   "userNumList":[],
   "rgSession":1
 }
 ```
+- @RGUSERCHR1 - Comma separated list of up to 25 loans being skipped
+- @RGUSERCHR2 - Selected share ID for fee
+
 If the request is successful, the poweron should respond with:
 ```json
 {
