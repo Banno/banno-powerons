@@ -229,7 +229,7 @@ DEFINE
  PARAMMSGALLINDEX=NUMBER
  PARAMMSGDEFAULTMAX=20 [each message can be up to 20 lines long by default]
 
-[* CFG Parameter variables for errorDispalyMessages (EDM)
+[* CFG Parameter variables for errorDisplayMessages (EDM)
 *] 
  PARAMERRDISPLAYMAX=200
  PARAMERRDISPLAYERRCODES=NUMBER ARRAY(200)
