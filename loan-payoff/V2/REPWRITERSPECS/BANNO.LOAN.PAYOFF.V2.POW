@@ -390,7 +390,7 @@ SETUP
 [* This is where you define all the soft text CFG tags and json properties
 **  - Optionally set PARAMMSGMAXLINES to override the default of 20 lines per message
 **  - Optionally set PARAMMSGOPT to mark a message as optional. Message will not be returned in
-**.   json response if no message lines found in the CFG.
+**    json response if no message lines found in the CFG.
 *]
  CALL PARAMMSGINIT
 
@@ -1854,7 +1854,7 @@ PROCEDURE JSONERROR
 END [PROCEDURE]
 
 PROCEDURE JSONSUCCESSPRELOADDATA
-[* Output the JSON for successful responses in the PRELOADDATA state
+[* Output the JSON for successful responses in the GETPRELOADDATA state
 *]
 
  JSONPROPNAME="results"
@@ -1877,7 +1877,7 @@ PROCEDURE JSONSUCCESSPRELOADDATA
 END [PROCEDURE]
 
 PROCEDURE JSONSUCCESSPERFORMCALC
-[* Output the JSON for successful responses in the PROCESSDATA state
+[* Output the JSON for successful responses in the PERFORMLOANPAYOFFCALC state
 *]
 
  JSONPROPNAME="results"
