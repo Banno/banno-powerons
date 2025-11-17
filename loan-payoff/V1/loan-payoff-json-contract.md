@@ -32,7 +32,8 @@ To which the poweron should respond with:
   }
 }
 ```
-summaryText: If provided, text is displayed on final screen, if not provided, 
+
+summaryText: If provided, text is displayed on final screen, if not provided,
              "This payoff amount is only an estimate. Please contact us for an
               exact payoff amount." is displayed. Up to 40 lines.
 
@@ -85,7 +86,7 @@ If the request is successful, the poweron should respond with:
 }
 ```
 
-### Errors
+## Errors
 
 Any and all errors should be conveyed via the following structure:
 
@@ -95,7 +96,8 @@ Any and all errors should be conveyed via the following structure:
   "loggingErrorMessage":"if error processing, something to log"
 }
 ```
-### Response Messages & Corresponding Logging Error Messages
+
+## Response Messages & Corresponding Logging Error Messages
 
 *All Errors begin with 'We're sorry we've encountered an error. Please contact your credit union.' followed by the Logging Error Message.
  That is the part of the error message that is displayed to the end user.
