@@ -483,7 +483,7 @@ PROCEDURE SETUPDATA
  INTERESTDESC(7)="Actual/364"
  INTERESTDESC(8)="Scheduled/364"
  
-[* This is the default state of debug mode.  This may be overriden if the Program Install Date (PID)
+[* This is the default state of debug mode.  This may be overridden if the Program Install Date (PID)
 ** is set in the CFG configuration file.
 *] 
  IF BNOLASTMODDATE+BNODEBUGPRINTINFODAYS>SYSTEMDATE THEN
@@ -618,7 +618,7 @@ PROCEDURE MSGPROPSELECTADD
 [* Call before JSONMSGARRAYS to selectively output soft text/message properties.
 ** This may be multiple times with different MSGPROPSELECT values to select and output
 ** multiple soft text properties.  JSONMSGARRAYS will output all defined soft text messages
-** if this procuedure is not called prior to JSONMSGARRAYS.
+** if this procedure is not called prior to JSONMSGARRAYS.
 ** Example:
 **
 **  MSGPROPSELECT="informationMsg"
