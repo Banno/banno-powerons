@@ -36,7 +36,7 @@
 **                                     memo mode or a config file error occurs.
 **    Ver. 1.3.0  05/16/24 T. Kainz - Added Program Installation Date parameter setting
 **    Ver. 1.3.1  03/19/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
-**    Ver. 1.4.0  11/14/25 J. Keenan - Added the parameter settings to allow address information
+**    Ver. 1.4.0  11/26/25 J. Keenan - Added the parameter settings to allow address information
 **                                     changes during memo mode.
 *]
 SYMCONNECT
@@ -234,7 +234,9 @@ DEFINE
 
  PARAMALLOWINMEMOMODE      = NUMBER
  MMEBEMAILLINECOUNT        = NUMBER
+ PARAMMEMOMODEEMAILSUBJECT = CHARACTER(120)
  PARAMMEMOMODEEMAILTEXT    = CHARACTER ARRAY(999)
+ TMPSUBJECT                = CHARACTER(120)
 END [DEFINE]
 
 SETUP
@@ -250,7 +252,7 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.4.0"
- LASTMODDATE='11/14/25'
+ LASTMODDATE='11/26/25'
  LASTMODTIME="17:30 PT"
  PROGRAMUPDATENOTE1="Added the parameter settings to Allow"                   
  PROGRAMUPDATENOTE2="address info changes in memo mode"
@@ -741,11 +743,9 @@ PROCEDURE POSTFMPROCESS
    CALL BNODEBUGMSGADD
   END
 
- IF PARAMSENDEMAIL=TRUE THEN
+ IF PARAMSENDEMAIL=TRUE OR
+    SYSMEMOMODE=TRUE THEN
   CALL SENDEMAIL
-
- IF SYSMEMOMODE=TRUE THEN
-  CALL SENDMEMOMODEEMAIL
 
 END [PROCEDURE]
 
@@ -1597,14 +1597,16 @@ END [PROCEDURE]
 
 PROCEDURE READCONFIGFILESETTINGS
 [* Read parameter settings from the configuration Letter file.
-**  IAT    PARAMINELIGIBLEACCTS  Ineligible Account Type(s) (in LISTEXPAND format)
-**  AW     PARAMWARNINGSACCT     Acct level warnings which exclude account (in LISTEXPAND format)
-**  CW     PARAMCLEARWARNING     Account level warning(s) to clear upon successful address change
-**  SW     PARAMSETWARNINGS      Account level warning to set upon successful address change
-**  PR     PARAMPORESTRICT       Should the program check for and restrict a PO box entry?
-**  DB     DEBUGMODE             Debug mode on or off
-**  PID    PARAMINSTALLDATE      Program installation date
-**  MMAIC  PARAMALLOWINMEMOMODE  Allow address information changes when the system is in memo mode?
+**  IAT    PARAMINELIGIBLEACCTS      Ineligible Account Type(s) (in LISTEXPAND format)
+**  AW     PARAMWARNINGSACCT         Acct level warnings which exclude account (in LISTEXPAND format)
+**  CW     PARAMCLEARWARNING         Account level warning(s) to clear upon successful address change
+**  SW     PARAMSETWARNINGS          Account level warning to set upon successful address change
+**  PR     PARAMPORESTRICT           Should the program check for and restrict a PO box entry?
+**  DB     DEBUGMODE                 Debug mode on or off
+**  PID    PARAMINSTALLDATE          Program installation date
+**  MMAIC  PARAMALLOWINMEMOMODE      Allow address information changes when the system is in memo mode?
+**  ES     PARAMEMAILSUBJECT         Email subject
+**  MMES   PARAMMEMOMODEEMAILSUBJECT Memo mode email subject
 **
 ** PASS    CONFIGFILENAME   Configuration Letter file name
 ** RETURN  INVALIDACCTYPES()  Array of ineligible account types
@@ -1617,6 +1619,8 @@ PROCEDURE READCONFIGFILESETTINGS
 ** RETURN  DEBUGMODE  Boolean: Debug mode on or off
 ** RETURN  PARAMINSTALLDATE Date: Program installation date
 ** RETURN  PARAMALLOWINMEMOMODE  Boolean flag: Allow address information changes in memo mode?
+** RETURN  PARAMEMAILSUBJECT Text of email subject
+** RETURN  PARAMMEMOMODEEMAILSUBJECT Text of memo mode email subject
 *]
  INVALIDCONFIGPARAMS=FALSE
  PARAMLOCFOUND=FALSE
@@ -1643,6 +1647,7 @@ PROCEDURE READCONFIGFILESETTINGS
  PARAMALLOWINMEMOMODE=FALSE
  EMAILLINECOUNT=0
  MMEBEMAILLINECOUNT=0
+ PARAMMEMOMODEEMAILSUBJECT="Update to Financial Institution Address Scheduled"
 
  FILEOPEN("LETTER",CONFIGFILENAME,"READ",LFNUMBER,LFERROR)
  IF LFERROR<>"" THEN
@@ -1835,6 +1840,12 @@ PROCEDURE READCONFIGFILESETTINGS
            PARAMMEMOMODEEMAILTEXT(MMEBEMAILLINECOUNT)=PARAMVALUE
           END        
         END
+
+[* Memo Mode email subject
+*]
+       ELSE IF PARAMNAME="MMES" AND
+               PARAMVALUE<>"" THEN
+        PARAMMEMOMODEEMAILSUBJECT=PARAMVALUE
       END [IF PARAMNAME<>""]
 
      PARAMNAME=""
@@ -1915,6 +1926,8 @@ PROCEDURE READCONFIGFILESETTINGS
  BNODEBUGMSG="EF:"+PARAMEMAILFROM
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="ES:"+PARAMEMAILSUBJECT
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="MMES:"+PARAMMEMOMODEEMAILSUBJECT
  CALL BNODEBUGMSGADD
 
  CALL VALIDATECONFIG
@@ -2503,14 +2516,19 @@ PROCEDURE SENDEMAIL
  CALL BNODEBUGMSGADD
  BNODEBUGMSG="TO:"+MEMBEREMAIL
  CALL BNODEBUGMSGADD
- BNODEBUGMSG="SUBJ:"+PARAMEMAILSUBJECT
+ IF SYSMEMOMODE=FALSE THEN
+  TMPSUBJECT=PARAMEMAILSUBJECT
+ ELSE
+  TMPSUBJECT=PARAMMEMOMODEEMAILSUBJECT
+ BNODEBUGMSG="SUBJ:"+TMPSUBJECT
+ 
  CALL BNODEBUGMSGADD
 
  IF PARAMEMAILFROM<>"" AND
     MEMBEREMAIL<>"" THEN
   DO
-   EMAILSTART(PARAMEMAILFROM ,MEMBEREMAIL,PARAMEMAILSUBJECT,EMAILSENDERROR)
-
+   EMAILSTART(PARAMEMAILFROM ,MEMBEREMAIL,TMPSUBJECT,EMAILSENDERROR)
+   
    IF EMAILSENDERROR="" THEN
     DO
      IF PARAMEMAILTYPE=EMAILTYPEHTML THEN
@@ -2518,47 +2536,21 @@ PROCEDURE SENDEMAIL
        EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
        EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
       END
-     FOR TMPLOOP=1 TO EMAILLINECOUNT
+     IF SYSMEMOMODE=FALSE THEN
       DO
-       TMPCHR=PARAMEMAILTEXT(TMPLOOP)
-       EMAILLINE(TMPCHR,EMAILSENDERROR)
+       FOR TMPLOOP=1 TO EMAILLINECOUNT
+        DO
+         TMPCHR=PARAMEMAILTEXT(TMPLOOP)
+         EMAILLINE(TMPCHR,EMAILSENDERROR)
+        END
       END
-     EMAILSEND(EMAILSENDERROR)
-    END
-  END
- BNODEBUGMSG= "SEND EMAIL ERROR:"+EMAILSENDERROR
- CALL BNODEBUGMSGADD
-END [PROCEDURE]
-
-PROCEDURE SENDMEMOMODEEMAIL
-
-[* Send memo mode email to user's email address.
-*]
- BNODEBUGMSG="SEND EMAIL INFORMATION:"
- CALL BNODEBUGMSGADD
- BNODEBUGMSG="FROM:"+PARAMEMAILFROM
- CALL BNODEBUGMSGADD
- BNODEBUGMSG="TO:"+MEMBEREMAIL
- CALL BNODEBUGMSGADD
- BNODEBUGMSG="SUBJ:Update to Financial Institution Address Scheduled"
- CALL BNODEBUGMSGADD
-
- IF PARAMEMAILFROM<>"" AND
-    MEMBEREMAIL<>"" THEN
-  DO
-   EMAILSTART(PARAMEMAILFROM ,MEMBEREMAIL,"Update to Financial Institution Address Scheduled",EMAILSENDERROR)
-
-   IF EMAILSENDERROR="" THEN
-    DO
-     IF PARAMEMAILTYPE=EMAILTYPEHTML THEN
+     ELSE
       DO
-       EMAILLINE("MIME-Version: 1.0",EMAILSENDERROR)
-       EMAILLINE("Content-Type: text/html; charset=us-ascii",EMAILSENDERROR)
-      END
-     FOR TMPLOOP=1 TO MMEBEMAILLINECOUNT
-      DO
-       TMPCHR=PARAMMEMOMODEEMAILTEXT(TMPLOOP)
-       EMAILLINE(TMPCHR,EMAILSENDERROR)
+       FOR TMPLOOP=1 TO MMEBEMAILLINECOUNT
+        DO
+         TMPCHR=PARAMMEMOMODEEMAILTEXT(TMPLOOP)
+         EMAILLINE(TMPCHR,EMAILSENDERROR)
+        END
       END
      EMAILSEND(EMAILSENDERROR)
     END
