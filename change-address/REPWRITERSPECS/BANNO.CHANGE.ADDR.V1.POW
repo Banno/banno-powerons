@@ -36,8 +36,10 @@
 **                                     memo mode or a config file error occurs.
 **    Ver. 1.3.0  05/16/24 T. Kainz - Added Program Installation Date parameter setting
 **    Ver. 1.3.1  03/19/25 J. Keenan - Added street 2(extra) to PO BOX RESTRICT check
-**    Ver. 1.4.0  11/26/25 J. Keenan - Added the parameter settings to allow address information
+**    Ver. 1.4.0  11/14/25 J. Keenan - Added the parameter settings to allow address information
 **                                     changes during memo mode.
+**    Ver. 1.4.1  12/02/25 J. Keenan - Enhanced email handling for address changes in memo mode.
+**
 *]
 SYMCONNECT
 STATELESS
@@ -251,8 +253,8 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.4.0"
- LASTMODDATE='11/26/25'
+ PROGRAMVERSION="1.4.1"
+ LASTMODDATE='12/02/25'
  LASTMODTIME="17:30 PT"
  PROGRAMUPDATENOTE1="Added the parameter settings to Allow"                   
  PROGRAMUPDATENOTE2="address info changes in memo mode"
