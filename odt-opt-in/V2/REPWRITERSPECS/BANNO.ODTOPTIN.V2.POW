@@ -417,8 +417,6 @@ PRINT TITLE=BNOPROGRAMNAME
 
  IF BNOERRORCODE=0 THEN
   CALL PARAMPOSTPROCESS
- 
- CALL GETUSELANGUAGE
 
  IF BNOERRORCODE=0 AND
     PARAMTESTMODE=TRUE THEN
@@ -869,6 +867,10 @@ END [PROCEDURE]
 PROCEDURE PARAMPOSTPROCESS
 [* Post-processing of the param/cfg variables
 *]
+
+[* After the parameters have been read, set the active language based on param value and language passed to PO
+*]
+ CALL GETUSELANGUAGE
 
 [* Add defaults if the CMMS (custom memo mode success) message is not set in the CFG
 *]
