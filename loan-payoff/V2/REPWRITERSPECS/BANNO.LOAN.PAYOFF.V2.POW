@@ -429,9 +429,7 @@ PRINT TITLE=BNOPROGRAMNAME
 
  IF BNOERRORCODE=0 THEN
   CALL PARAMPOSTPROCESS
-
- CALL GETUSELANGUAGE
-
+ 
  IF BNOERRORCODE=0 AND
     PARAMTESTMODE=TRUE THEN
   BNOERRORCODE=PARAMTESTEC
@@ -1527,6 +1525,10 @@ END [PROCEDURE]
 PROCEDURE PARAMPOSTPROCESS
 [* Post-processing of the param/cfg variables
 *]
+
+[* After the parameters have been read, set the active language based on param value and language passed to PO
+*]
+ CALL GETUSELANGUAGE
 
 [* Expand all the loan type lists
 *]
