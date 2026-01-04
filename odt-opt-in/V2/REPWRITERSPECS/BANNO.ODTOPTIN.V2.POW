@@ -1,5 +1,5 @@
 
-[*  Copyright 2025 Jack Henry and Associates
+[*  Copyright 2026 Jack Henry and Associates
 **
 **  PowerOn Name:                     BANNO.ODTOPTIN.V2.POW
 **  Configuration Letterfile Name:    BANNO.ODTOPTIN.V2.CFG
@@ -53,7 +53,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **  --------------------------------------------------------------------
-**    Ver. 2.0.0  12/31/2025 R. Robison: Original V2 version of ODT Opt-In PowerOn
+**    Ver. 2.0.0  01/04/2026 R. Robison: Original V2 version of ODT Opt-In PowerOn
 **                           Feature set based on: BANNO.ODTOPTIN.V1.POW Ver. 1.5.0  10/21/25
 **    
 *]
@@ -66,8 +66,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '12/31/25'
- BNOLASTMODTIME            = "17:30 MT"
+ BNOLASTMODDATE            = '01/04/26'
+ BNOLASTMODTIME            = "15:30 MT"
  BNOPROGRAMNAME            = "BANNO.ODTOPTIN.V2.POW"
  BNOCFGFILENAME            = "BANNO.ODTOPTIN.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
