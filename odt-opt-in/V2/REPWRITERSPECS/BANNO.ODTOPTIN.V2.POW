@@ -110,7 +110,8 @@ DEFINE
  BNOERRCODEFMSHTRKNGFAIL      = 506
  BNOERRCODEFMSCANDAUTHFEEFAIL = 507
  BNOERRCODEFMSHODTAMTFAIL     = 508
- BNOERRCODEFMMULTIPLE         = 509
+ [--do not use error code 509, it is used by a custom version of the po--]
+ BNOERRCODEFMMULTIPLE         = 510
 
 [* RGUSER Pass variables - passed from UX code
 *]

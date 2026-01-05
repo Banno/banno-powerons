@@ -284,4 +284,5 @@ Below is the inclusive list of Error Codes that may be returned by the PowerOn:
 | 506        | Error updating share tracking                   |                                                                                          |                                   |
 | 507        | Error updating source code & auth/fee fields    |                                                                                          |                                   |
 | 508        | Error updating share overdraft tolerance amount |                                                                                          |                                   |
-| 509        | Multiple update errors                          |                                                                                          |                                   |
+| 509        | n/a                                             |                                                                                          | Used by custom version of PowerOn |
+| 510        | Multiple update errors                          |                                                                                          |                                   |
