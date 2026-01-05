@@ -51,7 +51,8 @@
 **  506: Error updating share tracking
 **  507: Error updating source code & auth/fee fields
 **  508: Error updating share overdraft tolerance amount
-**  509: Multiple update errors
+**  --do not use error code 509, it is used by a custom version of the po--
+**  510: Multiple update errors
 **
 **  --------------------------------------------------------------------
 **  Additional Information
