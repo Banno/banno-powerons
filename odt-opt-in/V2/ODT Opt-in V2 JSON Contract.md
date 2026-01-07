@@ -231,6 +231,60 @@ Any and all errors should be conveyed via the following structure:
 - errorMessage: Error message - text description of the errorCode
 - errorDisplayMessage: **\*\*Optional** An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message. **Must be supported by UX code**
 
+### File Maintenance Error
+
+For PROCESSDATA state file maintenance errors, additional error details will be returned in the `shareDetailUpdated` array.
+
+```json
+{
+  "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        "name": "BANNO.ODTOPTIN.V2.POW",
+        "version": "2.0.0",
+        "lastModDate": "01/04/26 16:00 MT",
+        "language": 1,
+        "note1": "New PowerOn"
+      },
+      "systemInfo": {
+        "systemDate": "01/01/2026",
+        "slidLength": 4,
+        "memoMode": false
+      }
+    },
+    "errorCode": 506,
+    "errorMessage": "Error updating share",
+    "errorDisplayMessage": ["Optional member display message - see below"],
+        "shareDetailUpdated": [
+      {
+        "SID": "0000",
+        "name": "My Primary Share",
+        "balance": "######9.99",
+        "currentState": false,
+        "fmErrors": ""
+      },
+      {
+        "SID": "0010",
+        "name": "SuperDuper Checking",
+        "balance": "######9.99",
+        "currentState": true,
+        "fmErrors": ""
+      }
+    ]
+  }
+}
+```
+
+- errorCode: Error code generated (numeric) (506, 507, 508 and 510)
+- errorMessage: Error message - text description of the errorCode
+- errorDisplayMessage: **\*\*Optional** An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message. **Must be supported by UX code**
+- shareDetailUpdated: array of updated share detail objects
+  - SID: Share ID [SHARE:ID]
+  - name: Share description [SHARE:DESCRIPTION]
+  - balance: Share available balance [SHARE:AVAILABLEBALANCE]
+  - currentState: boolean - true/false. Is the share enrolled in ODT services? The updated state.
+  - fmErrors: string of fm error types.  Possible fm error types include: `trkFm` `odtAuthFeeFm` and `odtAmtFm`
+
 ### Memo Mode Error
 
 ```json
