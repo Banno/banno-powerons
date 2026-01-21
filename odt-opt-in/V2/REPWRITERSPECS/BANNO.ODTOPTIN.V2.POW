@@ -1233,9 +1233,9 @@ PROCEDURE PARAMPOSTPROCESS
  CALL PARAMMSGALLFIND
  IF PARAMMSGALLTAGFOUND=FALSE THEN
   DO
-   PARAMMSGALLVAL="Nightly processing is underway. Your overdraft settings have been processed"
+   PARAMMSGALLVAL="El procesamiento nocturno est&aacute; en curso. Sus configuraciones de sobregiro had sido procesadas y"
    CALL PARAMMSGALLADD
-   PARAMMSGALLVAL="and will be reflected the next business day."
+   PARAMMSGALLVAL="se reflecjar*aacute;n el pr&oacute;ximo d&iacute;a h&aacute;bil."
    CALL PARAMMSGALLADD
   END
 
