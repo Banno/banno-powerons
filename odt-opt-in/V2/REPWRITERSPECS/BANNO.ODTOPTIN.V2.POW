@@ -61,7 +61,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **  --------------------------------------------------------------------
-**    Ver. 2.0.0  01/05/2026 R. Robison: Original V2 version of ODT Opt-In PowerOn
+**    Ver. 2.0.0  01/20/2026 R. Robison: Original V2 version of ODT Opt-In PowerOn
 **                           Feature set based on: BANNO.ODTOPTIN.V1.POW Ver. 1.5.0  10/21/25
 **    
 *]
@@ -74,8 +74,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '01/05/26'
- BNOLASTMODTIME            = "14:00 MT"
+ BNOLASTMODDATE            = '01/20/26'
+ BNOLASTMODTIME            = "17:00 MT"
  BNOPROGRAMNAME            = "BANNO.ODTOPTIN.V2.POW"
  BNOCFGFILENAME            = "BANNO.ODTOPTIN.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
