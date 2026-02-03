@@ -55,16 +55,16 @@
       }
     ],
     "terms": [
-      "1-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
-      "2-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
+      "1-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
+      "2-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
     ],
     "feeDisclosure": [
-      "1-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
-      "2-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
+      "1-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
+      "2-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
     ],
     "revocationInstructions": [
-      "1-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
-      "2-This is test verbiage3. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
+      "1-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage.",
+      "2-This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage. This is test verbiage."
     ],
     "servicesInstructions": [
       "Check the box for an account to opt-in to overdraft services.  Un-check the box for an",
@@ -88,13 +88,13 @@
     - version: PowerOn version
     - lastModDate: Last modification date/time
     - language: 1 = English, 2 = Spanish
-    - note1: Note 1
-    - note2: Note 2
+    - note1: Note 1 **Optional**
+    - note2: Note 2 **Optional**
   - systemInfo:
     - systemDate: Current Episys system date in mm/dd/yyyy format
     - slidLength: The length of the share/loan ID the system is currently using (numeric, 2 or 4)
     - memoMode: boolean - true/false. Is the system in memo mode?
-- maxSharesExceeded: boolean - true/false. Did the program find more than 13 eligible shares for this member?
+- maxSharesExceeded: boolean - true/false. Did the program find more than 130 eligible shares for this member?
 - shareDetail: array of share details objects
   - SID: Share ID [SHARE:ID]
   - name: Share description [SHARE:DESCRIPTION]
