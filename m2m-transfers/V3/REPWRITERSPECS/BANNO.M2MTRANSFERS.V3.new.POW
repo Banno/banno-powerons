@@ -2907,9 +2907,9 @@ PROCEDURE EXPIRERECIPIENT
 [* Delete targeted recipient record (External Account) and output
 ** success or error code detail. Include updated current state in
 ** output
-**  PASS    RECIPLOCATOR  Locator code of record to delete
-**  RETURN  FMERROR       Expiration attempt error attempt return
-**  RETURN  BNOERRORCODE     Error code if attempt failed
+**  PASS    RGRECIPLOCATOR  Locator code of record to delete
+**  RETURN  FMERROR         Expiration attempt error attempt return
+**  RETURN  BNOERRORCODE    Error code if attempt failed
 *]
  FMPERFORM REVISE EXTERNALACCOUNT LOC RGRECIPLOCATOR (0,0,FMERROR)
   DO
@@ -3539,7 +3539,7 @@ PROCEDURE JSONSUCCESSDELETERECIP
  PRINT JSONBOOLEAN(TRUE)
  NEWLINE
 
- BNONUM=RECIPLOCATOR
+ BNONUM=RGRECIPLOCATOR
  CALL BNONUMTEXT
  JSONPROPNAME="recipientLoc"
  CALL JSONPROP
