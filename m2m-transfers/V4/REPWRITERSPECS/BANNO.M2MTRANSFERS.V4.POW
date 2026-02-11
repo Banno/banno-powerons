@@ -1,0 +1,4642 @@
+[*  Copyright 2021-2026 Jack Henry and Associates
+**
+**  PowerOn Name:       BANNO.M2MTRANSFERS.V4.POW
+**  Letterfile Name:    BANNO.M2MTRANSFERS.V4.CFG
+**
+**  --------------------------------------------------------------------
+**  Program Summary
+**  --------------------------------------------------------------------
+**  This Banno PowerOn allows the user to perform a transfer
+**  (immediate or scheduled) to another CU member
+**
+**  --------------------------------------------------------------------
+**  Program states and JSON returns
+**  --------------------------------------------------------------------
+**    STATE:  PRELOADDATA
+**  PROCESS:  Process PRELOADDATA state and create json response
+**     PASS:  @RGUSERCHR1 n/a
+**            @RGUSERNUM1 n/a
+**   RETURN:  Provides UX PRELOADDATA response
+**
+**    STATE:  VERIFYMEMBER
+**  PROCESS:  Process VERIFYMEMBER state and create json response
+**     PASS:  @RGUSERCHR1 [member id]|[first 3 of last name or business name]|[accountType]|[accountId]
+**            @RGUSERNUM1 n/a
+**   RETURN:  Provides UX VERIFYMEMBER response
+**
+**    STATE:  CREATETRAN
+**  PROCESS:  Process CREATETRAN state and create json response
+**     PASS:  @RGUSERCHR1 [sourceAccount]|[recipient member id]|[recipient S/L id]|[frequency]|[startDate or "soonest" ]|[day1]|[day2]
+**            @RGUSERCHR2 [first 3]|[nickname]
+**            @RGUSERCHR3 internal memo for immediate transfers
+**            @RGUSERCHR4 transfer amount
+**            @RGUSERNUM1 recipient locator if available
+**   RETURN:  Provides UX CREATETRAN response
+**
+**    STATE:  EDITTRAN
+**  PROCESS:  Process EDITTRAN state and create json response
+**     PASS:  @RGUSERCHR1 [transferFrequency]|[startDate]|[day1]|[day2]
+**            @RGUSERCHR2 internal memo for immediate transfers only
+**            @RGUSERCHR3 transfer amount
+**            @RGUSERNUM1 transfer locator
+**   RETURN:  Provides UX EDITTRAN response
+**
+**    STATE:  DELETERECIP
+**  PROCESS:  Process DELETERECIP state and create json response
+**     PASS:  @RGUSERCHR1 n/a
+**            @RGUSERNUM1 recipient locator
+**   RETURN:  Provides UX DELETERECIP response
+**
+**    STATE:  DELETETRAN
+**  PROCESS:  Process DELETETRAN state and create json response
+**     PASS:  @RGUSERCHR1 n/a
+**            @RGUSERNUM1 transfer locator
+**   RETURN:  Provides UX DELETETRAN response
+**
+**  --------------------------------------------------------------------
+**  Error codes and Logging Messages
+**  --------------------------------------------------------------------
+**  500: System in memo mode
+**  501: Config file error
+**  502: Invalid Source Account
+**  503: Invalid Recipient Account [**Unused**]
+**  504: Insufficient Information
+**  505: Invalid Input
+**  506: Error Processing Recipient Record
+**  507: Error Processing Transfer Record
+**  508: Undefined Error [**Unused**]
+**  509: Member verification failed
+**  510: Account ID incorrect [**Unused**]
+**  511: Request exceeds limits
+**  512: Config file validation error
+**
+**  --------------------------------------------------------------------
+**  Additional Information
+**  --------------------------------------------------------------------
+**
+**  For more information check
+**  https://github.com/Banno/banno-powerons
+**
+**  Banno is not responsible for any modifications to this file made by unauthorized personnel.
+**
+**  --------------------------------------------------------------------
+**  Modification History:
+**   Ver. 1.0.0  07/21/21 T. Kainz - Original Programming
+**   Ver. 1.1.0  10/11/21 T. Kainz - Adding check for service code for
+**               transfer in on credited share. Added check for IRS code
+**               on credited share - must be 0. Added parameter options
+**               to allow transfers into clubs or certs. Corrected issue
+**               preventing recurring transfers to loans. Set debugmode
+**               to on as default for first 45 days after latest update.
+**               Removed ability for the user to send funds to account
+**               type only, now requiring a specific share or loan ID
+**   Ver. 1.1.1  12/03/21 T. Kainz - Corrected transfer locator format
+**               issue in JSON output when locator is over 999. Added
+**               S/L ID Length to JSON output. Added procedure to
+**               normalize S/L ID length. Added check for same account
+**               transfer (not allowed). If tran counts are being
+**               enforced, and transfer initiated on system date is
+**               deleted (expired) or edited, adjust transfer count and
+**               transfer amount total accordingly. Added immed. transfer
+**               comment parameter.
+**   Ver. 1.1.2  3/28/2022 J. Carson - Corrected issue with CREATETRANSFER
+**               procedure where a stale transfer record is created if the
+**               start date is before the system date (GOODNIGHT has changed
+**               the date before midnight). Fix will perform an immediate
+**               transfer in that case.
+**   Ver. 1.1.3  03/29/2022 T. Kainz - Corrected issue where a saved
+**               recipient with a loan as a target was being recalled
+**               as a share
+**   Ver. 3.0.0  10/10/2022 T. Kainz
+**               * Program ver. bumped to v 3.0.0 to correspond with UX
+**                 version update to v3.
+**               * Added JSON flag for cross-accounts for UX use.
+**               * Modified logic determining if a transfer is immediate or
+**                  scheduled based upon UX request.
+**               * Added Reg E flag to be set to true for immediate transfer
+**               * Added Share transfer user created check to logic determining
+**                  whether to allow edit of manually created share transfers.
+**   Ver. 3.1.0  04/19/2023 R. Robison - Added support for label soft text on
+**               the member name and id input.  These labels are for the sub-title
+**               text under the main labels.
+**   Ver. 3.2.0  11/02/2023 R. Robison - Code refactor including framework for
+**               the optional share ID feature.
+**   Ver. 3.2.1  01/31/2024 T. Kainz -
+**               * Corrected issue where cross-account loans were being allowed
+**                 when only shares were requested.
+**               * Updated last name verification to properly process last names
+**                 stored with one or more spaces at the beginning.
+**               * Forced limitation of comment length for immediate transfers
+**                 to 39 characters to avoid failed xfers.
+**               * Updated procedures for building Share/Loan list.
+**               * Check for double-quotes in Share/Loan description and
+**                 nickname fields and replace with single-quotes.
+**   Ver. 3.2.2  07/10/2024 J. Keenan -
+**               * Corrected issue so that the loggingErrorMessage
+**                 for ineligible account type now indicates when the
+**                 account type is invalid and lists the account type.
+**               * Added Program Installation Date parameter setting.
+**               * Set debugmode to on as default for first 90 days after
+**                 latest update. Can be overridden by hidden parameter  "DB:".
+**   Ver. 3.2.3  09/04/2024 JuCarson - Banno
+**               * Fixed error where backslashes from share nickname or description
+**                 caused json error.
+**   Ver. 3.2.4  10/14/2024 T. Kainz -
+**               * Modified logic used to determine transfer record editability.
+**                 * Program now matches the user number who created the transfer
+**                   record against the SymXchange user number and if it matches, then
+**                   transfer record is automatically editable.
+**                 * Modified AE parameter setting to also allow a list entry in addition
+**                   to a TRUE/FALSE entry. If the transfer record was created by one
+**                   of the user numbers listed, transfer is editable.
+**               * Modified external record creation to only occur when member elects
+**                 to save the record (nickname field is not blank).
+**               * Added additional checks for invalid characters in Share/Loan Nicknames
+**                 and descriptions.
+**   Ver. 3.2.5  10/28/2024 T. Kainz - Banno
+**               * Modified displayed description of recipient S/L when existing transfer
+**                 references a saved account with an external account record which has
+**                 been expired or deleted.
+**   Ver. 3.2.6  12/11/2024 T. Kainz - Banno
+**               * Corrected issue where program was erring when no transfer record FM
+**                 history was found indicating the record creation date
+**   Ver. 3.3.0  02/19/2025 R. Robison - Banno
+**               * Adding support for errorDisplayMessage to accommodate memo mode message
+**               * Major refactor as there were multiple paths that produced invalid json
+**               * New param to prevent m2m transfer when system is in memo mode
+**   Ver. 3.3.1  12/17/2025 T. Kainz - Banno
+**               * Corrected JSON output error when deleting saved account
+**   Ver. 3.4.0  02/10/2026 R. Robison - Banno
+**               * Spanish language support
+**    
+*]
+SYMCONNECT
+STATELESS
+
+TARGET=ACCOUNT
+
+DEFINE
+ #INCLUDE "RD.GETDATA.DEF"
+ #INCLUDE "RB.LISTEXPAND.DEF"
+ #INCLUDE "BNOLB.SLLISTBUILD.DEF"
+
+ BNOLASTMODDATE            = '02/10/26'
+ BNOLASTMODTIME            = "22:00 MT"
+ BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
+ BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
+ BNOPROGRAMVERSION         = "3.4.0"
+ BNOPROGRAMNOTE1           = "spanish language support"
+ BNOPROGRAMNOTE2           = ""
+
+ BNODEBUGPRINTINFODAYS     = 60
+ BNODEBUGINCLUDEPARAMS     = 1
+
+ STATEPRELOADDATA          = "PRELOADDATA"
+ STATEVERIFYMEMBER         = "VERIFYMEMBER"
+ STATECREATETRAN           = "CREATETRAN"
+ STATEEDITTRAN             = "EDITTRAN"
+ STATEDELETERECIP          = "DELETERECIP"
+ STATEDELETETRAN           = "DELETETRAN"
+
+[* Error code setup
+*]
+
+ BNOERRCODEMEMOMODE        = 500
+ BNOERRCODECONFIGREAD      = 501
+  BNOERRMODOPEN            = "[configuration file name] open error - [system generated letter file read error message]"
+  BNOERRMODREAD            = "[configuration file name] read error - [system generated letter file read error message]"
+  BNOERRMODINVPARAM        =  "Invalid Parameter in CFG file"
+ BNOERRCODEINVSOURCE       = 502
+  BNOERRMODACCESSTYPE      = "Pref Access type 3 not found"
+  BNOERRMODACCTWARN        = "Acct Warning [warning code]"
+  BNOERRMODNOXFERFROM      = "No eligible transfer from shares/loans"
+  BNOERRMODACCTTYPE        = "Acct Type [account type]"
+ BNOERRCODEINVRECIP        = 503
+ BNOERRCODEMISSINGINFO     = 504
+  BNOERRMODCALCMBRLIMITS   = "Cannot calc member limits"
+ BNOERRCODEINVINPUT        = 505
+ BNOERRCODEPROCRECIP       = 506
+ BNOERRCODEPROCXFER        = 507
+  BNOERRMODXFRLOC          = "Target s/l xfer Loc [locator] not found"
+  BNOERRMODTARGETID        = "Target ID not found or invalid"
+ BNOERRCODEUNDEFINED       = 508
+ BNOERRCODEMBRVERIFY       = 509
+  BNOERRMODMBRNOTFOUND     = "Member account not found"
+  BNOERRMODACCTCLOSED      = "Account Closed - [close date]"
+  BNOERRMODNAMEVERIFY      = "Name verification failed"
+  BNOERRMODSAMEMBR         = "Must be a different member account number"
+  BNOERRMODSLCLOSED        = "S/L closed or charged-off - [date]"
+  BNOERRMODSLNOTFOUND      = "S/L ID not found"
+  BNOERRMODNOVALIDSL       = "No valid share or loan found"
+  BNOERRMODNOSVCCODE       = "S/L missing service code"
+  BNOERRMODINVSLTYPE       = "Invalid S/L type"
+  BNOERRMODINVSLCODE       = "Invalid share code"
+  BNOERRMODZEROPAYOFF      = " Loan has $0.00 payoff"
+  BNOERRMODINVIRSCODE      = " Invalid IRS code"
+ BNOERRCODEINVACCTID       = 510
+ BNOERRCODELIMITEXCEED     = 511
+ BNOERRCODECONFIGVALIDATE  = 512
+  BNOERRMODDUPLICATEPARAM  = "Duplicate Param file entry([parameter name])"
+  BNOERRMODINVALIDVALUE    = "Invalid Param Value([parameter name])"
+
+[* RGUSER Pass variables - passed from UX code
+*]
+ RGLANGUAGE=NUMBER
+ RGTARGETACCOUNT=CHARACTER
+ RGTARGETACCTTYPE=CHARACTER
+ RGTARGETSLID=CHARACTER
+ RGTARGETVERIFY3=CHARACTER
+ RGRECIPLOCATOR=NUMBER
+ RGTARGETSLTRANLOC=NUMBER
+ RGNEWTRANSOURCE=CHARACTER
+ RGNEWTRANRECIPSLID=CHARACTER
+ RGNEWTRANSTARTDATE=CHARACTER
+ RGNEWTRANRECIPACCT=CHARACTER
+ RGNEWTRANFREQCHR=CHARACTER
+ RGNEWTRANDAY1=CHARACTER
+ RGNEWTRANDAY2=CHARACTER
+ RGNEWTRANFIRST3=CHARACTER
+ RGNEWTRANNICKNAME=CHARACTER
+ RGNEWTRANCOMMENT=CHARACTER
+ RGNEWTRANAMOUNT=CHARACTER
+ RGNEWTRANRECIPLOC=NUMBER
+
+[* Main PowerOn variables and data structures for json
+*]
+ EXTACCTNUM                = CHARACTER
+ EXTFINAME                 = CHARACTER
+ EXTPRIMARY                = CHARACTER
+ EXTRECFOUND               = NUMBER
+ 
+ FMERROR                   = CHARACTER
+ FREQLOOP                  = NUMBER
+ I                         = NUMBER
+ IDTYPETOCHR               = CHARACTER ARRAY(3)
+ ACTUALLAST3               = CHARACTER
+ CAC                       = CHARACTER
+ CN                        = CHARACTER
+
+ MBRAMOUNTACTUAL           = MONEY
+ MBRAMOUNTACTUALCHR        = CHARACTER
+ MBRAMOUNTLIMIT            = MONEY
+ MBRAMOUNTLIMITCALC        = MONEY
+ MBRAMOUNTLIMITCALCCHR     = CHARACTER
+ MBRAMOUNTLIMITCHR         = CHARACTER
+ MBRCOUNTACTUAL            = NUMBER
+ MBRCOUNTACTUALCHR         = CHARACTER
+ MBRCOUNTLIMIT             = NUMBER
+ MBRCOUNTLIMITCALC         = NUMBER
+ MBRCOUNTLIMITCALCCHR      = CHARACTER
+ MBRCOUNTLIMITCHR          = CHARACTER
+ MBRINDIVIDUALLIMIT        = MONEY
+ MBRINDIVIDUALLIMITCHR     = CHARACTER
+ MBRINDIVLIMITCALC         = MONEY
+ MBRINDIVLIMITCALCCHR      = CHARACTER
+ MBRLASTTRANDATE           = DATE
+
+ NAMEFOUND                 = NUMBER
+ NEWLASTTRANDATE           = DATE
+ NEWRECIPACCTLOC           = NUMBER
+ NEWSLTRANSFERLOC          = NUMBER
+ NEWTRANAMOUNT             = MONEY
+ NEWTRANCOMMENT            = CHARACTER
+ NEWTRANDAY1               = NUMBER
+ NEWTRANDAY2               = NUMBER
+ NEWTRANFIRST3             = CHARACTER
+ NEWTRANFREQ               = NUMBER
+ NEWTRANFREQCHR            = CHARACTER
+ NEWTRANFREQFOUND          = NUMBER
+ NEWTRANNICKNAME           = CHARACTER
+ NEWTRANRECIPACCT          = CHARACTER
+ NEWTRANRECIPLOC           = NUMBER
+ NEWTRANRECIPLONGNAME      = CHARACTER
+ NEWTRANRECIPSLID          = CHARACTER
+ NEWTRANRECIPSLIDTYPE      = NUMBER
+ NEWTRANRECIPSLIDTYPECHR   = CHARACTER
+ NEWTRANSLDESCRIPTION      = CHARACTER
+ NEWTRANSRCACCT            = CHARACTER
+ NEWTRANSRCAMOUNT          = MONEY
+ NEWTRANSRCID              = CHARACTER
+ NEWTRANSRCIDTYPE          = CHARACTER
+ NEWTRANSTARTDATE          = DATE
+ NEWXFERAMOUNT             = MONEY
+ NEWXFERCOUNT              = NUMBER
+
+ TRANSFERCREATEDATE        = DATE
+ TRANSFERCREATEUSER        = NUMBER
+ PA3FOUND                  = NUMBER
+ PAACCOUNTTEST             = CHARACTER
+ PASLIDTEST                = CHARACTER
+ PASLIDTYPETEST            = NUMBER
+ POS                       = NUMBER
+
+ PREFACCESSMATCH           = NUMBER
+ PREFFOUND                 = NUMBER
+ PREFLOC                   = NUMBER
+ PREFUPDATEERROR           = CHARACTER
+
+ RECIPACCOUNT              = CHARACTER ARRAY(99)
+ RECIPCOUNT                = NUMBER
+ RECIPEXPIREDATE           = DATE
+ RECIPFOUND                = NUMBER
+ RECIPINDEX                = NUMBER
+ RECIPLISTEXPIREDATE       = DATE ARRAY(99)
+ RECIPLOC                  = NUMBER ARRAY(99)
+ RECIPMAX                  = 99
+ RECIPNAME                 = CHARACTER ARRAY(99)
+ RECIPNICKNAME             = CHARACTER ARRAY(99)
+
+ RESETPREFVALUES           = NUMBER
+ SEQ1                      = NUMBER
+ SEQ2                      = NUMBER
+ SERVICEIN                 = NUMBER ARRAY(99)
+ SLFOUND                   = NUMBER
+ SLLOOP                    = NUMBER
+ SLTRANSFERFOUND           = NUMBER
+ TARGETACCTCLOSEDATE       = DATE
+ TARGETSLCLOSECODATE       = DATE
+ SOONESTAVAILABLE          = NUMBER
+ 
+ TESTNAME                  = CHARACTER
+ THISACCOUNT               = CHARACTER
+ TMPAMTCHR                 = CHARACTER
+ TMPEXPIREDATE             = DATE
+ TMPNUM                    = NUMBER
+ TMPSID                    = CHARACTER
+ TMPSLID                   = CHARACTER
+ 
+ TRANACCOUNTNAME           = CHARACTER ARRAY(99)
+ TRANCOUNT                 = NUMBER
+ TRANCOUNTMAX              = 99
+ TRANDAY1                  = NUMBER ARRAY(99)
+ TRANDAY2                  = NUMBER ARRAY(99)
+ TRANERROR                 = CHARACTER
+ TRANFREQUENCY             = NUMBER ARRAY(99)
+ TRANLOC                   = NUMBER ARRAY(99)
+ TRANCREATEDATE            = DATE ARRAY(99)
+ TRANCREATEUSER            = NUMBER ARRAY(99)
+ TRANNEXTTRANDATE          = DATE ARRAY(99)
+ TRANREADONLYSTATUS        = CHARACTER ARRAY(99)
+ TRANRECIPACCT             = CHARACTER ARRAY(99)
+ TRANRECIPACCTID           = CHARACTER ARRAY(99)
+ TRANRECIPACCTTYPE         = CHARACTER ARRAY(99)
+ TRANRECIPEXPIREDATE       = DATE ARRAY(99)
+ TRANRECIPMBRID            = CHARACTER ARRAY(99)
+ TRANRECIPNAME             = CHARACTER ARRAY(99)
+ TRANRECIPNICKNAME         = CHARACTER ARRAY(99)
+ TRANRECIPTYPECHR          = CHARACTER ARRAY(5)
+ TRANSFERFREQCHR           = CHARACTER ARRAY(1,15)
+ TRANFREQALT               = 1
+ TRANFREQSTD               = 0
+ TRANSFERFREQMAX           = 14
+ TRANSOURCEACCT            = CHARACTER ARRAY(99)
+ TRANSTARTDATE             = DATE ARRAY(99)
+ TRANTYPE                  = NUMBER
+ TRANTYPEIMMEDIATE         = 1
+ TRANTYPEREGULAR           = 0
+ TRANXFERAMOUNT            = MONEY ARRAY(99)
+ 
+ TMPLOCATOR                = NUMBER
+ VALIDLIMITSEXCEEDED       = NUMBER
+ SVCCODEFOUND              = NUMBER
+ TARGETSLIDFOUND           = NUMBER
+ FOUND                     = NUMBER
+ TMPCOMMENT1               = CHARACTER
+ TMPAMOUNT                 = MONEY
+ TRANCREATEDATEFOUND       = NUMBER
+ TARGETTRANSFERLOC         = NUMBER
+
+ CROSSACCTFLAG             = NUMBER
+ VALIDATESTATUS            = NUMBER
+ FINDSHARECODE             = NUMBER
+ SYMXUSERNUMBER            = NUMBER
+ EXTERNALRECTOFIND         = CHARACTER
+ TMPCOUNT                  = NUMBER
+
+ CHARCHECK                 = CHARACTER
+ CHARCHECKRETURN           = CHARACTER
+ CHARCHECKTMP              = CHARACTER
+ CHARCHECKNUM              = NUMBER
+
+[* CFG Parameter variables specific to this PowerOn
+*]
+ PARAMALLOWEDIT            = NUMBER
+ PARAMEDITUSERSLIST        = CHARACTER
+ PARAMEDITUSERS            = NUMBER ARRAY(9999)
+ PARAMCROSSACCTACCESS      = NUMBER
+ PARAMALLOWMMTRANSFER      = NUMBER
+ PARAMENFORCELIMITS        = NUMBER
+ PARAMINELIGACCTSLIST      = CHARACTER
+ PARAMINELIGACCTS          = NUMBER ARRAY(9999)
+
+ PARAMINSTAMOUNTLIMIT      = MONEY
+ PARAMINSTCOUNTLIMIT       = NUMBER
+ PARAMINSTINDIVLIMIT       = MONEY
+ PARAMNAME                 = CHARACTER
+ PARAMNTSLTYPE             = NUMBER
+ PARAMVALIDATIONNAMETYPES  = CHARACTER
+ PARAMWARNINGSACCTLIST     = CHARACTER
+ PARAMWARNINGSACCT         = NUMBER ARRAY(999)
+
+ PARAMALLOWABLESHARECODES  = NUMBER ARRAY(3)
+ PARAMSIDOPTIONAL          = NUMBER
+ PARAMTRANCOMMENT          = CHARACTER
+ PARAMIDLENTEST            = NUMBER
+ PARAMLBLMEMBERNAME        = CHARACTER(80) ARRAY(2)
+ PARAMLBLID                = CHARACTER(80) ARRAY(2)
+ PARAMTESTACCTLIST         = CHARACTER
+
+[* CFG Parameter variables -- common
+*]
+ PARAMLANGSPANISH=NUMBER
+ PARAMDEBUGMODE=NUMBER
+ PARAMTESTMODE=NUMBER
+ PARAMTESTEC=NUMBER
+ PARAMPROGINSTALLDATE=DATE
+
+[* CFG Parameter variables for soft text messages
+*]
+ PARAMMSGTAGSMAX=20
+ PARAMMSGTAGSCOUNT=NUMBER
+ PARAMMSGTAG=CHARACTER
+ PARAMMSGPROP=CHARACTER
+ PARAMMSGOPT=NUMBER
+ PARAMMSGMAXLINES=NUMBER
+ PARAMMSGTAGLANG=NUMBER
+
+ PARAMMSGTAGS=CHARACTER ARRAY(20)
+ PARAMMSGPROPS=CHARACTER ARRAY(20)
+ PARAMMSGOPTIONAL=NUMBER ARRAY(20)
+ PARAMMSGDEFINED=NUMBER ARRAY(20)
+ PARAMMSGMAX=NUMBER ARRAY(20)
+ PARAMMSGALLMAX=800
+ PARAMMSGALL=CHARACTER ARRAY(800)
+ PARAMMSGALLTAGS=CHARACTER ARRAY(800)
+ PARAMMSGALLTAGSLANG=NUMBER ARRAY(800)
+ PARAMMSGTAGNONE=0
+ PARAMMSGTAGENGLISH=1
+ PARAMMSGTAGSPANISH=2
+ PARAMMSGTAGENGLISHSFX="_EN"
+ PARAMMSGTAGSPANISHSFX="_SP"
+ PARAMMSGALLCOUNT=NUMBER
+ PARAMMSGTAGFOUND=NUMBER
+ PARAMMSGTAGINDEX=NUMBER
+ PARAMMSGALLINDEX=NUMBER
+ PARAMMSGDEFAULTMAX=20 [each message can be up to 20 lines long by default]
+
+ PARAMMSGALLLANG=NUMBER
+ PARAMMSGALLTAG=CHARACTER
+ PARAMMSGALLVAL=CHARACTER
+ PARAMMSGALLTAGFOUND=NUMBER
+
+[* CFG Parameter variables for errorDisplayMessages (EDM)
+*] 
+ PARAMERRDISPLAYMAX=200
+ PARAMERRDISPLAYERRCODES=NUMBER ARRAY(200)
+ PARAMERRDISPLAYLINES=CHARACTER ARRAY(200)
+ PARAMERRDISPLAYLANG=NUMBER ARRAY(200)
+ PARAMERRDISPLAYCOUNT=NUMBER
+ PARAMERRDISPLAYINDEX=NUMBER
+
+[* CFG Parameter processing - general
+*]
+ BNOCFGPARAMMAX=200
+ BNOCFGPARAMCOUNT=NUMBER
+ BNOCFGPARAM=CHARACTER ARRAY(200)
+ BNOCFGPARAMVAL=CHARACTER ARRAY(200)
+ BNOCFGFILENUMBER=NUMBER
+ BNOCFGFILEFERROR=CHARACTER
+ BNOCFGFILELINE=CHARACTER
+ BNOCFGPARAMALLOWDUPS=NUMBER
+
+ BNOPARAMFOUND=NUMBER
+ BNOPARAMFOUNDINDEX=NUMBER
+ BNOPARAMFIND=CHARACTER
+ BNOPARAMVAL=CHARACTER
+ BNOPARAMVALLANG=CHARACTER ARRAY(2)
+ BNOPARAMTMP=CHARACTER
+ BNOPARAMVALTMP=CHARACTER
+ BNOPARAMLOOP=NUMBER
+
+[* Debug handling variables
+*]
+ BNODEBUGMSGMAX=999
+ BNODEBUGMSGLIST=CHARACTER ARRAY(999)
+ BNODEBUGLOOP=NUMBER
+ BNODEBUGCOUNT=NUMBER
+ BNODEBUGMSG=CHARACTER
+ BNODEBUGMODE=NUMBER
+
+[* Error handling variables
+*]
+ BNOERRORCODE=NUMBER
+ BNOERRORMODIFIER=CHARACTER
+ BNOERRCODE=NUMBER
+ BNOERRMESSAGE=CHARACTER
+ BNOERRMODIFIER=CHARACTER
+ BNOERRCOUNT=NUMBER
+ BNOERRTMPCOUNT=NUMBER
+ BNOERRTMPCOUNT2=NUMBER
+ BNOERRDISPLAYLIST=CHARACTER
+ BNOERRDISPLAYCODE=NUMBER
+ BNOERRFOUND=NUMBER
+ BNOERRCODES=NUMBER ARRAY(99)
+ BNOERRMESSAGES=CHARACTER ARRAY(99)
+ BNOERRMAX=99
+ BNOERRUNDEFINED="**Undefined**"
+
+ BNOERRDISPLAYMSGSMAX=5
+ BNOERRDISPLAYMSG=CHARACTER ARRAY(5)
+ BNOERRDISPLAYMSGCOUNT=NUMBER
+ BNOERRDISPLAYLINE=CHARACTER
+
+[* Misc. Variables
+*]
+ BNOTEXT=CHARACTER
+ BNOAMT=MONEY
+ BNORATE=RATE
+ BNONUM=NUMBER
+ BNOTMPLOOP=NUMBER
+ BNOPOS=NUMBER 
+ BNOIDLENGTH=NUMBER
+ BNOSLTYPELENGTH=NUMBER
+
+ JSONBOOLEAN=CHARACTER ARRAY(1)
+ JSONPROPNAME=CHARACTER
+ JSONOBJFIRSTPROP=NUMBER
+
+ TMPLOOP=NUMBER
+ TMPLOOP2=NUMBER
+ TMPCHR=CHARACTER
+ TMPMSGTAG=CHARACTER
+ TMPMSGPROP=CHARACTER
+ Q=CHARACTER
+ QQ=CHARACTER
+ TMPERRCODE=NUMBER
+ TMPDISPLAYLINE=CHARACTER
+ CHRVAL=NUMBER
+ TMPLINECOUNT=NUMBER
+ LINECOUNT=NUMBER
+ MSGTAGSELECTED=NUMBER
+ MSGTAGSELECT=CHARACTER
+ MSGPROPSELECT=CHARACTER
+ MSGPROPSELECTLIST=CHARACTER
+ TAGSFXPOS=NUMBER
+ USELANGUAGE=NUMBER
+ COLONPOS=NUMBER
+ JSONWRAPINRESULTS=NUMBER
+ 
+ SYMXINSTANCE=NUMBER
+ SYMXCLIENTNUM=NUMBER
+
+[* BNOPARSEDATALINE variables
+*]
+ BNODATALINE=CHARACTER
+ BNODLINDEX=NUMBER
+ BNODLFIELDCOUNT=NUMBER
+ BNODLFIELD=CHARACTER ARRAY(99)
+ BNODLFIELDMAX=99
+ BNODLPOS=NUMBER
+ BNODLDELIMITER=CHARACTER
+
+[* BNOCLEANUP variables
+*]
+ BNOCLEANLOOP=NUMBER
+ BNOCLEANVALIDCHRLIST="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
+ BNOCLEANVALIDCHRS=NUMBER ARRAY(255)
+ BNOCLEANVALIDCHRMAX=255
+
+[* Replace variables
+*]
+ TRUE=1
+ FALSE=0
+ DATENULL='--/--/--'
+ BNODEBUGMODEOFF=0
+ BNODEBUGMODEON=1
+ BNODEBUGMODEUNDEFINED=9999
+
+ SLIDTYPESHARECHR          = "S"
+ SLIDTYPELOANCHR           = "L"
+
+ EXTACCTSTATUSAPPROVED     = 2
+
+ SVCCODEMAX                = 99
+ SHARECODESAVINGS          = 0
+ SHARECODEDRAFT            = 1
+ SHARECODECERT             = 2
+ SHARECODECLUB             = 3
+ SHARECODEMAX              = 3
+
+ TARGETVERIFIED            = 0
+ TARGETSAMEACCT            = 1
+ TARGETACCTNOTFOUND        = 2
+ TARGETACCTCLOSED          = 3
+ TARGETSLCLOSED            = 4
+ TARGETNAMENOMATCH         = 5
+ TARGETNOTFOUNDBYSLID      = 6
+ TARGETNOTFOUNDBYTYPE      = 7
+ TARGETNOSERVICECODE       = 8
+ TARGETINVALIDSLTYPE       = 9
+ TARGETINVALIDSHARECODE    = 10
+ TARGETLOANZEROPAYOFF      = 11
+ TARGETINVALIDIRSCODE      = 12
+
+ ALLOWEDITFALSE            = 0
+ ALLOWEDITTRUE             = 1
+ ALLOWEDITUSER             = 2
+
+ MAXWARNINGTYPES           = 999
+ MAXACCTTYPES              = 9999
+ MAXUSERNUM                = 9999
+
+ TESTIDLENGTH2             = 2
+ TESTIDLENGTH4             = 4
+
+ CHRVALQUOTE=34
+ CHRVALBACKSLASH=92
+END [DEFINE]
+
+SETUP
+ CALL BNOERRINIT
+
+[* Register supported error messages
+*]
+ BNOERRCODE=BNOERRCODEMEMOMODE       BNOERRMESSAGE="Program running in memo mode"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODECONFIGREAD     BNOERRMESSAGE="Config file error"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEINVSOURCE      BNOERRMESSAGE="Invalid Source Account"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEINVRECIP       BNOERRMESSAGE="Invalid Recipient Account" [**Unused**]
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEMISSINGINFO    BNOERRMESSAGE="Insufficient Information"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEINVINPUT       BNOERRMESSAGE="Invalid Input"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEPROCRECIP      BNOERRMESSAGE="Error Processing Recipient Record"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEPROCXFER       BNOERRMESSAGE="Error Processing Transfer Record"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEUNDEFINED      BNOERRMESSAGE="Undefined Error" [**Unused**]
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEMBRVERIFY      BNOERRMESSAGE="Member verification failed"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODEINVACCTID      BNOERRMESSAGE="Account ID incorrect" [**Unused**]
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODELIMITEXCEED    BNOERRMESSAGE="Request exceeds limits"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODECONFIGVALIDATE BNOERRMESSAGE="Config file validation error"
+ CALL BNOERRADD
+
+ [*  Set any errors that support display messages
+ *]
+ BNOERRDISPLAYCODE=BNOERRCODEMEMOMODE
+ CALL BNOERRDISPLAYLISTADD
+
+[* This is where you define all the soft text CFG tags and json properties
+**  - Optionally set PARAMMSGMAXLINES to override the default of 20 lines per message
+**  - Optionally set PARAMMSGOPT to mark a message as optional. Message will not be returned in
+**.   json response if no message lines found in the CFG.
+*]
+ [CALL PARAMMSGINIT
+ PARAMMSGTAG="IT"     PARAMMSGPROP="introText"          [Intro Text Message]
+ PARAMMSGMAXLINES=10
+ CALL PARAMMSGTAGADD]
+
+ CALL SETUPDATA
+END [SETUP]
+
+PRINT TITLE=BNOPROGRAMNAME
+
+ CALL INITIALIZEDATA
+ 
+ [* The loading of RGDATA is serviced by these two procedures.  GETRGDATA sets RG varialbes based on state -- basic mapping.
+ ** TRANSFORMRGDATA further breaks out RG variables into more granular variables used downstream in the program.
+ *]
+ CALL GETRGDATA
+ CALL TRANSFORMRGDATA
+
+ CALL BNOCFGFILEREAD
+
+ IF BNOERRORCODE=0 THEN
+  CALL BNOSETPARAMVALS
+
+ IF BNOERRORCODE=0 THEN
+  CALL PARAMPOSTPROCESS
+
+ IF BNOERRORCODE=0 AND
+    PARAMTESTMODE=TRUE THEN
+  BNOERRORCODE=PARAMTESTEC
+
+ IF BNOERRORCODE=0 THEN
+  CALL CHECKFORPA3 
+
+ IF BNOERRORCODE=0 AND PARAMTESTMODE=FALSE THEN
+  DO
+   IF @RGSTATE=STATEPRELOADDATA THEN
+    DO
+     CALL READPREFSETTINGS
+
+     IF PARAMENFORCELIMITS=TRUE AND
+      ((PARAMINSTCOUNTLIMIT=0 AND MBRCOUNTLIMIT=0) OR
+       (PARAMINSTAMOUNTLIMIT=$0.00 AND MBRAMOUNTLIMIT=$0.00) OR
+        PARAMINSTINDIVLIMIT=$0.00 AND MBRINDIVIDUALLIMIT=$0.00) THEN
+      DO
+       BNOERRORCODE=BNOERRCODECONFIGREAD
+       BNOERRORMODIFIER=BNOERRMODINVPARAM
+      END
+
+     IF BNOERRORCODE=0 THEN
+      CALL VALIDATEACCOUNT
+
+     IF BNOERRORCODE=0 THEN
+      CALL CALCLIMITS
+
+     IF BNOERRORCODE=0 THEN
+      DO
+       CALL BUILDSHARELOANLIST
+       IF BNOSHARECOUNT=0 AND
+          BNOLOANCOUNT=0 THEN
+        DO
+         BNOERRORCODE=BNOERRCODEINVSOURCE
+         BNOERRORMODIFIER=BNOERRMODNOXFERFROM
+        END
+      END
+
+     IF BNOERRORCODE=0 THEN
+      DO
+       CALL BUILDRECIPLIST
+       CALL BUILDSLTRANSFERLIST
+      END
+    END
+   ELSE IF @RGSTATE=STATEVERIFYMEMBER THEN
+    DO
+     CALL VALIDATETARGETACCOUNT
+     IF VALIDATESTATUS<>TARGETVERIFIED THEN
+      CALL SETERRORCODEBYVALIDATESTATUS
+    END
+   ELSE IF @RGSTATE=STATECREATETRAN THEN
+    DO
+[* Run validations first
+*]    
+     IF PARAMALLOWMMTRANSFER=FALSE AND
+        SYSMEMOMODE=TRUE THEN
+      BNOERRORCODE=BNOERRCODEMEMOMODE
+     IF BNOERRORCODE=0 THEN
+      CALL VALIDATENEWTRANRECIP
+
+[* Now process the create request
+*]    
+     IF BNOERRORCODE=0 THEN
+      CALL CREATETRANSFER
+     IF BNOERRORCODE=0 THEN
+      DO
+       IF PARAMENFORCELIMITS=TRUE THEN
+        CALL UPDATEPREFTOTALS
+       IF NEWTRANRECIPLOC=0 AND     [Only save the recipient account if the user ]
+          NEWTRANNICKNAME<>"" THEN  [has elected to (nickname is not blank)      ]
+        CALL CREATERECIPACCT
+      END
+    END
+   ELSE IF @RGSTATE=STATEEDITTRAN THEN
+    DO
+[* Run validations first
+*]    
+     CALL VALIDATEEDITTRANLOC
+     IF BNOERRORCODE=0 THEN
+      CALL SETNEWTRANSLDESC
+     IF BNOERRORCODE=0 THEN
+      CALL EDITTRANCHECKLIMITS
+
+[* Now process the edit request
+*]    
+     IF BNOERRORCODE=0 THEN
+      CALL EDITEXPIRETRANSFER
+     IF BNOERRORCODE=0 THEN
+      CALL CREATETRANSFER
+     IF BNOERRORCODE=0 AND 
+        PARAMENFORCELIMITS=TRUE THEN
+      CALL UPDATEPREFTOTALS
+    END
+   ELSE IF @RGSTATE=STATEDELETERECIP THEN
+    DO
+     CALL EXPIRERECIPIENT
+    END
+   ELSE IF @RGSTATE=STATEDELETETRAN THEN
+    DO
+     CALL DELETEEXPIRETRANSFER
+     IF BNOERRORCODE=0 AND
+        PARAMENFORCELIMITS=TRUE THEN
+      DO
+       CALL UPDATEPREFTOTALS
+       CALL SETUPLIMITS
+      END
+    END       
+  END  
+
+[* Output JSON 
+*]
+ CALL JSONOPEN
+ 
+ IF @RGSTATE=STATEPRELOADDATA THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSPRELOADDATA
+   ELSE
+    DO 
+     JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END 
+  END
+ ELSE IF @RGSTATE=STATEVERIFYMEMBER THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSVERIFYMEMBER
+   ELSE
+    DO 
+     JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END 
+  END
+ ELSE IF @RGSTATE=STATECREATETRAN THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSTRAN
+   ELSE
+    DO 
+     IF BNOERRORCODE=BNOERRCODEINVINPUT OR
+        BNOERRORCODE=BNOERRCODEPROCXFER THEN
+      JSONWRAPINRESULTS=TRUE
+     ELSE
+      JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END
+  END
+ ELSE IF @RGSTATE=STATEEDITTRAN THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSTRAN
+   ELSE
+    DO 
+     JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END 
+  END
+ ELSE IF @RGSTATE=STATEDELETERECIP THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSDELETERECIP
+   ELSE
+    DO 
+     JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END
+  END
+ ELSE IF @RGSTATE=STATEDELETETRAN THEN
+  DO
+   IF BNOERRORCODE=0 THEN
+    CALL JSONSUCCESSTRAN
+   ELSE
+    DO 
+     JSONWRAPINRESULTS=FALSE
+     CALL JSONERROR
+    END 
+  END 
+
+ CALL BNOCFGDEBUGADD
+ CALL BNOJSONRGDATA
+ CALL BNOJSONDEBUGDATA
+ IF BNODEBUGMODE=BNODEBUGMODEOFF THEN
+  NEWLINE
+ 
+ CALL JSONCLOSE
+END [PRINT]
+
+[*
+**  --------------------------------------------------------------------
+**  Initialization Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE SETUPDATA
+[* Set the SETUP data constants
+*]
+ JSONBOOLEAN(TRUE)="true"
+ JSONBOOLEAN(FALSE)="false"
+ 
+[* This is the default state of debug mode.  This may be overridden if the Program Install Date (PID)
+** is set in the CFG configuration file.
+*] 
+ IF BNOLASTMODDATE+BNODEBUGPRINTINFODAYS>SYSTEMDATE THEN
+  BNODEBUGMODE=BNODEBUGMODEON
+ ELSE 
+  BNODEBUGMODE=BNODEBUGMODEOFF 
+
+ SYMXINSTANCE=@SYMXINSTANCEID
+ SYMXCLIENTNUM=@CLIENTNUMBER
+ BNOIDLENGTH=GETDATANUMBER(GETPARAMIDLENGTH)
+ BNOSLTYPELENGTH=GETDATANUMBER(GETPARAMTYPELENGTH)
+
+ Q=CTRLCHR(CHRVALQUOTE)
+ QQ=CTRLCHR(CHRVALQUOTE)
+ CALL BNOCLEANUPINIT
+
+ TRANRECIPTYPECHR(0)       = "savings"
+ TRANRECIPTYPECHR(1)       = "checking"
+ TRANRECIPTYPECHR(2)       = "certificate"
+ TRANRECIPTYPECHR(3)       = "club"
+ TRANRECIPTYPECHR(4)       = "loan"
+
+ SYMXUSERNUMBER            = SYSUSERNUMBER
+ IDTYPETOCHR(0)            = SLIDTYPESHARECHR
+ IDTYPETOCHR(1)            = SLIDTYPELOANCHR
+
+[* The following freq references are defined twice because there are some differences
+** between Episys and Banno in the frequency type declarations.
+*]
+ TRANSFERFREQCHR(TRANFREQSTD,0)="demand"
+ TRANSFERFREQCHR(TRANFREQALT,0)="once"
+
+ TRANSFERFREQCHR(TRANFREQSTD,1)="annual"
+ TRANSFERFREQCHR(TRANFREQALT,1)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,2)="semi-annual"
+ TRANSFERFREQCHR(TRANFREQALT,2)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,3)="quarterly"
+ TRANSFERFREQCHR(TRANFREQALT,3)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,4)="monthly"
+ TRANSFERFREQCHR(TRANFREQALT,4)="monthly"
+
+ TRANSFERFREQCHR(TRANFREQSTD,5)="semi-monthly"
+ TRANSFERFREQCHR(TRANFREQALT,5)="semiMonthly"
+
+ TRANSFERFREQCHR(TRANFREQSTD,6)="biweekly skip-first"
+ TRANSFERFREQCHR(TRANFREQALT,6)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,7)="biweekly skip-last"
+ TRANSFERFREQCHR(TRANFREQALT,7)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,8)="biweekly"
+ TRANSFERFREQCHR(TRANFREQALT,8)="biWeekly"
+
+ TRANSFERFREQCHR(TRANFREQSTD,9)="weekly"
+ TRANSFERFREQCHR(TRANFREQALT,9)="weekly"
+
+ TRANSFERFREQCHR(TRANFREQSTD,10)="immediate"
+ TRANSFERFREQCHR(TRANFREQALT,10)="immediate"
+
+ TRANSFERFREQCHR(TRANFREQSTD,11)="weekly skip-first"
+ TRANSFERFREQCHR(TRANFREQALT,11)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,12)="weekly skip-last"
+ TRANSFERFREQCHR(TRANFREQALT,12)=""
+
+ TRANSFERFREQCHR(TRANFREQSTD,13)="bimonthly"
+ TRANSFERFREQCHR(TRANFREQALT,13)=""
+END [PROCEDURE]
+
+PROCEDURE INITIALIZEDATA
+[* Initialize variables
+*]
+
+ THISACCOUNT=ACCOUNT:NUMBER
+ BNOERRORCODE=0
+ BNOERRORMODIFIER=""
+ BNOCFGPARAMALLOWDUPS=FALSE
+ JSONOBJFIRSTPROP=TRUE
+ BNODLDELIMITER=""
+ MSGPROPSELECTLIST=""
+ MSGTAGSELECT=""
+ JSONWRAPINRESULTS=TRUE
+
+ WHILELIMIT=100000
+ PA3FOUND=FALSE
+ PREFLOC=@PREFLOCATOR
+ 
+ LELISTINPUT=GETDATACHARACTER(GETPARAMSYMXCHCLSERVICESXIN,SYMXINSTANCE,SYMXCLIENTNUM)
+ BNODEBUGMSG="SVCS XFER IN:"+LELISTINPUT
+ CALL BNODEBUGMSGADD
+ CALL LISTEXPAND
+ FOR TMPLOOP=1 TO SVCCODEMAX
+  DO
+   SERVICEIN(TMPLOOP)=LELIST(TMPLOOP)
+  END
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Load Data Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE GETRGDATA
+[* Read in the @RG values from the UX, segment them into their individual
+** values.
+*]
+ RGLANGUAGE=@RGSESSION
+ IF @RGSTATE=STATEVERIFYMEMBER THEN
+  DO
+   BNODATALINE=@RGUSERCHR1
+   BNODLDELIMITER="|"
+   CALL BNOPARSEDATALINE
+
+   RGTARGETACCOUNT=BNODLFIELD(1)
+   RGTARGETVERIFY3=UPPERCASE(BNODLFIELD(2))
+   RGTARGETACCTTYPE=BNODLFIELD(3)
+   
+   TMPSLID=BNODLFIELD(4)
+   CALL NORMALIZESLID
+   RGTARGETSLID=TMPSLID
+
+   RGTARGETACCOUNT="0000000000"+RGTARGETACCOUNT
+   RGTARGETACCOUNT=SEGMENT(RGTARGETACCOUNT,LENGTH(RGTARGETACCOUNT)-9,LENGTH(RGTARGETACCOUNT))
+  END
+ ELSE IF @RGSTATE=STATECREATETRAN THEN
+  DO
+[* @RGUSERCHR1
+*]
+   BNODATALINE=@RGUSERCHR1
+   BNODLDELIMITER="|"
+   CALL BNOPARSEDATALINE
+
+   BNODEBUGMSG="STATE CREATETRAN...:"
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(1):"+BNODLFIELD(1)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(2):"+BNODLFIELD(2)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(3):"+BNODLFIELD(3)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(4):"+BNODLFIELD(4)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(5):"+BNODLFIELD(5)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(6):"+BNODLFIELD(6)
+   CALL BNODEBUGMSGADD
+   BNODEBUGMSG="  BNODLFIELD(7):"+BNODLFIELD(7)
+   CALL BNODEBUGMSGADD
+
+[* Source Acct Detail *]
+   RGNEWTRANSOURCE=BNODLFIELD(1)
+
+[* Recipent Acct Detail]
+   RGNEWTRANRECIPACCT=BNODLFIELD(2)
+
+[* Recipient is either "S" or "L" and share/loan ID
+*]
+   RGNEWTRANRECIPSLID=BNODLFIELD(3)
+   RGNEWTRANFREQCHR=BNODLFIELD(4)
+   RGNEWTRANSTARTDATE=BNODLFIELD(5)
+
+   RGNEWTRANDAY1=BNODLFIELD(6)
+   RGNEWTRANDAY2=BNODLFIELD(7)
+
+[* @RGUSERCHR2
+*]
+   BNODATALINE=@RGUSERCHR2
+   BNODLDELIMITER="|"
+   CALL BNOPARSEDATALINE
+   RGNEWTRANFIRST3=BNODLFIELD(1)
+   RGNEWTRANNICKNAME=BNODLFIELD(2)
+
+[* @RGUSERCHR3
+*]
+   RGNEWTRANCOMMENT=@RGUSERCHR3
+
+[* @RGUSERCHR4
+*]
+   RGNEWTRANAMOUNT=@RGUSERCHR4
+
+[* @RGUSERNUM1
+*]
+   RGNEWTRANRECIPLOC=@RGUSERNUM1
+  END
+ ELSE IF @RGSTATE=STATEEDITTRAN THEN
+  DO
+   RGTARGETSLTRANLOC=@RGUSERNUM1
+
+[* @RGUSERCHR1
+*]
+   BNODATALINE=@RGUSERCHR1
+   BNODLDELIMITER="|"
+   CALL BNOPARSEDATALINE
+
+   RGNEWTRANFREQCHR=BNODLFIELD(1)
+   RGNEWTRANSTARTDATE=BNODLFIELD(2)
+   RGNEWTRANDAY1=BNODLFIELD(3)
+   RGNEWTRANDAY2=BNODLFIELD(4)
+
+[* @RGUSERCHR2
+*]
+   RGNEWTRANCOMMENT=@RGUSERCHR2
+
+[* @RGUSERCHR3
+*]
+   RGNEWTRANAMOUNT=@RGUSERCHR3
+  END
+ ELSE IF @RGSTATE=STATEDELETERECIP THEN
+  DO
+   RGRECIPLOCATOR=@RGUSERNUM1
+  END
+ ELSE IF @RGSTATE=STATEDELETETRAN THEN
+  DO
+   RGTARGETSLTRANLOC=@RGUSERNUM1
+  END 
+END [PROCEDURE]
+
+PROCEDURE TRANSFORMRGDATA
+[* Take the GETRGDATA data and transform further into components
+** 
+*]
+
+ IF @RGSTATE=STATECREATETRAN THEN
+  DO
+[* Source Acct Detail *]
+   NEWTRANSRCACCT=SEGMENT(RGNEWTRANSOURCE,1,10)
+   NEWTRANSRCIDTYPE=SEGMENT(RGNEWTRANSOURCE,11,11)
+   NEWTRANSRCID=SEGMENT(RGNEWTRANSOURCE,12,LENGTH(RGNEWTRANSOURCE))
+
+   BNODEBUGMSG="RGNEWTRANSOURCE:"+RGNEWTRANSOURCE+"   "+
+               "NEWTRANSRCACCT:"+NEWTRANSRCACCT+"   "+
+               "NEWTRANSRCIDTYPE:"+NEWTRANSRCIDTYPE+"   "+
+               "NEWTRANSRCID:"+NEWTRANSRCID
+   CALL BNODEBUGMSGADD
+
+[* Recipent Acct Detail]
+   NEWTRANRECIPACCT=RGNEWTRANRECIPACCT
+   NEWTRANRECIPACCT="0000000000"+NEWTRANRECIPACCT
+   NEWTRANRECIPACCT=SEGMENT(NEWTRANRECIPACCT, LENGTH(NEWTRANRECIPACCT)-9,LENGTH(NEWTRANRECIPACCT))
+
+[* Recipient is either "S" or "L" and share/loan ID
+*]
+   NEWTRANRECIPSLIDTYPECHR=UPPERCASE(SEGMENT(RGNEWTRANRECIPSLID,1,1))
+   TMPSLID=SEGMENT(RGNEWTRANRECIPSLID,2,LENGTH(RGNEWTRANRECIPSLID))
+   CALL NORMALIZESLID
+   NEWTRANRECIPSLID=TMPSLID
+
+   BNODEBUGMSG="RGNEWTRANRECIPSLID:"+RGNEWTRANRECIPSLID+
+               "   NEWTRANRECIPSLIDTYPECHR:"+NEWTRANRECIPSLIDTYPECHR+
+               "   NEWTRANRECIPSLID:"+TMPSLID
+   CALL BNODEBUGMSGADD
+
+   NEWTRANFREQCHR=RGNEWTRANFREQCHR
+   CALL FINDFREQNUM
+
+   NEWTRANSTARTDATE=DATEVALUE(RGNEWTRANSTARTDATE)
+   IF LOWERCASE(RGNEWTRANSTARTDATE)="soonest" THEN
+    SOONESTAVAILABLE=TRUE
+   ELSE
+    SOONESTAVAILABLE=FALSE
+
+   NEWTRANDAY1=VALUE(RGNEWTRANDAY1)
+   NEWTRANDAY2=VALUE(RGNEWTRANDAY2)
+
+   NEWTRANFIRST3=RGNEWTRANFIRST3
+   NEWTRANNICKNAME=RGNEWTRANNICKNAME
+
+   BNOTEXT=RGNEWTRANCOMMENT
+   CALL BNONLS
+   NEWTRANCOMMENT=BNOTEXT
+
+   BNOTEXT=RGNEWTRANAMOUNT
+   CALL BNONLTS
+   TMPAMTCHR=BNOTEXT
+   CALL AMTCHRTOMONEY
+
+   NEWTRANRECIPLOC=RGNEWTRANRECIPLOC
+  END
+ ELSE IF @RGSTATE=STATEEDITTRAN THEN
+  DO
+   NEWTRANFREQCHR=RGNEWTRANFREQCHR
+   CALL FINDFREQNUM
+   NEWTRANSTARTDATE=DATEVALUE(RGNEWTRANSTARTDATE)
+   NEWTRANDAY1=VALUE(RGNEWTRANDAY1)
+   NEWTRANDAY2=VALUE(RGNEWTRANDAY2)
+
+   BNOTEXT=RGNEWTRANCOMMENT
+   CALL BNONTS
+   NEWTRANCOMMENT=BNOTEXT
+
+   BNOTEXT=RGNEWTRANAMOUNT
+   CALL BNONLTS
+   TMPAMTCHR=BNOTEXT
+   CALL AMTCHRTOMONEY
+  END
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Misc Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE FINDFREQNUM
+[* Find the numeric frequency corresponding to the Banno text version of the frequency
+**  PASS    NEWTRANFREQCHR    Transer frequency in character format
+**  RETURN  NEWTRANFREQFOUND  Matching frequency found? Boolean TRUE/FALSE
+**  RETURN  NEWTRANFREQ       Corresponding Share Transfer frequency number
+*]
+ NEWTRANFREQFOUND=FALSE
+ NEWTRANFREQ=-1
+
+ FOR FREQLOOP=0 TO TRANSFERFREQMAX
+  DO
+   IF UPPERCASE(NEWTRANFREQCHR)=UPPERCASE(TRANSFERFREQCHR(TRANFREQALT,FREQLOOP)) THEN
+    DO
+     NEWTRANFREQ=FREQLOOP
+     NEWTRANFREQFOUND=TRUE
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE MSGPROPSELECTADD
+[* Call before JSONMSGARRAYS to selectively output soft text/message properties.
+** This may be called multiple times with different MSGPROPSELECT values to select and output
+** multiple soft text properties. MSGTAGSELECT can be set if multiple message tags point to a
+** single message property and a specific message tag/property is being output.  JSONMSGARRAYS 
+** will output all defined soft text message if this procedure is not called prior to JSONMSGARRAYS.
+** Example:
+**
+**  MSGPROPSELECT="informationMsg"
+**  CALL MSGPROPSELECTADD
+**  CALL JSONMSGARRAYS
+**
+**  PASS    MSGPROPSELECT      The json property name for soft text that should be selected
+**  PASS    MSGTAGSELECT       The CFG tag name for soft text that should be selected (**optional**)
+**  
+**  RETURN  MSGPROPSELECTLIST  Updated list
+*]
+
+ IF MSGPROPSELECTLIST<>"" THEN
+  MSGPROPSELECTLIST=MSGPROPSELECTLIST+","
+ MSGPROPSELECTLIST=MSGPROPSELECTLIST+MSGPROPSELECT
+ IF MSGTAGSELECT<>"" THEN
+  MSGPROPSELECTLIST=MSGPROPSELECTLIST+":"+MSGTAGSELECT
+ MSGTAGSELECT=""
+END
+
+PROCEDURE GETUSELANGUAGE
+ 
+ USELANGUAGE=PARAMMSGTAGENGLISH
+ IF PARAMLANGSPANISH=TRUE THEN
+  USELANGUAGE=RGLANGUAGE
+END [PROCEDURE]
+
+PROCEDURE READPREFSETTINGS
+[* Reset the preference record calculation settings for the day
+*]
+ PREFFOUND=FALSE
+ MBRCOUNTLIMIT=0
+ MBRAMOUNTLIMIT=$0.00
+ MBRINDIVIDUALLIMIT=$0.00
+ MBRCOUNTACTUAL=0
+ MBRAMOUNTACTUAL=$0.00
+ RESETPREFVALUES=FALSE
+
+ FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+  DO
+   IF PREFERENCE:LASTTRANDATE<SYSTEMDATE THEN
+    RESETPREFVALUES=TRUE
+
+   BNODEBUGMSG=FORMAT("PREFERENCE:LASTTRANDATE = 99/99/99",PREFERENCE:LASTTRANDATE)+
+                FORMAT("  RESETPREFVALUES:9",RESETPREFVALUES)
+   CALL BNODEBUGMSGADD
+  END
+
+ IF RESETPREFVALUES=TRUE THEN
+  DO
+   FMPERFORM REVISE PREFERENCE LOC @PREFLOCATOR(1,0,PREFUPDATEERROR)
+    DO
+     SET XFERCOUNT TO 0
+     SET XFERAMOUNT TO $0.00
+     SET DEPCOUNT TO 0
+     SET DEPAMOUNT TO $0.00
+     SET WDCHECKCOUNT TO 0
+     SET WDCHECKAMOUNT TO $0.00
+     SET WDCASHCOUNT TO 0
+     SET WDCASHAMOUNT TO $0.00
+     SET BILLPAYCOUNT TO 0
+     SET BILLPAYAMOUNT TO $0.00
+     SET LASTTRANDATE TO SYSTEMDATE
+    END
+  END
+
+ FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+  DO
+   PREFFOUND=TRUE
+   MBRCOUNTLIMIT=PREFERENCE:XFERCOUNTLIMIT
+   MBRAMOUNTLIMIT=PREFERENCE:XFERLIMIT
+   MBRINDIVIDUALLIMIT=PREFERENCE:XFERMAX
+   MBRCOUNTACTUAL=PREFERENCE:XFERCOUNT
+   MBRAMOUNTACTUAL=PREFERENCE:XFERAMOUNT
+   MBRLASTTRANDATE=PREFERENCE:LASTTRANDATE
+  END
+
+ BNONUM=MBRCOUNTLIMIT
+ CALL BNONUMTEXT
+ MBRCOUNTLIMITCHR=BNOTEXT
+
+ BNOAMT=MBRAMOUNTLIMIT
+ CALL BNOAMTTEXT
+ MBRAMOUNTLIMITCHR=BNOTEXT
+
+ BNOAMT=MBRINDIVIDUALLIMIT
+ CALL BNOAMTTEXT
+ MBRINDIVIDUALLIMITCHR=BNOTEXT
+
+ BNONUM=MBRCOUNTACTUAL
+ CALL BNONUMTEXT
+ MBRCOUNTACTUALCHR=BNOTEXT
+
+ BNOAMT=MBRAMOUNTACTUAL
+ CALL BNOAMTTEXT
+ MBRAMOUNTACTUALCHR=BNOTEXT
+END [PROCEDURE ]
+
+PROCEDURE CALCLIMITS
+[* Calculate member's current Preference record limits
+*]
+ MBRCOUNTLIMITCALC=-1
+ MBRAMOUNTLIMITCALC=-$0.01
+ MBRINDIVLIMITCALC=-$0.01
+
+ MBRCOUNTLIMITCALCCHR=""
+ MBRAMOUNTLIMITCALCCHR=""
+ MBRINDIVLIMITCALCCHR=""
+
+ BNODEBUGMSG=FORMAT("MBRCOUNTLIMIT:###9+   ",MBRCOUNTLIMIT)+
+            FORMAT("MBRAMOUNTLIMIT:###,##9.99+   ",MBRAMOUNTLIMIT)+
+            FORMAT("MBRINDIVIDUALLIMIT:###,##9.99+   ",MBRINDIVIDUALLIMIT)
+ CALL BNODEBUGMSGADD
+
+ IF (PARAMINSTCOUNTLIMIT>0 AND PARAMINSTCOUNTLIMIT<9999) THEN
+  DO
+   IF MBRCOUNTLIMIT=0 THEN
+    MBRCOUNTLIMITCALC=PARAMINSTCOUNTLIMIT
+   ELSE IF (MBRCOUNTLIMIT>0 AND MBRCOUNTLIMIT<9999) THEN
+    MBRCOUNTLIMITCALC=MBRCOUNTLIMIT
+   ELSE IF MBRCOUNTLIMIT>=9999 THEN
+    MBRCOUNTLIMITCALC=9999
+  END
+ ELSE IF PARAMINSTCOUNTLIMIT>=9999 THEN
+  DO
+   IF MBRCOUNTLIMIT=0 THEN
+    MBRCOUNTLIMITCALC=9999
+   ELSE IF (MBRCOUNTLIMIT>0 AND MBRCOUNTLIMIT<9999) THEN
+    MBRCOUNTLIMITCALC=MBRCOUNTLIMIT
+   ELSE IF MBRCOUNTLIMIT>=9999 THEN
+    MBRCOUNTLIMITCALC=9999
+  END
+ ELSE IF PARAMINSTCOUNTLIMIT=0 THEN
+  DO
+   IF MBRCOUNTLIMIT=0 THEN
+    MBRCOUNTLIMITCALC=MBRCOUNTLIMIT
+   IF (MBRCOUNTLIMIT>0 AND MBRCOUNTLIMIT<9999) THEN
+    MBRCOUNTLIMITCALC=MBRCOUNTLIMIT
+   ELSE IF MBRCOUNTLIMIT>=9999 THEN
+    MBRCOUNTLIMITCALC=9999
+  END
+
+ IF (PARAMINSTAMOUNTLIMIT>$0.00 AND PARAMINSTAMOUNTLIMIT<$999,999.99) THEN
+  DO
+   IF MBRAMOUNTLIMIT=$0.00 THEN
+    MBRAMOUNTLIMITCALC=PARAMINSTAMOUNTLIMIT
+   ELSE IF (MBRAMOUNTLIMIT>$0.00 AND MBRAMOUNTLIMIT<$999,999.99) THEN
+    MBRAMOUNTLIMITCALC=MBRAMOUNTLIMIT
+   ELSE IF MBRAMOUNTLIMIT>=$999,999.99 THEN
+    MBRAMOUNTLIMITCALC=$999,999.99
+  END
+ ELSE IF PARAMINSTAMOUNTLIMIT>=$999,999.99 THEN
+  DO
+   IF MBRAMOUNTLIMIT=$0.00 THEN
+    MBRAMOUNTLIMITCALC=$999,999.99
+   ELSE IF (MBRAMOUNTLIMIT>$0.00 AND MBRAMOUNTLIMIT<$999,999.99) THEN
+    MBRAMOUNTLIMITCALC=MBRAMOUNTLIMIT
+   ELSE IF MBRAMOUNTLIMIT>=$999,999.99 THEN
+    MBRCOUNTLIMITCALC=9999
+  END
+ ELSE IF PARAMINSTAMOUNTLIMIT=$0.00 THEN
+  DO
+   IF (MBRAMOUNTLIMIT>$0.00 AND MBRAMOUNTLIMIT<$999,999.99) THEN
+    MBRAMOUNTLIMITCALC=MBRAMOUNTLIMIT
+   ELSE IF MBRAMOUNTLIMIT>=$999,999.99 THEN
+    MBRAMOUNTLIMITCALC=$999,999.99
+   ELSE IF MBRAMOUNTLIMIT>=$999,999.99 THEN
+    MBRAMOUNTLIMITCALC=$999,999.99
+  END
+
+ IF (PARAMINSTINDIVLIMIT>$0.00 AND PARAMINSTINDIVLIMIT<$999,999.99) THEN
+  DO
+   IF MBRINDIVIDUALLIMIT=$0.00 THEN
+    MBRINDIVLIMITCALC=PARAMINSTINDIVLIMIT
+   ELSE IF (MBRINDIVIDUALLIMIT>$0.00 AND MBRINDIVIDUALLIMIT<$999,999.99) THEN
+    MBRINDIVLIMITCALC=MBRINDIVIDUALLIMIT
+   ELSE IF MBRINDIVIDUALLIMIT>=$999,999.99 THEN
+    MBRINDIVLIMITCALC=$999,999.99
+  END
+ ELSE IF PARAMINSTINDIVLIMIT>=$999,999.99 THEN
+  DO
+   IF MBRINDIVIDUALLIMIT=$0.00 THEN
+    MBRINDIVLIMITCALC=$999,999.99
+   ELSE IF (MBRINDIVIDUALLIMIT>$0.00 AND MBRINDIVIDUALLIMIT<$999,999.99) THEN
+    MBRINDIVLIMITCALC=MBRINDIVIDUALLIMIT
+   ELSE IF MBRINDIVIDUALLIMIT>=$999,999.99 THEN
+    MBRINDIVLIMITCALC=$999,999.99
+  END
+ ELSE IF PARAMINSTINDIVLIMIT=$0.00 THEN
+  DO
+   IF (MBRINDIVIDUALLIMIT>$0.00 AND MBRINDIVIDUALLIMIT<$999,999.99) THEN
+    MBRINDIVLIMITCALC=MBRINDIVIDUALLIMIT
+   ELSE IF MBRINDIVIDUALLIMIT>=$999,999.99 THEN
+    MBRINDIVLIMITCALC=$999,999.99
+   ELSE IF MBRINDIVIDUALLIMIT>=$999,999.99 THEN
+    MBRINDIVLIMITCALC=$999,999.99
+  END
+
+ IF MBRINDIVLIMITCALC>=$999,999.99 AND
+    MBRCOUNTLIMITCALC>=9999 AND
+    MBRAMOUNTLIMITCALC>=$999,999.99 THEN
+  PARAMENFORCELIMITS=FALSE
+
+ IF PARAMENFORCELIMITS=TRUE AND
+   (MBRCOUNTLIMITCALC<0 OR
+    MBRAMOUNTLIMITCALC<$0.00 OR
+    MBRINDIVLIMITCALC<$0.00) THEN
+  DO
+   BNOERRORCODE=BNOERRCODEMISSINGINFO
+   BNOERRORMODIFIER=BNOERRMODCALCMBRLIMITS
+  END
+
+ BNONUM=MBRCOUNTLIMITCALC
+ CALL BNONUMTEXTTRAIL
+ MBRCOUNTLIMITCALCCHR=BNOTEXT
+
+ BNOAMT=MBRAMOUNTLIMITCALC
+ CALL BNOAMTTEXTTRAIL
+ MBRAMOUNTLIMITCALCCHR=BNOTEXT
+
+ BNOAMT=MBRINDIVLIMITCALC
+ CALL BNOAMTTEXTTRAIL
+ MBRINDIVLIMITCALCCHR=BNOTEXT
+
+ BNODEBUGMSG="MBRCOUNTLIMITCALC:"+MBRCOUNTLIMITCALCCHR+
+             "   MBRAMOUNTLIMITCALC:"+MBRAMOUNTLIMITCALCCHR+
+             "   MBRINDIVLIMITCALC:"+MBRINDIVLIMITCALCCHR
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE SETUPLIMITS
+[* Establish current transfer limits
+*]
+ BNODEBUGMSG="*** PROCEDURE SETUPLIMITS"
+ CALL BNODEBUGMSGADD
+
+ CALL READPREFSETTINGS
+ CALL CALCLIMITS
+END [PROCEDURE]
+
+PROCEDURE NORMALIZESLID
+[* Trim or pad the user input to the required 2 or 4 digit S/L ID
+**  PASS    TMPSLID   S/L ID user input
+**  RETURN  TMPSLID   Correct length S/L ID
+*]
+
+ IF TMPSLID="na" THEN
+  TMPSLID=""
+ IF TMPSLID<>"" THEN
+  DO
+   TMPSLID="0000"+TMPSLID
+   TMPSLID=SEGMENT(TMPSLID,(LENGTH(TMPSLID)-BNOIDLENGTH)+1,LENGTH(TMPSLID))
+  END
+END [PROCEDURE]
+
+PROCEDURE AMTCHRTOMONEY
+[* Convert text monetary amount to money value. Text value may or may not
+** have a decimal with or without trailing digits
+**  PASS    TMPAMTCHR       Monetary value in character format
+**  RETURN  NEWTRANAMOUNT   Converted monetary value in money format
+*]
+ NEWTRANAMOUNT=$0.00
+
+ POS=CHARACTERSEARCH(TMPAMTCHR,".")
+ IF POS>0 THEN
+  DO
+   IF POS=LENGTH(TMPAMTCHR)-1 THEN
+    NEWTRANAMOUNT=MONEY(VALUE(TMPAMTCHR+"0"))
+   ELSE
+    NEWTRANAMOUNT=MONEY(VALUE(TMPAMTCHR))
+  END
+ ELSE
+  NEWTRANAMOUNT=MONEY(VALUE(TMPAMTCHR)*100)
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Build Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE BUILDSHARELOANLIST
+[* Build a list of eligible Shares/Loans from which to transfer the
+** funds from
+** 3.2.1 - Updated procedures being called
+*]
+ CALL BNOBUILDSHARELOANLISTINIT
+
+ BNOSLTYPE=PARAMNTSLTYPE
+ BNOCROSSACCTACCESS=PARAMCROSSACCTACCESS
+ BNOSLCODE(BNOSHARECODESHARE)=TRUE
+ BNOSLCODE(BNOSHARECODEDRAFT)=TRUE
+ BNOSLCODE(BNOSHARECODECERTIFICATE)=TRUE
+ BNOSLCODE(BNOSHARECODECLUB)=TRUE
+ BNOEXCLUDESHARETYPELIST="none"
+ BNOEXCLUDELOANTYPELIST="none"
+ BNOINCLUDECLOSED=FALSE
+ BNOINCLUDECHARGEDOFF=FALSE
+ BNOINCLUDEEXTLOANS=FALSE
+ BNOACCESSTYPE=BNOACCESSTYPEXFEROUT
+ BNOAVAILCALCMETHOD=0
+
+ CALL BNOBUILDSHARELOANLIST
+
+ BNODEBUGMSG=FORMAT("1 BNOSHARECOUNT=999",BNOSHARECOUNT)+
+             FORMAT("   BNOLOANCOUNT=999",BNOLOANCOUNT)
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE BUILDRECIPLIST
+[* Build a list of saved recipients for the member to reuse
+*]
+ RECIPCOUNT=0
+ FOR EACH EXTERNALACCOUNT WITH (SEGMENT(EXTERNALACCOUNT:FINANCIALINSTITUTIONNAME,1,4)="M2M:" AND
+                                EXTERNALACCOUNT:RT="" AND
+                                EXTERNALACCOUNT:STATUS=2 [AND
+                                EXTERNALACCOUNT:EXPIRATIONDATE=DATENULL])
+  DO
+   IF RECIPCOUNT<RECIPMAX THEN
+    DO
+     RECIPCOUNT=RECIPCOUNT+1
+     RECIPLOC(RECIPCOUNT)=EXTERNALACCOUNT:LOCATOR
+     RECIPNAME(RECIPCOUNT)=UPPERCASE(EXTERNALACCOUNT:PRIMARYACCOUNTHOLDERNAME)
+     BNOTEXT=SEGMENT(EXTERNALACCOUNT:FINANCIALINSTITUTIONNAME,5,
+             LENGTH(EXTERNALACCOUNT:FINANCIALINSTITUTIONNAME))
+     CALL BNONLS
+     CHARCHECK=BNOTEXT
+     CALL CHECKFORINVALIDCHARS
+     RECIPNICKNAME(RECIPCOUNT)=CHARCHECKRETURN
+     RECIPACCOUNT(RECIPCOUNT)=EXTERNALACCOUNT:NUMBER
+     RECIPLISTEXPIREDATE(RECIPCOUNT)=EXTERNALACCOUNT:EXPIRATIONDATE
+    END
+  END
+END
+
+PROCEDURE BUILDSLTRANSFERLIST
+[* Build a list of existing transfers for the member to use/edit or delete
+*]
+ WHILELIMIT=2000000
+ TRANCOUNT=0
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL)
+  DO
+   FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:TYPE=3 AND
+                                (SHARE TRANSFER:EXPIRATIONDATE=DATENULL OR
+                                 SHARE TRANSFER:EXPIRATIONDATE>SYSTEMDATE) AND
+                                 SHARE TRANSFER:ACCOUNTNUMBER<>ACCOUNT:NUMBER)
+    DO
+     IF TRANCOUNT<TRANCOUNTMAX THEN
+      DO
+       PAACCOUNTTEST=SHARE TRANSFER:ACCOUNTNUMBER
+       PASLIDTYPETEST=SHARE TRANSFER:IDTYPE
+       PASLIDTEST=SHARE TRANSFER:ID
+
+       EXTERNALRECTOFIND=PAACCOUNTTEST+
+                         IDTYPETOCHR(PASLIDTYPETEST)+
+                         PASLIDTEST
+
+       CALL FINDEXTERNALRECORD    [EXTRECFOUND=RECIPINDEX]
+       CALL FINDPREFACCESSMATCH
+       IF PREFACCESSMATCH=FALSE THEN
+        DO
+         TMPNUM=0
+         TRANCOUNT=TRANCOUNT+1
+
+         TRANLOC(TRANCOUNT)=SHARE TRANSFER:LOCATOR
+         TRANSOURCEACCT(TRANCOUNT)=ACCOUNT:NUMBER+SLIDTYPESHARECHR+SHARE:ID
+
+         TARGETTRANSFERLOC=TRANLOC(TRANCOUNT)
+         CALL FINDTRANCREATEDATE
+         TRANCREATEDATE(TRANCOUNT)=TRANSFERCREATEDATE
+         TRANCREATEUSER(TRANCOUNT)=TRANSFERCREATEUSER
+
+         BNODEBUGMSG=FORMAT("**** TESTING FOR READONLY DATA - SHARE TRANSFER LOC ########9",TARGETTRANSFERLOC)
+         CALL BNODEBUGMSGADD
+         BNODEBUGMSG=FORMAT("EXTRECFOUND:9  ",EXTRECFOUND)+
+                     FORMAT("PARAMALLOWEDIT:9  ",PARAMALLOWEDIT)+
+                    "   SHARE TRAN FREQ:"+
+                     TRANSFERFREQCHR(TRANFREQALT,SHARE TRANSFER:FREQUENCY)+
+                    FORMAT("  TRANSFERCREATEUSER:,###9+  ",TRANSFERCREATEUSER)+
+                    FORMAT("PARAMEDITUSERS 9999",PARAMEDITUSERS(TRANSFERCREATEUSER))
+         CALL BNODEBUGMSGADD
+
+[* Determine if existing transfer is editable or not
+*]
+         IF TRANSFERFREQCHR(TRANFREQALT,SHARE TRANSFER:FREQUENCY)<>"" AND
+           (PARAMALLOWEDIT=ALLOWEDITTRUE OR
+           (PARAMALLOWEDIT=ALLOWEDITUSER AND PARAMEDITUSERS(TRANSFERCREATEUSER)=TRUE) OR
+            TRANSFERCREATEUSER=SYMXUSERNUMBER) THEN
+          TRANREADONLYSTATUS(TRANCOUNT)=JSONBOOLEAN(FALSE)
+         ELSE
+          TRANREADONLYSTATUS(TRANCOUNT)=JSONBOOLEAN(TRUE)
+
+         TRANACCOUNTNAME(TRANCOUNT)=SHARE:NICKNAME
+         IF SHARE:NICKNAME="" THEN
+          TRANACCOUNTNAME(TRANCOUNT)=SHARE:DESCRIPTION
+
+         CHARCHECK=TRANACCOUNTNAME(TRANCOUNT)
+         CALL CHECKFORINVALIDCHARS
+         TRANACCOUNTNAME(TRANCOUNT)=CHARCHECKRETURN
+
+         TRANXFERAMOUNT(TRANCOUNT)=SHARE TRANSFER:AMOUNT
+         TRANRECIPNAME(TRANCOUNT)=RECIPNAME(EXTRECFOUND) [First three letters of last/business name]
+         TRANRECIPMBRID(TRANCOUNT)=SHARE TRANSFER:ACCOUNTNUMBER
+         TRANRECIPACCT(TRANCOUNT)=SHARE TRANSFER:ACCOUNTNUMBER
+
+         IF SHARE TRANSFER:IDTYPE=1 THEN
+          TMPNUM=4
+         ELSE
+          DO
+           TMPSID=SHARE TRANSFER:ID
+           FOR ACCOUNT SHARE TRANSFER:ACCOUNTNUMBER
+            DO
+             FOR EACH SHARE WITH (SHARE:ID=TMPSID)
+              DO
+               TMPNUM=SHARE:SHARECODE
+              END
+            END
+          END
+
+         IF SHARE TRANSFER:IDTYPE=1 THEN
+          TRANRECIPACCTTYPE(TRANCOUNT)="loan"
+         ELSE
+          TRANRECIPACCTTYPE(TRANCOUNT)="share"
+         TRANRECIPEXPIREDATE(TRANCOUNT)=RECIPLISTEXPIREDATE(EXTRECFOUND)
+
+         BNODEBUGMSG=FORMAT("SHARECODE (TMPNUM) :#9  ",TMPNUM)+
+                    "TRANRECIPTYPECHR(TMPNUM):"+TRANRECIPTYPECHR(TMPNUM)
+         CALL BNODEBUGMSGADD
+
+         TRANRECIPACCTID(TRANCOUNT)=SHARE TRANSFER:ID
+         TRANRECIPNICKNAME(TRANCOUNT)=RECIPNICKNAME(EXTRECFOUND)
+[* Use 'x'+last 2 of member number+'L' or 'S'+S/L ID format instead of description/nickname
+*]
+         IF TRANRECIPNICKNAME(TRANCOUNT)="" THEN
+          DO
+           TRANRECIPNICKNAME(TRANCOUNT)=
+            "x"+SEGMENT(SHARE TRANSFER:ACCOUNTNUMBER,LENGTH(SHARE TRANSFER:ACCOUNTNUMBER)-1,
+                        LENGTH(SHARE TRANSFER:ACCOUNTNUMBER))+
+            UPPERCASE(SEGMENT(TRANRECIPACCTTYPE(TRANCOUNT),1,1))+
+            SHARE TRANSFER:ID
+          END
+
+         TRANSTARTDATE(TRANCOUNT)=SHARE TRANSFER:EFFECTIVEDATE
+         IF TRANSTARTDATE(TRANCOUNT)=DATENULL THEN
+          TRANSTARTDATE(TRANCOUNT)=SHARE TRANSFER:NEXTDATE
+         TRANNEXTTRANDATE(TRANCOUNT)=SHARE TRANSFER:NEXTDATE
+
+         TRANFREQUENCY(TRANCOUNT)=SHARE TRANSFER:FREQUENCY
+
+         TRANDAY1(TRANCOUNT)=SHARE TRANSFER:DAY1
+         TRANDAY2(TRANCOUNT)=SHARE TRANSFER:DAY2
+        END
+      END
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE GETRECIPSLDATA
+
+ FOR ACCOUNT NEWTRANRECIPACCT
+  DO
+   IF NEWTRANRECIPSLIDTYPE=0 THEN
+    DO
+     FOR EACH SHARE WITH (SHARE:ID=NEWTRANRECIPSLID)
+      DO
+       NEWTRANRECIPSLIDTYPECHR=SLIDTYPESHARECHR
+       NEWTRANSLDESCRIPTION=SHARE:NICKNAME
+       IF NEWTRANSLDESCRIPTION="" THEN
+        NEWTRANSLDESCRIPTION=SHARE:DESCRIPTION
+
+       CHARCHECK=NEWTRANSLDESCRIPTION
+       CALL CHECKFORINVALIDCHARS
+       NEWTRANSLDESCRIPTION=CHARCHECKRETURN
+      END
+    END
+   ELSE [recip is a loan]
+    DO
+     FOR EACH LOAN WITH (LOAN:ID=NEWTRANRECIPSLID)
+      DO
+       NEWTRANRECIPSLIDTYPECHR=SLIDTYPELOANCHR
+       NEWTRANSLDESCRIPTION=LOAN:NICKNAME
+       IF NEWTRANSLDESCRIPTION="" THEN
+        NEWTRANSLDESCRIPTION=LOAN:DESCRIPTION
+
+       CHARCHECK=NEWTRANSLDESCRIPTION
+       CALL CHECKFORINVALIDCHARS
+       NEWTRANSLDESCRIPTION=CHARCHECKRETURN
+      END
+    END
+  END
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Query/find Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE FINDPREFACCESSMATCH
+ PREFACCESSMATCH=FALSE
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+    DO
+     FOR EACH PREFERENCE ACCESS WITH  (PREFERENCE ACCESS:ACCESSTYPE=0 OR
+                                       PREFERENCE ACCESS:ACCESSTYPE=2) AND
+                                     ((PREFERENCE ACCESS:ACCOUNTNUMBER=PAACCOUNTTEST AND
+                                       PREFERENCE ACCESS:IDTYPE=PASLIDTYPETEST AND
+                                       PREFERENCE ACCESS:ID=PASLIDTEST) OR
+                                      (PREFERENCE ACCESS:ACCOUNTNUMBER=PAACCOUNTTEST AND
+                                       PREFERENCE ACCESS:IDTYPE=2))
+      DO
+       PREFACCESSMATCH=TRUE
+      END
+    END
+  END
+END
+
+PROCEDURE FINDEXTERNALRECORD
+[* PASS    EXTERNALRECTOFIND    Recipient account to search for
+*]
+ EXTRECFOUND=FALSE
+
+ FOR RECIPINDEX=1 TO RECIPCOUNT
+  DO
+   IF EXTERNALRECTOFIND=RECIPACCOUNT(RECIPINDEX) THEN
+    EXTRECFOUND=RECIPINDEX
+  END
+
+ BNODEBUGMSG="EXTERNALRECTOFIND:"+EXTERNALRECTOFIND+FORMAT("   EXTRECFOUND:9",EXTRECFOUND)
+ CALL BNODEBUGMSGADD
+END
+
+PROCEDURE FINDTRANCREATEDATE
+[* Find the date on which the transfer was created
+**
+**  PASS   TARGETTRANSFERLOC          The S/L Transfer Locator to lookup
+**  RETURN TRANCREATEDATEFOUND        Boolean - Was record found
+**  RETURN TRANSFERCREATEDATE         Record created date
+*]
+ TRANSFERCREATEDATE=DATENULL
+ TRANSFERCREATEUSER=9999
+ TRANCREATEDATEFOUND=FALSE
+
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   FOR EACH FMHISTORY
+    DO
+     IF FMHISTORY:ACCOUNTNUMBER=ACCOUNT:NUMBER AND
+        FMHISTORY:RECORDTYPE=8 AND
+        UPPERCASE(FMHISTORY:FIELDNAME)="NEW LOCATOR" THEN
+      DO
+       IF FMHISTORY:NEWNUMBER=TARGETTRANSFERLOC THEN
+        DO
+         TRANCREATEDATEFOUND=TRUE
+         TRANSFERCREATEDATE=FMHISTORY:POSTDATE
+         TRANSFERCREATEUSER=FMHISTORY:USERNUMBER
+
+         BNODEBUGMSG=FORMAT("CREATE DATE FOUND:99/99/9999    ",TRANSFERCREATEDATE)+
+                     FORMAT("CREATE USER:9999+",TRANSFERCREATEUSER)
+         CALL BNODEBUGMSGADD
+        END
+      END
+    END
+   UNTIL TRANCREATEDATEFOUND=TRUE
+  END
+END [PROCEDURE]
+
+PROCEDURE FINDBYACCTTYPESHARE
+[*this procedure contains custom logic for finding the share account if the option share ID feature is enabled.
+*]
+ SLFOUND=FALSE
+[
+ FINDSHARECODE=1
+ IF PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
+  CALL FINDBYSHARECODE
+ FINDSHARECODE=0
+ IF SLFOUND=FALSE AND
+    PARAMALLOWABLESHARECODES(FINDSHARECODE)=TRUE THEN
+  CALL FINDBYSHARECODE
+]
+END
+
+PROCEDURE FINDBYSHARECODE
+
+ SLFOUND=FALSE
+ FOR EACH SHARE WITH (SHARE:CLOSEDATE=DATENULL AND
+                      SHARE:CHARGEOFFDATE=DATENULL AND
+                      SHARE:SHARECODE=FINDSHARECODE AND
+                      SHARE:IRSCODE=0)
+  DO
+   TMPLOOP=1
+   WHILE TMPLOOP<=SVCCODEMAX AND SLFOUND=FALSE
+    DO
+     IF SERVICEIN(TMPLOOP)=TRUE AND ANYSERVICE(SHARE,TMPLOOP) THEN
+      DO
+       SLFOUND=TRUE
+       RGTARGETSLID=SHARE:ID
+      END
+     TMPLOOP=TMPLOOP+1
+    END
+  END
+ UNTIL SLFOUND=TRUE
+END
+
+[*
+**  --------------------------------------------------------------------
+**  Validation Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE CHECKFORPA3
+
+ FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+  DO
+   FOR EACH PREFERENCE ACCESS WITH (PREFERENCE ACCESS:ACCESSTYPE=3)
+    DO
+     PA3FOUND=TRUE
+    END
+   UNTIL PA3FOUND=TRUE
+  END
+ UNTIL PA3FOUND=TRUE
+
+ IF PA3FOUND=FALSE THEN
+  DO
+   BNOERRORCODE=BNOERRCODEINVSOURCE
+   BNOERRORMODIFIER=BNOERRMODACCESSTYPE
+  END
+END
+
+PROCEDURE VALIDATEACCOUNT
+[* Validate the account against targeted account warning codes
+** and validate account type
+*]
+ IF PARAMINELIGACCTS(ACCOUNT:TYPE)=TRUE THEN
+  DO
+   BNOERRORCODE=BNOERRCODEINVSOURCE
+   BNOERRORMODIFIER=BNOERRMODACCTTYPE
+   BNOERRORMODIFIER=FORMAT("Acct Type 9999",ACCOUNT:TYPE)
+  END
+
+ TMPLOOP=1
+ WHILE BNOERRORCODE=0 AND TMPLOOP<=MAXWARNINGTYPES
+  DO
+   IF PARAMWARNINGSACCT(TMPLOOP)=TRUE AND
+      ANYWARNING(ACCOUNT,TMPLOOP) THEN
+    DO
+     BNOERRORCODE=BNOERRCODEINVSOURCE
+     BNOERRORMODIFIER=BNOERRMODACCTWARN
+     BNOERRORMODIFIER=FORMAT("Acct Warning 999",TMPLOOP)
+    END
+
+   TMPLOOP=TMPLOOP+1
+  END
+END [PROCEDURE]
+
+PROCEDURE CHECKFORINVALIDCHARS
+[* Check the passed character value for any double-quotes (ascii 34)
+** or backslashes (ascii 92) and if found prepend with an escape
+** character (ascii 92).
+**
+**  PASS    CHARCHECK  Character value being tested
+**  RETURN  CHARCHECKRETURN  Updated CHARCHECK character value
+*]
+ CHARCHECKRETURN=""
+
+ FOR CHARCHECKNUM=1 TO LENGTH(CHARCHECK)
+  DO
+   CHARCHECKTMP=SEGMENT(CHARCHECK,CHARCHECKNUM,CHARCHECKNUM)
+   IF CHARCHECKTMP=CTRLCHR(34) THEN
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(34)
+   ELSE IF CHARCHECKTMP=CTRLCHR(92) THEN
+    CHARCHECKRETURN=CHARCHECKRETURN+CTRLCHR(92)+CTRLCHR(92)
+   ELSE
+    CHARCHECKRETURN=CHARCHECKRETURN+CHARCHECKTMP
+  END
+END [PROCEDURE]
+
+PROCEDURE VALIDATETARGETACCOUNT
+[*
+]
+ BNODEBUGMSG="PROCEDURE VALIDATETARGETACCOUNT - TARGETING - "+
+             "ACCT "+RGTARGETACCOUNT+"  ACCT TYPE:"+
+              UPPERCASE(RGTARGETACCTTYPE)+"  "+
+             "TARGETSLID="+RGTARGETSLID
+ CALL BNODEBUGMSGADD
+
+ VALIDATESTATUS=TARGETVERIFIED
+
+ IF RGTARGETACCOUNT=THISACCOUNT THEN
+  VALIDATESTATUS=TARGETSAMEACCT
+
+ IF VALIDATESTATUS=TARGETVERIFIED THEN
+  DO
+   VALIDATESTATUS=TARGETACCTNOTFOUND
+   FOR ACCOUNT RGTARGETACCOUNT
+    DO
+     VALIDATESTATUS=TARGETVERIFIED
+     TARGETACCTCLOSEDATE=ACCOUNT:CLOSEDATE
+     IF TARGETACCTCLOSEDATE<>DATENULL THEN
+      VALIDATESTATUS=TARGETACCTCLOSED
+
+[* Validate the first three characters of the last name against eligible name records.
+*]
+     IF VALIDATESTATUS=TARGETVERIFIED THEN
+      DO
+       NAMEFOUND=FALSE
+       FOR EACH NAME WITH (CHARACTERSEARCH(PARAMVALIDATIONNAMETYPES,FORMAT("99",NAME:TYPE))>0)
+        DO
+         TESTNAME=NAME:LAST
+         CALL VALIDATENAME
+        END
+       UNTIL NAMEFOUND=TRUE
+
+       IF NAMEFOUND=FALSE THEN
+        VALIDATESTATUS=TARGETNAMENOMATCH
+
+       BNODEBUGMSG=FORMAT("END OF NAME CHECK - NAME FOUND:9",NAMEFOUND)
+       CALL BNODEBUGMSGADD
+      END
+
+[*Attempt to validate the share/loan account type and share/loan ID
+*]
+     IF UPPERCASE(RGTARGETACCTTYPE)<>"SHARE" AND
+        UPPERCASE(RGTARGETACCTTYPE)<>"LOAN" THEN
+      VALIDATESTATUS=TARGETINVALIDSLTYPE
+
+     IF VALIDATESTATUS=TARGETVERIFIED AND
+        UPPERCASE(RGTARGETACCTTYPE)="SHARE" AND
+        RGTARGETSLID<>"" THEN
+      DO
+       SLFOUND=FALSE
+       FOR EACH SHARE WITH (SHARE:ID=RGTARGETSLID)
+        DO
+         SLFOUND=TRUE
+         IF SHARE:CLOSEDATE<>DATENULL OR SHARE:CHARGEOFFDATE<>DATENULL THEN
+          DO
+           VALIDATESTATUS=TARGETSLCLOSED
+           IF SHARE:CLOSEDATE<>DATENULL THEN
+            TARGETSLCLOSECODATE=SHARE:CLOSEDATE
+           ELSE IF SHARE:CHARGEOFFDATE<>DATENULL THEN
+            TARGETSLCLOSECODATE=SHARE:CHARGEOFFDATE
+          END
+         ELSE IF PARAMALLOWABLESHARECODES(SHARE:SHARECODE)=FALSE THEN
+          VALIDATESTATUS=TARGETINVALIDSHARECODE
+         ELSE IF SHARE:IRSCODE<>0 THEN
+          VALIDATESTATUS=TARGETINVALIDIRSCODE
+
+         IF VALIDATESTATUS=TARGETVERIFIED THEN
+          DO
+           SVCCODEFOUND=FALSE
+           TMPLOOP=1
+           WHILE TMPLOOP<=SVCCODEMAX AND SVCCODEFOUND=FALSE
+            DO
+             IF SERVICEIN(TMPLOOP)=TRUE AND ANYSERVICE(SHARE,TMPLOOP) THEN
+              SVCCODEFOUND=TRUE
+
+             TMPLOOP=TMPLOOP+1
+            END
+           IF SVCCODEFOUND=FALSE THEN
+            VALIDATESTATUS=TARGETNOSERVICECODE
+          END
+        END
+       UNTIL SLFOUND=TRUE
+
+       IF SLFOUND=FALSE THEN
+        VALIDATESTATUS=TARGETNOTFOUNDBYSLID
+      END
+
+     IF VALIDATESTATUS=TARGETVERIFIED AND
+        UPPERCASE(RGTARGETACCTTYPE)="SHARE" AND
+        RGTARGETSLID="" THEN
+      DO
+       CALL FINDBYACCTTYPESHARE
+       IF SLFOUND=FALSE THEN
+        VALIDATESTATUS=TARGETNOTFOUNDBYTYPE
+      END
+
+     IF VALIDATESTATUS=TARGETVERIFIED AND
+        UPPERCASE(RGTARGETACCTTYPE)="LOAN" THEN
+      DO
+       SLFOUND=FALSE
+       FOR EACH LOAN WITH (LOAN:ID=RGTARGETSLID)
+        DO
+         SLFOUND=TRUE
+         IF LOAN:CLOSEDATE<>DATENULL OR LOAN:CHARGEOFFDATE<>DATENULL THEN
+          DO
+           VALIDATESTATUS=TARGETSLCLOSED
+           IF LOAN:CLOSEDATE<>DATENULL THEN
+            TARGETSLCLOSECODATE=LOAN:CLOSEDATE
+           ELSE IF LOAN:CHARGEOFFDATE<>DATENULL THEN
+            TARGETSLCLOSECODATE=LOAN:CHARGEOFFDATE
+          END
+         ELSE IF LOAN:PAYOFFAMOUNT<=$0.00 THEN
+          VALIDATESTATUS=TARGETLOANZEROPAYOFF
+
+         IF VALIDATESTATUS=TARGETVERIFIED THEN
+          DO
+           SVCCODEFOUND=FALSE
+           TMPLOOP=1
+           WHILE TMPLOOP<=SVCCODEMAX AND SVCCODEFOUND=FALSE
+            DO
+             IF SERVICEIN(TMPLOOP)=TRUE AND ANYSERVICE(LOAN,TMPLOOP) THEN
+              SVCCODEFOUND=TRUE
+
+             TMPLOOP=TMPLOOP+1
+            END
+           IF SVCCODEFOUND=FALSE THEN
+            VALIDATESTATUS=TARGETNOSERVICECODE
+           ELSE
+            DO
+             BNODEBUGMSG="Loan ID found - BY TARGET TYPE: "+LOAN:ID
+             CALL BNODEBUGMSGADD
+            END
+          END
+        END
+       UNTIL SLFOUND=TRUE
+
+       IF SLFOUND=FALSE THEN
+        VALIDATESTATUS=TARGETNOTFOUNDBYSLID
+      END
+    END [FOR ACCOUNT]
+  END
+
+ BNODEBUGMSG=" END OF VALIDATETARGETACCOUNT - "+FORMAT("VALIDATESTATUS:99",VALIDATESTATUS)
+ CALL BNODEBUGMSGADD
+
+END [PROCEDURE]
+
+PROCEDURE VALIDATEEDITTRANLOC
+
+ SLTRANSFERFOUND=FALSE
+ FOR EACH SHARE
+  DO
+   FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:LOCATOR=RGTARGETSLTRANLOC)
+    DO
+     SLTRANSFERFOUND=TRUE
+     NEWTRANSRCACCT=ACCOUNT:NUMBER
+     NEWTRANSRCIDTYPE=SLIDTYPESHARECHR
+     NEWTRANSRCID=SHARE:ID
+     NEWTRANSRCAMOUNT=SHARE TRANSFER:AMOUNT
+     NEWTRANRECIPACCT=SHARE TRANSFER:ACCOUNTNUMBER
+     IF SHARE TRANSFER:IDTYPE=0 THEN
+      NEWTRANRECIPSLIDTYPECHR=SLIDTYPESHARECHR
+     ELSE
+      NEWTRANRECIPSLIDTYPECHR=SLIDTYPELOANCHR
+     NEWTRANRECIPSLID=SHARE TRANSFER:ID
+    END
+  END UNTIL SLTRANSFERFOUND=TRUE
+
+ IF SLTRANSFERFOUND=FALSE THEN
+  DO
+   BNOERRORCODE=BNOERRCODEPROCXFER
+   BNOERRORMODIFIER=BNOERRMODXFRLOC
+   BNOERRORMODIFIER=FORMAT("Target s/l xfer Loc ######9 not found",RGTARGETSLTRANLOC)
+  END
+END [PROCEDURE]
+
+PROCEDURE SETNEWTRANSLDESC
+
+ FOR ACCOUNT NEWTRANRECIPACCT
+  DO
+   NEWTRANRECIPLONGNAME=NAME:LONGNAME
+   FOR EACH SHARE WITH (SHARE:ID=NEWTRANRECIPSLID)
+    DO
+     NEWTRANSLDESCRIPTION=SHARE:NICKNAME
+     IF NEWTRANSLDESCRIPTION="" THEN
+      NEWTRANSLDESCRIPTION=SHARE:DESCRIPTION
+     
+     CHARCHECK=NEWTRANSLDESCRIPTION
+     CALL CHECKFORINVALIDCHARS
+     NEWTRANSLDESCRIPTION=CHARCHECKRETURN
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE SETERRORCODEBYVALIDATESTATUS
+
+ BNOERRORCODE=BNOERRCODEMBRVERIFY
+ IF VALIDATESTATUS=TARGETACCTNOTFOUND THEN
+  BNOERRORMODIFIER=BNOERRMODMBRNOTFOUND
+ ELSE IF VALIDATESTATUS=TARGETACCTCLOSED THEN
+  DO
+   BNOERRORMODIFIER=BNOERRMODACCTCLOSED
+   BNOERRORMODIFIER=FORMAT("Account Closed - 99/99/99",TARGETACCTCLOSEDATE)
+  END
+ ELSE IF VALIDATESTATUS=TARGETNAMENOMATCH THEN
+  BNOERRORMODIFIER=BNOERRMODNAMEVERIFY
+ ELSE IF VALIDATESTATUS=TARGETSAMEACCT THEN
+  BNOERRORMODIFIER=BNOERRMODSAMEMBR
+ ELSE IF VALIDATESTATUS=TARGETSLCLOSED THEN
+  DO
+   BNOERRORMODIFIER=BNOERRMODSLCLOSED
+   BNOERRORMODIFIER=FORMAT("S/L closed or charged-off - 99/99/99",TARGETSLCLOSECODATE)
+  END
+ ELSE IF VALIDATESTATUS=TARGETNOTFOUNDBYSLID THEN
+  BNOERRORMODIFIER=BNOERRMODSLNOTFOUND
+ ELSE IF VALIDATESTATUS=TARGETNOTFOUNDBYTYPE THEN
+  BNOERRORMODIFIER=BNOERRMODNOVALIDSL
+ ELSE IF VALIDATESTATUS=TARGETNOSERVICECODE THEN
+  BNOERRORMODIFIER=BNOERRMODNOSVCCODE
+ ELSE IF VALIDATESTATUS=TARGETINVALIDSLTYPE THEN
+  BNOERRORMODIFIER=BNOERRMODINVSLTYPE
+ ELSE IF VALIDATESTATUS=TARGETINVALIDSHARECODE THEN
+  BNOERRORMODIFIER=BNOERRMODINVSLCODE
+ ELSE IF VALIDATESTATUS=TARGETLOANZEROPAYOFF THEN
+  BNOERRORMODIFIER=BNOERRMODZEROPAYOFF
+ ELSE IF VALIDATESTATUS=TARGETINVALIDIRSCODE THEN
+  BNOERRORMODIFIER=BNOERRMODINVIRSCODE
+END [PROCEDURE]
+
+PROCEDURE VALIDATENAME
+[* Validate the primary member's last name against user input
+** 3.2.1 - remove leading spaces from last name
+**
+** PASS    TESTNAME   target account last name
+** RETURN  NAMEFOUND  BOOLOEAN name found?
+*]
+ BNOTEXT=TESTNAME
+ CALL BNONLS
+ TESTNAME=BNOTEXT
+
+ ACTUALLAST3=UPPERCASE(SEGMENT(TESTNAME,1,3))
+ IF ACTUALLAST3=RGTARGETVERIFY3 THEN
+  NAMEFOUND=TRUE
+END [PROCEDURE]
+
+PROCEDURE EDITTRANCHECKLIMITS
+[* check for amounts before expiration process to avoid issues
+** where transfer is expired but new transfer cannot be created due to limits.
+*]
+
+ IF PARAMENFORCELIMITS=TRUE THEN
+  DO
+   CALL SETUPLIMITS
+   TMPAMOUNT=MBRAMOUNTACTUAL-NEWTRANSRCAMOUNT+NEWTRANAMOUNT
+   IF TMPAMOUNT>MBRAMOUNTLIMITCALC OR
+      NEWTRANAMOUNT>MBRINDIVLIMITCALC THEN
+    BNOERRORCODE=BNOERRCODELIMITEXCEED
+  END
+END
+
+PROCEDURE VALIDATENEWTRANRECIP
+
+ BNODEBUGMSG="Targeting by specific ID: "+NEWTRANRECIPACCT+" "+UPPERCASE(NEWTRANRECIPSLIDTYPECHR)+" '"+NEWTRANRECIPSLID+"'"
+ CALL BNODEBUGMSGADD
+
+ TARGETSLIDFOUND=FALSE
+ SLFOUND=FALSE
+ FOR ACCOUNT NEWTRANRECIPACCT
+  DO
+   NEWTRANRECIPLONGNAME=NAME:LONGNAME
+   IF UPPERCASE(NEWTRANRECIPSLIDTYPECHR)=SLIDTYPESHARECHR THEN
+    DO
+     FOR EACH SHARE WITH (SHARE:ID=NEWTRANRECIPSLID AND
+                          SHARE:IRSCODE=0 AND
+                          PARAMALLOWABLESHARECODES(SHARE:SHARECODE)=TRUE)
+      DO
+       SLFOUND=TRUE
+       SVCCODEFOUND=FALSE
+       FOR TMPLOOP=1 TO SVCCODEMAX
+        DO
+         IF SERVICEIN(TMPLOOP)=TRUE AND
+            ANYSERVICE(SHARE,TMPLOOP) THEN
+          DO
+           SVCCODEFOUND=TRUE
+           TMPLOOP=SVCCODEMAX
+          END
+        END
+
+       BNODEBUGMSG=FORMAT("SHARE SVC CODE FOUND=9",SVCCODEFOUND)
+       CALL BNODEBUGMSGADD
+
+       IF SVCCODEFOUND=TRUE THEN
+        DO
+         TARGETSLIDFOUND=TRUE
+         NEWTRANSLDESCRIPTION=SHARE:NICKNAME
+         IF NEWTRANSLDESCRIPTION="" THEN
+          NEWTRANSLDESCRIPTION=SHARE:DESCRIPTION
+
+         CHARCHECK=NEWTRANSLDESCRIPTION
+         CALL CHECKFORINVALIDCHARS
+         NEWTRANSLDESCRIPTION=CHARCHECKRETURN
+        END
+      END
+     UNTIL SLFOUND=TRUE 
+    END [IF UPPERCASE(NEWTRANRECIPSLIDTYPECHR)=SLIDTYPESHARECHR THEN]
+   ELSE IF UPPERCASE(NEWTRANRECIPSLIDTYPECHR)=SLIDTYPELOANCHR THEN
+    DO
+     FOR EACH LOAN WITH LOAN:ID=NEWTRANRECIPSLID
+      DO
+       SLFOUND=TRUE
+       SVCCODEFOUND=FALSE
+       FOR TMPLOOP=1 TO SVCCODEMAX
+        DO
+         IF SERVICEIN(TMPLOOP)=TRUE AND
+            ANYSERVICE(LOAN,TMPLOOP) THEN
+          DO
+           SVCCODEFOUND=TRUE
+           TMPLOOP=SVCCODEMAX
+          END
+        END
+
+       BNODEBUGMSG=FORMAT("LOAN SVC CODE FOUND=9",SVCCODEFOUND)
+       CALL BNODEBUGMSGADD
+
+       IF SVCCODEFOUND=TRUE THEN
+        DO
+         TARGETSLIDFOUND=TRUE
+         NEWTRANSLDESCRIPTION=LOAN:NICKNAME
+         IF NEWTRANSLDESCRIPTION="" THEN
+          NEWTRANSLDESCRIPTION=LOAN:DESCRIPTION
+
+         CHARCHECK=NEWTRANSLDESCRIPTION
+         CALL CHECKFORINVALIDCHARS
+         NEWTRANSLDESCRIPTION=CHARCHECKRETURN
+        END
+      END
+     UNTIL SLFOUND=TRUE 
+    END
+  END
+
+ IF TARGETSLIDFOUND=FALSE THEN
+  BNOERRORMODIFIER=BNOERRMODTARGETID 
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Config File Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE PARAMMSGINIT
+
+ PARAMMSGTAGSCOUNT=0
+ PARAMMSGOPT=FALSE
+ PARAMMSGMAXLINES=0
+ FOR PARAMMSGTAGINDEX=1 TO PARAMMSGTAGSMAX
+  DO
+   PARAMMSGOPTIONAL(PARAMMSGTAGINDEX)=FALSE
+   PARAMMSGDEFINED(PARAMMSGTAGINDEX)=FALSE
+   PARAMMSGMAX(PARAMMSGTAGINDEX)=PARAMMSGDEFAULTMAX
+  END
+END [PROCEDURE] 
+
+PROCEDURE PARAMMSGTAGADD
+
+ IF PARAMMSGTAGSCOUNT<PARAMMSGTAGSMAX THEN
+  DO
+   PARAMMSGTAGSCOUNT=PARAMMSGTAGSCOUNT+1
+   PARAMMSGTAGS(PARAMMSGTAGSCOUNT)=PARAMMSGTAG 
+   PARAMMSGPROPS(PARAMMSGTAGSCOUNT)=PARAMMSGPROP
+   PARAMMSGOPTIONAL(PARAMMSGTAGSCOUNT)=PARAMMSGOPT
+   IF PARAMMSGMAXLINES<>0 THEN 
+    PARAMMSGMAX(PARAMMSGTAGSCOUNT)=PARAMMSGMAXLINES
+   
+   PARAMMSGOPT=FALSE
+   PARAMMSGMAXLINES=0
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOINITPARAMVALS
+[* Initialize parameter/cfg variables
+*]
+ 
+ PARAMERRDISPLAYCOUNT=0
+ PARAMLANGSPANISH=FALSE
+ PARAMDEBUGMODE=BNODEBUGMODEUNDEFINED
+ PARAMTESTMODE=FALSE
+ PARAMTESTEC=0
+ PARAMPROGINSTALLDATE=DATENULL
+
+ PARAMINELIGACCTSLIST=""
+ PARAMWARNINGSACCTLIST=""
+ PARAMENFORCELIMITS=FALSE
+ PARAMINSTCOUNTLIMIT=0
+ PARAMINSTAMOUNTLIMIT=$0.00
+ PARAMINSTINDIVLIMIT=$0.00
+ PARAMCROSSACCTACCESS=FALSE
+ PARAMALLOWMMTRANSFER=TRUE
+ PARAMNTSLTYPE=BNOSLTYPESHARE
+ PARAMALLOWEDIT=ALLOWEDITFALSE
+ PARAMEDITUSERSLIST="none"
+ PARAMVALIDATIONNAMETYPES="00,01,05,06,07,08,09"
+ PARAMALLOWABLESHARECODES(SHARECODESAVINGS)=TRUE
+ PARAMALLOWABLESHARECODES(SHARECODEDRAFT)=TRUE
+ PARAMALLOWABLESHARECODES(SHARECODECERT)=FALSE
+ PARAMALLOWABLESHARECODES(SHARECODECLUB)=FALSE
+ PARAMSIDOPTIONAL=FALSE
+ PARAMIDLENTEST=0
+ PARAMTRANCOMMENT=""
+ PARAMLBLMEMBERNAME(PARAMMSGTAGENGLISH)=""
+ PARAMLBLMEMBERNAME(PARAMMSGTAGSPANISH)=""
+ PARAMLBLID(PARAMMSGTAGENGLISH)=""
+ PARAMLBLID(PARAMMSGTAGSPANISH)=""
+ PARAMTESTACCTLIST=""
+END [PROCEDURE]
+
+PROCEDURE BNOSETPARAMVALS
+[* Assign parameter settings retrieved from the configuration Letter
+** file to variables for use throughout the program
+*]
+ CALL BNOINITPARAMVALS
+
+ CALL GETPARAMMSGS
+
+[* Get any display error messages if configured in CFG file
+*]
+ CALL GETERRORDISPLAYMESSAGES
+ 
+ BNOPARAMFIND="SLS"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",BNOPARAMVAL)>0 THEN
+    PARAMLANGSPANISH=TRUE
+   ELSE 
+    PARAMLANGSPANISH=FALSE 
+  END
+
+ BNOPARAMFIND="PID"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMPROGINSTALLDATE=DATEVALUE(BNOPARAMVAL)
+
+[* Enforce Limits
+*]
+ BNOPARAMFIND="EL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMENFORCELIMITS=TRUE
+   ELSE 
+    PARAMENFORCELIMITS=FALSE 
+  END
+
+[* Ineligible Account Type(s)
+*]
+ BNOPARAMFIND="IAT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMINELIGACCTSLIST=BNOPARAMVAL
+
+[* Account Warnings
+*]
+ BNOPARAMFIND="IAW"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMWARNINGSACCTLIST=BNOPARAMVAL
+
+[* Global Count Limit
+*]
+ BNOPARAMFIND="GCL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMINSTCOUNTLIMIT=VALUE(BNOPARAMVAL)
+
+[* Global Amount Limit
+*]
+ BNOPARAMFIND="GAL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMINSTAMOUNTLIMIT=MONEY(VALUE(BNOPARAMVAL))
+
+[* Global Individual Limit
+*]
+ BNOPARAMFIND="GIL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMINSTINDIVLIMIT=MONEY(VALUE(BNOPARAMVAL))
+
+[* Cross-Account Access
+*]
+ BNOPARAMFIND="XA"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMCROSSACCTACCESS=TRUE
+   ELSE 
+    PARAMCROSSACCTACCESS=FALSE 
+  END
+
+[* Allow Memo Mode Transfers
+*]
+ BNOPARAMFIND="MMXF"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMALLOWMMTRANSFER=TRUE
+   ELSE 
+    PARAMALLOWMMTRANSFER=FALSE 
+  END
+
+[* Transfer From Type - If parameter is not 'SHARE[S]',
+** 'LOAN[S]' or 'BOTH' then defaults to NTSLTYPESHARE ('SHARES')
+*]
+ BNOPARAMFIND="XT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF UPPERCASE(BNOPARAMVAL)="LOAN" OR
+      UPPERCASE(BNOPARAMVAL)="LOANS" THEN
+    PARAMNTSLTYPE=BNOSLTYPELOAN
+   ELSE IF UPPERCASE(BNOPARAMVAL)="SHARE" OR
+           UPPERCASE(BNOPARAMVAL)="SHARES" THEN
+    PARAMNTSLTYPE=BNOSLTYPESHARE
+   ELSE IF UPPERCASE(BNOPARAMVAL)="BOTH" THEN
+    PARAMNTSLTYPE=BNOSLTYPESHARELOAN
+   ELSE
+    PARAMNTSLTYPE=BNOSLTYPESHARE
+  END
+
+[* Allow manual transfer edits. If "TRUE" then ALL edits are allowed, else if NOT
+** false then edits are allowed by user number, otherwise, edits allowed
+** defaults to FALSE
+*]
+ BNOPARAMFIND="AE"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMALLOWEDIT=ALLOWEDITTRUE
+   ELSE IF CHARACTERSEARCH("NOFALSE",UPPERCASE(BNOPARAMVAL))=0 AND
+           BNOPARAMVAL<>"" THEN
+    DO
+     PARAMALLOWEDIT=ALLOWEDITUSER
+     IF BNOPARAMVAL<>"" THEN
+      PARAMEDITUSERSLIST=BNOPARAMVAL
+    END        
+  END
+
+[**TODO: check why this is not in the CFG]
+[* Validation name types
+*]
+ BNOPARAMFIND="VNT"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  PARAMVALIDATIONNAMETYPES=BNOPARAMVAL
+
+[* Allow transfers to certificates IF member elects to transfer to a
+** specific ID
+*]
+ BNOPARAMFIND="ACE"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMALLOWABLESHARECODES(SHARECODECERT)=TRUE
+   ELSE 
+    PARAMALLOWABLESHARECODES(SHARECODECERT)=FALSE 
+  END
+
+[* Allow transfers to club shares IF member elects to transfer to a
+** specific ID
+*]
+ BNOPARAMFIND="ACL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMALLOWABLESHARECODES(SHARECODECLUB)=TRUE
+   ELSE 
+    PARAMALLOWABLESHARECODES(SHARECODECLUB)=FALSE 
+  END
+
+[* Share ID optional on new member transfers
+*]
+ BNOPARAMFIND="SIDO"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",UPPERCASE(BNOPARAMVAL))>0 THEN
+    PARAMSIDOPTIONAL=TRUE
+   ELSE 
+    PARAMSIDOPTIONAL=FALSE 
+  END
+
+[* Share/Loan ID Length Test
+*]
+ BNOPARAMFIND="IL"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF VALUE(BNOPARAMVAL)=TESTIDLENGTH2 THEN
+    PARAMIDLENTEST=TESTIDLENGTH2
+   ELSE IF VALUE(BNOPARAMVAL)=TESTIDLENGTH4 THEN
+    PARAMIDLENTEST=TESTIDLENGTH4
+  END
+
+[* Default Transaction Comment
+*]
+ BNOPARAMFIND="TC"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMTRANCOMMENT=SEGMENT(BNOPARAMVAL,1,19)
+
+[* Member Name sub-title label
+*]
+ BNOPARAMFIND="LBLMN"
+ CALL BNOGETPARAMVAL
+ PARAMLBLMEMBERNAME(PARAMMSGTAGENGLISH)=BNOPARAMVALLANG(PARAMMSGTAGENGLISH)
+ PARAMLBLMEMBERNAME(PARAMMSGTAGSPANISH)=BNOPARAMVALLANG(PARAMMSGTAGSPANISH)
+
+[* ID sub-title label
+*]
+ BNOPARAMFIND="LBLID"
+ CALL BNOGETPARAMVAL
+ PARAMLBLID(PARAMMSGTAGENGLISH)=BNOPARAMVALLANG(PARAMMSGTAGENGLISH)
+ PARAMLBLID(PARAMMSGTAGSPANISH)=BNOPARAMVALLANG(PARAMMSGTAGSPANISH)
+
+[* Test parameters
+*]
+ BNOPARAMFIND="DEBUGMODE"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND BNOPARAMVAL<>"" THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",BNOPARAMVAL)>0 THEN
+    PARAMDEBUGMODE=BNODEBUGMODEON
+   ELSE 
+    PARAMDEBUGMODE=BNODEBUGMODEOFF 
+  END
+
+ BNOPARAMFIND="TESTMODE"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  DO
+   IF CHARACTERSEARCH("TRUEYES1ON",BNOPARAMVAL)>0 THEN
+    PARAMTESTMODE=TRUE
+  END
+
+ BNOPARAMFIND="TESTEC"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE AND
+    BNOPARAMVAL<>"" THEN
+  PARAMTESTEC=VALUE(BNOPARAMVAL)
+
+ BNOPARAMFIND="TESTACCOUNTLIST"
+ CALL BNOGETPARAMVAL
+ IF BNOPARAMFOUND=TRUE THEN
+  PARAMTESTACCTLIST=BNOPARAMVAL
+END [PROCEDURE]
+
+PROCEDURE PARAMPOSTPROCESS
+[* Post-processing of the param/cfg variables
+*]
+
+[* After the parameters have been read, set the active language based on param value and language passed to PO
+*]
+ CALL GETUSELANGUAGE
+
+[* PowerOn-specific post processing goes here
+*]
+ LELISTINPUT=PARAMINELIGACCTSLIST
+ IF LELISTINPUT="" THEN
+  LELISTINPUT="NONE"
+ CALL LISTEXPAND
+ FOR TMPLOOP=0 TO MAXACCTTYPES
+  DO
+   PARAMINELIGACCTS(TMPLOOP)=LELIST(TMPLOOP)
+  END
+
+ LELISTINPUT=PARAMWARNINGSACCTLIST
+ IF LELISTINPUT="" THEN
+  LELISTINPUT="NONE"
+ CALL LISTEXPAND
+ FOR TMPLOOP=0 TO MAXWARNINGTYPES
+  DO
+   PARAMWARNINGSACCT(TMPLOOP)=LELIST(TMPLOOP)
+  END
+
+ IF PARAMALLOWEDIT=ALLOWEDITUSER THEN
+  DO
+   LELISTINPUT=PARAMEDITUSERSLIST
+   CALL LISTEXPAND
+   FOR TMPLOOP=0 TO MAXUSERNUM
+    DO
+     PARAMEDITUSERS(TMPLOOP)=LELIST(TMPLOOP)
+    END
+  END
+
+[* Update debug mode based on debug parameter and the install date parameter
+*]
+ IF PARAMDEBUGMODE<>BNODEBUGMODEUNDEFINED THEN
+  BNODEBUGMODE=PARAMDEBUGMODE
+ ELSE IF PARAMPROGINSTALLDATE<>DATENULL THEN
+  DO
+   IF PARAMPROGINSTALLDATE+BNODEBUGPRINTINFODAYS>SYSTEMDATE THEN
+    BNODEBUGMODE=BNODEBUGMODEON
+   ELSE 
+    BNODEBUGMODE=BNODEBUGMODEOFF 
+  END 
+END [PROCEDURE]
+
+PROCEDURE GETPARAMMSGS
+
+ PARAMMSGALLCOUNT=0
+ FOR BNOPARAMLOOP=1 TO BNOCFGPARAMCOUNT
+  DO
+   PARAMMSGTAGINDEX=1 
+   PARAMMSGTAGFOUND=FALSE
+   WHILE PARAMMSGTAGINDEX<=PARAMMSGTAGSCOUNT AND PARAMMSGTAGFOUND=FALSE
+    DO
+     BNOPARAMTMP=BNOCFGPARAM(BNOPARAMLOOP)
+     CALL PARAMEXTRACTLANG
+     IF PARAMMSGTAGS(PARAMMSGTAGINDEX)=BNOPARAMTMP THEN
+      DO
+       PARAMMSGTAGFOUND=TRUE
+       IF BNOCFGPARAMVAL(BNOPARAMLOOP)<>"" THEN
+        PARAMMSGDEFINED(PARAMMSGTAGINDEX)=TRUE
+
+       IF PARAMMSGALLCOUNT<PARAMMSGALLMAX THEN
+        DO
+         PARAMMSGALLLANG=PARAMMSGTAGLANG
+         PARAMMSGALLTAG=BNOPARAMTMP
+         PARAMMSGALLVAL=BNOCFGPARAMVAL(BNOPARAMLOOP)
+         CALL PARAMMSGALLADD
+        END 
+      END
+     PARAMMSGTAGINDEX=PARAMMSGTAGINDEX+1
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE PARAMMSGALLADD
+[* Update the PARAMMSGALL arrays
+**
+**  PASS    PARAMMSGALLLANG      Language (English or Spanish)
+**  PASS    PARAMMSGALLTAG       Message tag
+**  PASS    PARAMMSGALLVAL       Message text/value
+*]
+
+ PARAMMSGALLCOUNT=PARAMMSGALLCOUNT+1
+ PARAMMSGALLTAGSLANG(PARAMMSGALLCOUNT)=PARAMMSGALLLANG
+ PARAMMSGALLTAGS(PARAMMSGALLCOUNT)=PARAMMSGALLTAG
+ BNOTEXT=PARAMMSGALLVAL
+ CALL BNOCLEANUPTEXT
+ PARAMMSGALL(PARAMMSGALLCOUNT)=BNOTEXT
+END [PROCEDURE]
+
+PROCEDURE PARAMMSGALLFIND
+[* Check to see if a tag and message already exists in the PARAMMSGALL arrays
+**
+**  PASS    PARAMMSGALLLANG      Language (English or Spanish)
+**  PASS    PARAMMSGALLTAG       Message tag
+*]
+
+ TMPLOOP=1
+ PARAMMSGALLTAGFOUND=FALSE
+ WHILE TMPLOOP<=PARAMMSGALLCOUNT AND PARAMMSGALLTAGFOUND=FALSE
+  DO
+   IF PARAMMSGALLTAGSLANG(TMPLOOP)=PARAMMSGALLLANG AND
+      PARAMMSGALLTAGS(TMPLOOP)=PARAMMSGALLTAG AND
+      PARAMMSGALL(TMPLOOP)<>"" THEN
+    PARAMMSGALLTAGFOUND=TRUE  
+   TMPLOOP=TMPLOOP+1
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOCFGFILEREAD
+[* Open and read through the parameter file to create an array of
+** parameter names and associated values.
+**
+**  PASS    BCFGFILENAME      Parameter Letter file name
+**  PASS    BNOCFGPARAMMAX    Maximum number of parameters
+**  
+**  RETURN  BNOCFGFILEFERROR  File open/read error
+**  RETURN  BNOERRORCODE      Error code
+**  RETURN  BNOCFGPARAM(A)    Parameter Name
+**  RETURN  BNOCFGPARAMVAL(A) Parameter Value
+**  RETURN  BNOCFGPARAMCOUNT  Parameters Found
+**
+*]
+ BNOCFGPARAMALLOWDUPS=TRUE
+ BNOCFGFILEFERROR=""
+ BNOCFGPARAMCOUNT=0
+ WHILELIMIT=1000000
+ FILEOPEN("LETTER",BNOCFGFILENAME,"READ",BNOCFGFILENUMBER,BNOCFGFILEFERROR)
+ IF BNOCFGFILEFERROR<>"" THEN
+  DO
+   BNOERRORCODE=BNOERRCODECONFIGREAD
+   BNOERRORMODIFIER=BNOERRMODOPEN
+   BNOERRORMODIFIER=BNOCFGFILENAME+" open error - "+BNOCFGFILEFERROR
+   BNODEBUGMSG="Error opening CFG param file: "+BNOCFGFILEFERROR
+   CALL BNODEBUGMSGADD
+  END
+ ELSE
+  DO
+   WHILE BNOCFGFILEFERROR="" AND BNOCFGPARAMCOUNT<BNOCFGPARAMMAX 
+    DO
+     FILEREADLINE(BNOCFGFILENUMBER,BNOCFGFILELINE,BNOCFGFILEFERROR)
+     IF BNOCFGFILEFERROR<>"" AND
+        BNOCFGFILEFERROR<>"EOF" THEN
+      DO
+       BNOERRORCODE=BNOERRCODECONFIGREAD
+       BNOERRORMODIFIER=BNOERRMODREAD
+       BNOERRORMODIFIER=BNOCFGFILENAME+" read error - "+BNOCFGFILEFERROR
+       BNODEBUGMSG="Error reading CFG param file: "+BNOCFGFILEFERROR
+       CALL BNODEBUGMSGADD
+      END
+     ELSE
+      DO
+       BNOPOS=CHARACTERSEARCH(BNOCFGFILELINE,":")
+       IF SEGMENT(BNOCFGFILELINE,1,1)<>"*" AND BNOPOS>1 THEN
+        DO
+         BNOTEXT=SEGMENT(BNOCFGFILELINE,1,BNOPOS-1)
+         CALL BNONLTS
+         BNOPARAMTMP=UPPERCASE(BNOTEXT)
+
+         BNOTEXT=SEGMENT(BNOCFGFILELINE,BNOPOS+1,LENGTH(BNOCFGFILELINE))
+         CALL BNONLS
+         BNOPARAMVALTMP=BNOTEXT
+
+         BNOPARAMFOUND=FALSE
+         IF BNOCFGPARAMALLOWDUPS=FALSE THEN 
+          DO
+           FOR BNOTMPLOOP=1 TO BNOCFGPARAMCOUNT
+            DO
+             IF BNOCFGPARAM(BNOTMPLOOP)=BNOPARAMTMP THEN
+              BNOPARAMFOUND=TRUE
+            END
+           IF BNOPARAMFOUND=TRUE THEN
+            DO
+             BNOERRORCODE=BNOERRCODECONFIGVALIDATE
+             BNOERRORMODIFIER=BNOERRMODDUPLICATEPARAM
+             BNOERRORMODIFIER="Duplicate Param file entry("+BNOPARAMTMP+")"
+             BNODEBUGMSG="Duplicate Param file entry: "+BNOPARAMTMP
+             CALL BNODEBUGMSGADD
+            END
+          END
+
+         IF BNOPARAMFOUND=FALSE THEN
+          DO
+           BNOCFGPARAMCOUNT=BNOCFGPARAMCOUNT+1
+           BNOCFGPARAM(BNOCFGPARAMCOUNT)=BNOPARAMTMP
+           BNOCFGPARAMVAL(BNOCFGPARAMCOUNT)=BNOPARAMVALTMP
+          END
+        END  [IF SEGMENT(BNOCFGFILELINE,1,1)<>"*"]
+      END  [IF BNOCFGFILEFERROR=""]
+    END  [WHILE BNOCFGFILEFERROR=""]
+  END
+
+ FILECLOSE(BNOCFGFILENUMBER,BNOCFGFILEFERROR)
+END [PROCEDURE]
+
+PROCEDURE BNOCFGDEBUGADD
+[* Add CFG lines to debug
+*]
+
+ IF BNODEBUGMODE=BNODEBUGMODEON AND
+    BNODEBUGINCLUDEPARAMS=TRUE THEN
+  DO
+   FOR TMPLOOP=1 TO BNOCFGPARAMCOUNT
+    DO
+     BNOTEXT=BNOCFGPARAMVAL(TMPLOOP)
+     CALL BNOCLEANUPTEXT
+     BNODEBUGMSG="PARAM:"+BNOCFGPARAM(TMPLOOP)+"-"+
+                  BNOTEXT
+     CALL BNODEBUGMSGADD
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOGETPARAMVAL
+[* Find requested parameter setting and return value.
+**
+**  PASS    BNOPARAMFIND   Targeted parameter setting
+**  
+**  RETURN  BNOPARAMFOUND  T/F found flag
+**  RETURN  BNOPARAMVAL    Parameter value found
+*] 
+ BNOPARAMFOUND=FALSE
+ BNOPARAMVAL=""
+ BNOPARAMVALLANG(PARAMMSGTAGENGLISH)=""
+ BNOPARAMVALLANG(PARAMMSGTAGSPANISH)=""
+ FOR BNOPARAMLOOP=1 TO BNOCFGPARAMCOUNT
+  DO
+   BNOPARAMTMP=BNOCFGPARAM(BNOPARAMLOOP)
+   CALL PARAMEXTRACTLANG
+   IF BNOPARAMTMP=BNOPARAMFIND THEN
+    DO
+     BNOPARAMVAL=BNOCFGPARAMVAL(BNOPARAMLOOP)
+     BNOPARAMVALLANG(PARAMMSGTAGLANG)=BNOCFGPARAMVAL(BNOPARAMLOOP)
+     BNOPARAMFOUND=TRUE
+     BNOPARAMLOOP=BNOCFGPARAMCOUNT
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE GETERRORDISPLAYMESSAGES
+[* Find the error display lines
+*] 
+ 
+ FOR BNOPARAMLOOP=1 TO BNOCFGPARAMCOUNT
+  DO
+   IF SEGMENT(BNOCFGPARAM(BNOPARAMLOOP),1,3)="EDM" THEN
+    DO
+     BNOPARAMTMP=BNOCFGPARAM(BNOPARAMLOOP)
+     CALL PARAMEXTRACTLANG
+     TMPERRCODE=VALUE(SEGMENT(BNOPARAMTMP,4,6))
+     IF CHARACTERSEARCH(BNOERRDISPLAYLIST,FORMAT("999",TMPERRCODE))>0 THEN
+      DO
+       BNOTEXT=BNOCFGPARAMVAL(BNOPARAMLOOP)
+       CALL BNONTS
+       CALL BNOCLEANUPTEXT
+       TMPDISPLAYLINE=BNOTEXT
+       CALL PARAMERRDISPLAYADD
+      END
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE PARAMEXTRACTLANG
+[* Extract language suffix and set PARAMMSGTAGLANG.  Return updated BNOPARAMTMP variable.
+*]
+
+ PARAMMSGTAGLANG=PARAMMSGTAGENGLISH
+ TAGSFXPOS=CHARACTERSEARCH(BNOPARAMTMP,PARAMMSGTAGENGLISHSFX)
+ IF TAGSFXPOS<>0 AND
+    TAGSFXPOS=LENGTH(BNOPARAMTMP)-2 THEN
+  BNOPARAMTMP=SEGMENT(BNOPARAMTMP,1,LENGTH(BNOPARAMTMP)-3)
+ TAGSFXPOS=CHARACTERSEARCH(BNOPARAMTMP,PARAMMSGTAGSPANISHSFX)
+ IF TAGSFXPOS<>0 AND
+    TAGSFXPOS=LENGTH(BNOPARAMTMP)-2 THEN
+  DO
+   BNOPARAMTMP=SEGMENT(BNOPARAMTMP,1,LENGTH(BNOPARAMTMP)-3)
+   PARAMMSGTAGLANG=PARAMMSGTAGSPANISH
+  END 
+END [PROCEDURE]
+
+PROCEDURE PARAMERRDISPLAYADD
+
+ IF PARAMERRDISPLAYCOUNT<PARAMERRDISPLAYMAX THEN
+  DO
+   PARAMERRDISPLAYCOUNT=PARAMERRDISPLAYCOUNT+1
+   PARAMERRDISPLAYERRCODES(PARAMERRDISPLAYCOUNT)=TMPERRCODE
+   PARAMERRDISPLAYLANG(PARAMERRDISPLAYCOUNT)=PARAMMSGTAGLANG
+   BNOTEXT=TMPDISPLAYLINE
+   CALL BNONTS
+   PARAMERRDISPLAYLINES(PARAMERRDISPLAYCOUNT)=BNOTEXT
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOERRDISPLAYLISTADD
+[* Add to the list of errors that support error display messages.  Used to 
+** register those error codes that support display messages.
+*]
+
+ IF BNOERRDISPLAYLIST<>"" THEN
+  BNOERRDISPLAYLIST=BNOERRDISPLAYLIST+","
+ BNOERRDISPLAYLIST=BNOERRDISPLAYLIST+FORMAT("999",BNOERRDISPLAYCODE)
+END [PROCEDURE]
+
+PROCEDURE GETBNOERRDISPLAYMSG
+
+ PARAMERRDISPLAYINDEX=1
+ BNOERRDISPLAYMSGCOUNT=0
+ WHILE PARAMERRDISPLAYINDEX<=PARAMERRDISPLAYCOUNT AND
+       BNOERRDISPLAYMSGCOUNT<BNOERRDISPLAYMSGSMAX
+  DO
+   IF PARAMERRDISPLAYERRCODES(PARAMERRDISPLAYINDEX)=BNOERRCODE AND
+      PARAMERRDISPLAYLANG(PARAMERRDISPLAYINDEX)=USELANGUAGE THEN
+    DO
+     BNOERRDISPLAYMSGCOUNT=BNOERRDISPLAYMSGCOUNT+1
+     BNOERRDISPLAYMSG(BNOERRDISPLAYMSGCOUNT)=PARAMERRDISPLAYLINES(PARAMERRDISPLAYINDEX)
+    END  
+   PARAMERRDISPLAYINDEX=PARAMERRDISPLAYINDEX+1
+  END
+
+ IF BNOERRDISPLAYMSGCOUNT=1 AND
+    BNOERRDISPLAYMSG(1)="" THEN
+  BNOERRDISPLAYMSGCOUNT=0  
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  File Maintenance Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE EDITEXPIRETRANSFER
+[* Expire an existing transfer - edit state
+**
+*]
+ FMPERFORM REVISE SHARE NEWTRANSRCID TRANSFER LOC RGTARGETSLTRANLOC (0,0,TRANERROR)
+  DO
+   SET EFFECTIVEDATE TO DATENULL
+   SET EXPIRATIONDATE TO SYSTEMDATE
+  END
+ IF TRANERROR<>"" THEN
+  BNOERRORCODE=BNOERRCODEPROCXFER
+END [PROCEDURE]
+
+PROCEDURE DELETEEXPIRETRANSFER
+[* Expire an existing transfer - DELETE state
+**
+*]
+
+ SLTRANSFERFOUND=FALSE
+ FOR EACH SHARE
+  DO
+   FOR EACH SHARE TRANSFER WITH (SHARE TRANSFER:LOCATOR=RGTARGETSLTRANLOC)
+    DO
+     SLTRANSFERFOUND=TRUE
+     NEWTRANRECIPACCT=SHARE TRANSFER:ACCOUNTNUMBER
+     NEWTRANRECIPSLIDTYPE=SHARE TRANSFER:IDTYPE
+     NEWTRANRECIPSLID=SHARE TRANSFER:ID
+     NEWTRANSRCACCT=ACCOUNT:NUMBER
+     NEWTRANSRCID=SHARE:ID
+     NEWTRANFREQ=SHARE TRANSFER:FREQUENCY
+     NEWTRANFREQCHR=TRANSFERFREQCHR(TRANFREQALT,NEWTRANFREQ)
+     NEWTRANSTARTDATE=SHARE TRANSFER:EFFECTIVEDATE
+     IF NEWTRANSTARTDATE=DATENULL THEN
+      NEWTRANSTARTDATE=SHARE TRANSFER:NEXTDATE
+     NEWTRANDAY1=SHARE TRANSFER:DAY1
+     NEWTRANDAY2=SHARE TRANSFER:DAY2
+     NEWTRANAMOUNT=SHARE TRANSFER:AMOUNT
+     NEWTRANSRCIDTYPE=SLIDTYPESHARECHR
+
+     NEWTRANRECIPLONGNAME=NAME:LONGNAME
+     CALL GETRECIPSLDATA
+    END
+  END
+
+ IF SLTRANSFERFOUND=FALSE THEN
+  BNOERRORCODE=BNOERRCODEPROCXFER
+ ELSE
+  DO
+   FMPERFORM REVISE SHARE NEWTRANSRCID TRANSFER LOC RGTARGETSLTRANLOC (0,0,TRANERROR)
+    DO
+     SET EFFECTIVEDATE TO DATENULL
+     SET EXPIRATIONDATE TO SYSTEMDATE
+    END
+   IF TRANERROR<>"" THEN
+    BNOERRORCODE=BNOERRCODEPROCXFER
+  END
+END [PROCEDURE]
+
+PROCEDURE CREATETRANSFER
+[* Create Transfer Record. If creating a new transfer record as a result
+** of an edit, validate net increase/decrease against daily limits..
+*]
+ BNODEBUGMSG="*** PROCEDURE CREATETRANSFER"
+ CALL BNODEBUGMSGADD
+
+ VALIDLIMITSEXCEEDED=FALSE
+ IF PARAMENFORCELIMITS=TRUE THEN
+  DO
+   CALL SETUPLIMITS
+
+   IF @RGSTATE=STATEEDITTRAN THEN
+    DO
+     TMPAMOUNT=MBRAMOUNTACTUAL-NEWTRANSRCAMOUNT+NEWTRANAMOUNT
+     IF TMPAMOUNT>MBRAMOUNTLIMITCALC OR
+        NEWTRANAMOUNT>MBRINDIVLIMITCALC THEN
+      VALIDLIMITSEXCEEDED=TRUE
+    END
+   ELSE
+    DO
+     IF MBRCOUNTACTUAL+1>MBRCOUNTLIMITCALC OR
+        MBRAMOUNTACTUAL+NEWTRANAMOUNT>MBRAMOUNTLIMITCALC OR
+        NEWTRANAMOUNT>MBRINDIVLIMITCALC THEN
+      VALIDLIMITSEXCEEDED=TRUE
+    END
+  END
+
+ IF VALIDLIMITSEXCEEDED=TRUE THEN
+  BNOERRORCODE=BNOERRCODEINVINPUT
+ ELSE
+  DO
+   IF NEWTRANFREQ=0 AND
+      SOONESTAVAILABLE=TRUE AND
+      NEWTRANDAY1=0 AND
+      NEWTRANDAY2=0 THEN
+    TRANTYPE=TRANTYPEIMMEDIATE
+   ELSE
+    TRANTYPE=TRANTYPEREGULAR
+
+   IF TRANTYPE=TRANTYPEIMMEDIATE THEN
+    CALL CREATEIMMEDIATETRANSFER
+   ELSE
+    CALL CREATEFUTURETRANSFER
+
+   IF TRANERROR<>"" THEN
+    BNOERRORCODE=BNOERRCODEPROCXFER 
+  END
+END [PROCEDURE]
+
+PROCEDURE CREATEIMMEDIATETRANSFER
+[* Perform an immediate transfer
+*]
+ BNODEBUGMSG="*** PROCEDURE CREATEIMMEDIATETRANSFER"
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG=FORMAT("NEWTRANAMOUNT:###,##9.99",NEWTRANAMOUNT)+
+             "   NEWTRANCOMMENT:"+NEWTRANCOMMENT
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="SOURCE - NEWTRANSRCACCT:"+NEWTRANSRCACCT+
+            "   NEWTRANSRCIDTYPE:"+NEWTRANSRCIDTYPE+
+            "   NEWTRANSRCID: "+NEWTRANSRCID
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="RECIP - NEWTRANRECIPACCT:"+NEWTRANRECIPACCT+
+            "   NEWTRANRECIPSLIDTYPECHR:"+NEWTRANRECIPSLIDTYPECHR+
+            "   NEWTRANRECIPSLID:"+NEWTRANRECIPSLID
+ CALL BNODEBUGMSGADD
+
+[* If comment is 16 characters or less, it will be stored as a transaction
+** description. PARMTRANCOMMENT allows the CU to seed the comment with
+** a std value to force the comment to be over 16 characters and thus
+** always be a tran comment instead of a tran description.
+*]
+ TMPCOMMENT1=PARAMTRANCOMMENT
+ IF TMPCOMMENT1<>"" AND
+    NEWTRANCOMMENT<>"" THEN
+  TMPCOMMENT1=TMPCOMMENT1+" "
+ TMPCOMMENT1=TMPCOMMENT1+NEWTRANCOMMENT
+[* 3.2.1 - Enforce max length on comment to avoid tran error.
+*]
+ TRANPERFORM XF (0,SEQ1,SEQ2,CAC,CN,TRANERROR)
+  DO
+   SET FMACCT TO NEWTRANSRCACCT
+   SET FMTYPE TO NEWTRANSRCIDTYPE
+   SET FMID   TO NEWTRANSRCID
+
+   SET TOACCT TO NEWTRANRECIPACCT
+   SET TOTYPE TO NEWTRANRECIPSLIDTYPECHR
+   SET TOID   TO NEWTRANRECIPSLID
+   SET REGE   TO 1
+   SET AMOUNT TO NEWTRANAMOUNT
+   SET COMMENT:1 TO SEGMENT(TMPCOMMENT1,1,39)
+  END [TRANPERFORM]
+
+ BNODEBUGMSG="S/L TRANPERFORM TRANERROR:"+TRANERROR
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE CREATEFUTURETRANSFER
+[* NEED TO ADD >> Perform a final check to make sure limits aren't being exceeded and if so
+** return an error message
+*]
+
+ TMPNUM=0
+ IF UPPERCASE(NEWTRANRECIPSLIDTYPECHR)=SLIDTYPELOANCHR THEN
+  TMPNUM=1
+ IF TRANERROR="" THEN
+  DO
+   FMPERFORM CREATE SHARE NEWTRANSRCID TRANSFER LOC AFTERLAST (0,0,NEWSLTRANSFERLOC,TRANERROR)
+    DO
+     SET TYPE TO 3
+     SET ACCOUNTNUMBER TO NEWTRANRECIPACCT
+     SET IDTYPE TO TMPNUM
+     SET ID TO NEWTRANRECIPSLID
+     SET AMOUNT TO NEWTRANAMOUNT
+     SET EFFECTIVEDATE TO NEWTRANSTARTDATE
+     SET NEXTDATE TO NEWTRANSTARTDATE
+     SET FREQUENCY TO NEWTRANFREQ
+     SET DAY1 TO NEWTRANDAY1
+     SET DAY2 TO NEWTRANDAY2
+    END
+  END
+
+ BNODEBUGMSG="S/L CREATE TRANSFER TRANERROR:"+TRANERROR
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="NEWTRANSRCID:"+NEWTRANSRCID+"  "+
+             "NEWTRANRECIPACCT:"+NEWTRANRECIPACCT+"  "+
+             "NEWTRANRECIPSLID:"+NEWTRANRECIPSLID+"  "+
+             "NEWTRANRECIPSLIDTYPECHR:"+NEWTRANRECIPSLIDTYPECHR
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE UPDATEPREFTOTALS
+[* Update Preference record totals based upon the tran type and amount
+*]
+ BNODEBUGMSG="*** PROCEDURE UPDATEPREFTOTALS"
+ CALL BNODEBUGMSGADD
+
+ CALL READPREFSETTINGS
+
+ BNODEBUGMSG=FORMAT("PRE UPDATE XFER AMOUNT:###,##9.99",MBRAMOUNTACTUAL)
+ CALL BNODEBUGMSGADD
+
+ IF @RGSTATE=STATECREATETRAN THEN
+  DO
+   IF SYSTEMDATE=MBRLASTTRANDATE THEN
+    DO
+     NEWXFERCOUNT=MBRCOUNTACTUAL+1
+     NEWXFERAMOUNT=MBRAMOUNTACTUAL+NEWTRANAMOUNT
+     NEWLASTTRANDATE=SYSTEMDATE
+    END
+   ELSE
+    DO
+     NEWXFERCOUNT=1
+     NEWXFERAMOUNT=NEWTRANAMOUNT
+     NEWLASTTRANDATE=SYSTEMDATE
+    END
+  END
+ ELSE IF @RGSTATE=STATEDELETETRAN THEN
+  DO
+[* Determine if transfer being deleted was created on the system date and
+** if so, deduct the transfer values from the daily totals.
+*]
+   TARGETTRANSFERLOC=RGTARGETSLTRANLOC
+   CALL FINDTRANCREATEDATE
+
+   IF TRANCREATEDATEFOUND=TRUE AND
+      TRANSFERCREATEDATE=SYSTEMDATE THEN
+    DO
+[*reduce the ttl transfer count by 1 and the ttl amount by transfer amount
+*]
+     NEWXFERCOUNT=MBRCOUNTACTUAL-1
+     NEWXFERAMOUNT=MBRAMOUNTACTUAL-NEWTRANAMOUNT
+     NEWLASTTRANDATE=SYSTEMDATE
+    END
+  END
+ ELSE IF @RGSTATE=STATEEDITTRAN THEN
+  DO
+   TARGETTRANSFERLOC=RGTARGETSLTRANLOC
+   CALL FINDTRANCREATEDATE
+
+   NEWXFERCOUNT=MBRCOUNTACTUAL
+   NEWXFERAMOUNT=MBRAMOUNTACTUAL-NEWTRANSRCAMOUNT+NEWTRANAMOUNT
+   NEWLASTTRANDATE=SYSTEMDATE
+  END
+
+ BNODEBUGMSG=FORMAT("NEWXFERCOUNT:###,##9.99",NEWTRANSRCAMOUNT)+
+             FORMAT("  NEWXFERCOUNT:999   ",NEWXFERCOUNT)+
+             FORMAT("  XFERAMOUNT:###,##9.99",NEWXFERAMOUNT)+
+             FORMAT("  NEWLASTTRANDATE:99/99/99",NEWLASTTRANDATE)
+ CALL BNODEBUGMSGADD
+
+ IF @RGSTATE=STATECREATETRAN OR
+   (@RGSTATE=STATEEDITTRAN AND
+    TRANCREATEDATEFOUND=TRUE AND
+    TRANSFERCREATEDATE=SYSTEMDATE) OR
+   (@RGSTATE=STATEDELETETRAN AND
+    TRANCREATEDATEFOUND=TRUE AND
+    TRANSFERCREATEDATE=SYSTEMDATE) THEN
+  DO
+   FMPERFORM REVISE PREFERENCE LOC @PREFLOCATOR (0,0,PREFUPDATEERROR)
+    DO
+     SET XFERCOUNT TO NEWXFERCOUNT
+     SET XFERAMOUNT TO NEWXFERAMOUNT
+     SET LASTTRANDATE TO NEWLASTTRANDATE
+    END
+  END
+
+ BNODEBUGMSG="PREFUPDATEERROR:"+PREFUPDATEERROR
+ CALL BNODEBUGMSGADD
+
+ CALL READPREFSETTINGS
+
+ BNODEBUGMSG=FORMAT("POST UPDATE XFER AMOUNT:###,##9.99",MBRAMOUNTACTUAL)
+ CALL BNODEBUGMSGADD
+END
+
+PROCEDURE EXPIRERECIPIENT
+[* Delete targeted recipient record (External Account) and output
+** success or error code detail. Include updated current state in
+** output
+**  PASS    RGRECIPLOCATOR  Locator code of record to delete
+**  RETURN  FMERROR         Expiration attempt error attempt return
+**  RETURN  BNOERRORCODE    Error code if attempt failed
+*]
+ FMPERFORM REVISE EXTERNALACCOUNT LOC RGRECIPLOCATOR (0,0,FMERROR)
+  DO
+   SET EXPIRATIONDATE TO SYSTEMDATE
+  END
+ IF FMERROR<>"" THEN
+  BNOERRORCODE=BNOERRCODEPROCRECIP
+END [PROCEDURE]
+
+PROCEDURE CREATERECIPACCT
+[* Create a new recipient's account for future use
+** PASS   NEWTRANNICKNAME
+*]
+ BNODEBUGMSG="** PROCEDURE CREATERECIPACCT"
+ CALL BNODEBUGMSGADD
+
+ TMPEXPIREDATE=DATENULL
+
+ EXTFINAME="M2M:"+NEWTRANNICKNAME
+ EXTACCTNUM=NEWTRANRECIPACCT+NEWTRANRECIPSLIDTYPECHR+NEWTRANRECIPSLID
+
+ BNODEBUGMSG="NEWTRANNICKNAME:"+NEWTRANNICKNAME
+ CALL BNODEBUGMSGADD
+
+ EXTPRIMARY=UPPERCASE(NEWTRANFIRST3)
+ RECIPFOUND=FALSE
+ RECIPEXPIREDATE=DATENULL
+ TMPLOCATOR=0
+ FOR EACH EXTERNALACCOUNT WITH (EXTERNALACCOUNT:NUMBER=EXTACCTNUM AND
+                                EXTERNALACCOUNT:PRIMARYACCOUNTHOLDERNAME=EXTPRIMARY AND
+                                EXTERNALACCOUNT:STATUS=EXTACCTSTATUSAPPROVED)
+  DO
+   BNODEBUGMSG=FORMAT("TESTING EXT REC:9999",EXTERNALACCOUNT:LOCATOR)+
+               "  FINAME:"+EXTERNALACCOUNT:FINANCIALINSTITUTIONNAME+
+               "  NUMBER:"+EXTERNALACCOUNT:NUMBER+
+               "  ACCTHLDRNAME:"+EXTERNALACCOUNT:PRIMARYACCOUNTHOLDERNAME+
+               FORMAT("  STATUS:9",EXTERNALACCOUNT:STATUS)
+   CALL BNODEBUGMSGADD
+
+   RECIPFOUND=TRUE
+   RECIPEXPIREDATE=EXTERNALACCOUNT:EXPIRATIONDATE
+   TMPLOCATOR=EXTERNALACCOUNT:LOCATOR
+  END UNTIL RECIPFOUND=TRUE
+
+ IF RECIPFOUND=TRUE AND
+    RECIPEXPIREDATE<>TMPEXPIREDATE THEN
+  DO
+   FMPERFORM REVISE EXTERNALACCOUNT LOC TMPLOCATOR (0,0,FMERROR)
+    DO
+     SET EXPIRATIONDATE TO TMPEXPIREDATE
+    END
+  END
+ ELSE IF RECIPFOUND=FALSE THEN
+  DO
+   FMPERFORM CREATE EXTERNALACCOUNT LOC AFTERLAST (0,0,NEWRECIPACCTLOC,FMERROR)
+    DO
+     SET FINANCIALINSTITUTIONNAME TO EXTFINAME
+     SET NUMBER TO EXTACCTNUM
+     SET PRIMARYACCOUNTHOLDERNAME TO EXTPRIMARY
+     SET STATUS TO EXTACCTSTATUSAPPROVED
+     SET EXPIRATIONDATE TO TMPEXPIREDATE
+    END
+  END
+
+ BNODEBUGMSG=FORMAT("RECIPFOUND:9",RECIPFOUND)+FORMAT("   RECIPEXPIREDATE:99/99/99",RECIPEXPIREDATE)
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="CREATE RECIP - EXTFINAME:"+EXTFINAME
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="  EXTACCTNUM:"+EXTACCTNUM+
+             "  EXTPRIMARY:"+EXTPRIMARY+FORMAT("  EXTSTATUS:9",EXTACCTSTATUSAPPROVED)+
+             FORMAT("  TMPEXPIREDATE:99/99/99",TMPEXPIREDATE)
+ CALL BNODEBUGMSGADD
+ BNODEBUGMSG="FMERROR:"+FMERROR
+ CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  JSON Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE JSONCURRENTSTATE
+[* Member's Preference Record limits and counts
+*]
+
+ JSONPROPNAME="currentState"
+ CALL JSONPROP
+ CALL JSONOBJ
+ NEWLINE
+
+[* Pass S/L ID length value to UX for user input enforcement
+*]
+ JSONPROPNAME="slidLength"
+ CALL JSONPROPFIRST
+ IF PARAMIDLENTEST>0 THEN
+  PRINT PARAMIDLENTEST
+ ELSE
+  PRINT BNOIDLENGTH
+ NEWLINE
+
+ JSONPROPNAME="systemDate"
+ CALL JSONPROP
+ PRINT Q+FORMAT("99/99/9999",SYSTEMDATE)+Q
+ NEWLINE
+
+[Output transferLimits Object]
+ CALL JSONTRANSFERLIMITS
+
+[Output availableShares Array]
+ CALL JSONAVAILABLESHARES
+
+[Output scheduledTransfers Array]
+ CALL JSONSCHEDTRANSFERS
+
+[Output savedRecipients Array]
+ CALL JSONSAVEDRECIPIENTS
+
+[* Start labels
+*]
+ IF PARAMLBLMEMBERNAME(USELANGUAGE)<>"" OR PARAMLBLID(USELANGUAGE)<>"" THEN
+  DO
+   JSONPROPNAME="labels"
+   CALL JSONPROP
+   CALL JSONOBJ
+   NEWLINE
+
+   JSONPROPNAME="memberNameSubTitle"
+   CALL JSONPROPFIRST
+   PRINT Q+PARAMLBLMEMBERNAME(USELANGUAGE)+Q
+   NEWLINE
+
+   JSONPROPNAME="idSubTitle"
+   CALL JSONPROP
+   PRINT Q+PARAMLBLID(USELANGUAGE)+Q
+   NEWLINE
+
+   CALL JSONOBJEND [END labels]
+  END
+
+[* The share ID optional feature is not currently supported in baseline PowerOn.
+ PRINT ","+Q+"shareAcctIdOptional"+Q+": "+JSONBOOLEAN(PARAMSIDOPTIONAL)
+ NEWLINE
+*]
+ CALL JSONOBJEND [END currentState]
+END
+
+PROCEDURE JSONTRANSFERLIMITS
+
+ JSONPROPNAME="transferLimits"
+ CALL JSONPROP
+ CALL JSONOBJ
+ NEWLINE
+
+ JSONPROPNAME="enforceLimits"
+ CALL JSONPROPFIRST
+ PRINT JSONBOOLEAN(PARAMENFORCELIMITS)
+ NEWLINE
+
+ JSONPROPNAME="countLimit"
+ CALL JSONPROP
+ PRINT Q+MBRCOUNTLIMITCALCCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="memberCount"
+ CALL JSONPROP
+ PRINT Q+MBRCOUNTACTUALCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="amountLimit"
+ CALL JSONPROP
+ PRINT Q+MBRAMOUNTLIMITCALCCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="memberAmount"
+ CALL JSONPROP
+ PRINT Q+MBRAMOUNTACTUALCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="perTransferLimit"
+ CALL JSONPROP
+ PRINT Q+MBRINDIVLIMITCALCCHR+Q
+ NEWLINE
+ CALL JSONOBJEND [END transferLimits]
+END
+
+PROCEDURE JSONAVAILABLESHARES
+
+[* Start Available Transfer Shares
+*]
+ JSONPROPNAME="availableShares"
+ CALL JSONPROP
+ CALL JSONARRAY
+
+ TMPCOUNT=1
+ FOR SLLOOP=1 TO BNOSHARECOUNT
+  DO
+   IF BNOSHAREACCTNUM(SLLOOP)<>THISACCOUNT THEN
+    CROSSACCTFLAG=TRUE
+   ELSE
+    CROSSACCTFLAG=FALSE
+
+   IF TMPCOUNT<>1 THEN
+    PRINT ","
+   CALL JSONOBJ
+   NEWLINE
+
+   JSONPROPNAME="transferSLId"
+   CALL JSONPROPFIRST
+   PRINT Q+BNOSHAREACCTNUM(SLLOOP)+SLIDTYPESHARECHR+BNOSHAREID(SLLOOP)+Q
+   NEWLINE
+
+   TMPNUM=BNOSHARECODE(SLLOOP)
+   IF TMPNUM>1 THEN
+    TMPNUM=0
+
+   JSONPROPNAME="type"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPTYPECHR(TMPNUM)+Q
+   NEWLINE
+
+   IF BNOSHARENICKNAME(SLLOOP)<>"" THEN
+    TMPCHR=UPPERCASE(BNOSHARENICKNAME(SLLOOP))
+   ELSE
+    TMPCHR=UPPERCASE(BNOSHAREDESC(SLLOOP))
+   CHARCHECK=TMPCHR
+   CALL CHECKFORINVALIDCHARS
+   TMPCHR=CHARCHECKRETURN
+
+   JSONPROPNAME="name"
+   CALL JSONPROP
+   PRINT Q+TMPCHR+Q
+   NEWLINE
+
+   BNOTEXT=FORMAT("#############9.99",BNOSHAREAVAILBAL(SLLOOP))
+   CALL BNONLS
+   JSONPROPNAME="available"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   JSONPROPNAME="accountOwnerName"
+   CALL JSONPROP
+   PRINT Q+BNOSHAREXACCTPRIMARYNAME(SLLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="crossAccount"
+   CALL JSONPROP
+   PRINT JSONBOOLEAN(CROSSACCTFLAG)
+   NEWLINE
+
+   CALL JSONOBJEND
+
+   TMPCOUNT=TMPCOUNT+1
+  END
+
+[* Start Available Transfer Loans
+*]
+ FOR SLLOOP=1 TO BNOLOANCOUNT
+  DO
+   IF BNOLOANACCTNUM(SLLOOP)<>THISACCOUNT THEN
+    CROSSACCTFLAG=TRUE
+   ELSE
+    CROSSACCTFLAG=FALSE
+
+   IF TMPCOUNT<>1 THEN
+    PRINT ","
+
+   CALL JSONOBJ
+   NEWLINE
+
+   JSONPROPNAME="transferSLId"
+   CALL JSONPROPFIRST
+   PRINT Q+BNOLOANACCTNUM(SLLOOP)+SLIDTYPELOANCHR+BNOLOANID(SLLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="type"
+   CALL JSONPROP
+   PRINT Q+"loan"+Q
+   NEWLINE
+
+   IF BNOLOANNICKNAME(SLLOOP)<>"" THEN
+    TMPCHR=UPPERCASE(BNOLOANNICKNAME(SLLOOP))
+   ELSE
+    TMPCHR=UPPERCASE(BNOLOANDESC(SLLOOP))
+   CHARCHECK=TMPCHR
+   CALL CHECKFORINVALIDCHARS
+   TMPCHR=CHARCHECKRETURN
+
+   JSONPROPNAME="name"
+   CALL JSONPROP
+   PRINT Q+TMPCHR+Q
+   NEWLINE
+
+   BNOTEXT=FORMAT("#############9.99",BNOLOANAVAILCREDIT(SLLOOP))
+   CALL BNONLS
+   JSONPROPNAME="available"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   JSONPROPNAME="accountOwnerName"
+   CALL JSONPROP
+   PRINT Q+BNOLOANXACCTPRIMARYNAME(SLLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="crossAccount"
+   CALL JSONPROP
+   PRINT JSONBOOLEAN(CROSSACCTFLAG)
+   NEWLINE
+
+   CALL JSONOBJEND
+
+   TMPCOUNT=TMPCOUNT+1
+  END
+
+[* End available transfer Shares/Loans
+*]
+ CALL JSONARRAYEND [END availableShares]
+END
+
+PROCEDURE JSONSCHEDTRANSFERS
+
+ JSONPROPNAME="scheduledTransfers"
+ CALL JSONPROP
+ CALL JSONARRAY
+ NEWLINE
+
+ FOR TMPLOOP=1 TO TRANCOUNT
+  DO
+   IF TMPLOOP<>1 THEN
+    PRINT ","
+
+   CALL JSONOBJ
+   NEWLINE
+
+[* Format locator to remove comma(s)
+*]
+   BNOTEXT=FORMAT("#######9",TRANLOC(TMPLOOP))
+   CALL BNONLS
+
+   JSONPROPNAME="transferLoc"
+   CALL JSONPROPFIRST
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+[* Send transfer creation date to UX for user input logic
+*]
+   JSONPROPNAME="transferCreateDate"
+   CALL JSONPROP
+   PRINT Q+FORMAT("99/99/9999",TRANCREATEDATE(TMPLOOP))+Q
+   NEWLINE
+
+   JSONPROPNAME="sourceAccount"
+   CALL JSONPROP
+   PRINT Q+TRANSOURCEACCT(TMPLOOP)+Q
+   NEWLINE
+
+   CHARCHECK=TRANACCOUNTNAME(TMPLOOP)
+   CALL CHECKFORINVALIDCHARS
+   TRANACCOUNTNAME(TMPLOOP)=CHARCHECKRETURN
+
+   JSONPROPNAME="accountName"
+   CALL JSONPROP
+   PRINT Q+TRANACCOUNTNAME(TMPLOOP)+Q
+   NEWLINE
+
+   BNOTEXT=FORMAT("##########9.99",TRANXFERAMOUNT(TMPLOOP))
+   CALL BNONLS
+
+   JSONPROPNAME="transferAmt"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   JSONPROPNAME="recipientName"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPNAME(TMPLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="recipientMemberId"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPACCT(TMPLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="recipientAccountType"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPACCTTYPE(TMPLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="recipientAccountId"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPACCTID(TMPLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="recipientNickname"
+   CALL JSONPROP
+   PRINT Q+TRANRECIPNICKNAME(TMPLOOP)+Q
+   NEWLINE
+
+   JSONPROPNAME="startDate"
+   CALL JSONPROP
+   PRINT Q+FORMAT("99/99/9999",TRANSTARTDATE(TMPLOOP))+Q
+   NEWLINE
+
+   JSONPROPNAME="nextTransferDate"
+   CALL JSONPROP
+   PRINT Q+FORMAT("99/99/9999",TRANNEXTTRANDATE(TMPLOOP))+Q
+   NEWLINE
+
+   JSONPROPNAME="transferFrequency"
+   CALL JSONPROP
+   IF TRANSFERFREQCHR(TRANFREQALT,TRANFREQUENCY(TMPLOOP))<>"" THEN
+    PRINT Q+TRANSFERFREQCHR(TRANFREQALT,TRANFREQUENCY(TMPLOOP))+Q
+   ELSE
+    PRINT Q+TRANSFERFREQCHR(TRANFREQSTD,TRANFREQUENCY(TMPLOOP))+Q
+   NEWLINE
+
+   BNOTEXT=""
+   IF TRANDAY1(TMPLOOP)>0 THEN
+    DO
+     BNOTEXT=FORMAT("#9",TRANDAY1(TMPLOOP))
+     CALL BNONLS
+    END
+   JSONPROPNAME="day1"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   BNOTEXT=""
+   IF TRANDAY2(TMPLOOP)>0 THEN
+    DO
+     BNOTEXT=FORMAT("#9",TRANDAY2(TMPLOOP))
+     CALL BNONLS
+    END
+   JSONPROPNAME="day2"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   JSONPROPNAME="readOnly"
+   CALL JSONPROP
+   PRINT TRANREADONLYSTATUS(TMPLOOP)
+   NEWLINE
+
+   CALL JSONOBJEND
+  END
+
+ CALL JSONARRAYEND
+END
+
+PROCEDURE JSONSAVEDRECIPIENTS
+
+[* Start Saved Recipients
+*]
+ JSONPROPNAME="savedRecipients"
+ CALL JSONPROP
+ CALL JSONARRAY
+ NEWLINE
+
+ TMPCOUNT=1
+ FOR TMPLOOP=1 TO RECIPCOUNT
+  DO
+   IF RECIPLISTEXPIREDATE(TMPLOOP)=DATENULL THEN
+    DO
+     IF TMPCOUNT<>1 THEN
+      PRINT ","
+
+     CALL JSONOBJ
+     NEWLINE
+
+     BNOTEXT=FORMAT("########9",RECIPLOC(TMPLOOP))
+     CALL BNONLS
+     JSONPROPNAME="recipientLoc"
+     CALL JSONPROPFIRST
+     PRINT Q+BNOTEXT+Q
+     NEWLINE
+
+     JSONPROPNAME="recipientName"
+     CALL JSONPROP
+     PRINT Q+RECIPNAME(TMPLOOP)+Q
+     NEWLINE
+
+
+     JSONPROPNAME="recipientMemberId"
+     CALL JSONPROP
+     PRINT Q+SEGMENT(RECIPACCOUNT(TMPLOOP),1,10)+Q
+     NEWLINE
+
+[tek 03/29/22]
+     IF UPPERCASE(SEGMENT(RECIPACCOUNT(TMPLOOP),11,11))=SLIDTYPELOANCHR THEN
+      TMPCHR="loan"
+     ELSE
+      TMPCHR="share"
+
+     JSONPROPNAME="recipientAccountType"
+     CALL JSONPROP
+     PRINT Q+TMPCHR+Q
+     NEWLINE
+
+     JSONPROPNAME="recipientAccountId"
+     CALL JSONPROP
+     PRINT Q+SEGMENT(RECIPACCOUNT(TMPLOOP),12,LENGTH(RECIPACCOUNT(TMPLOOP)))+Q
+     NEWLINE
+
+     JSONPROPNAME="recipientNickname"
+     CALL JSONPROP
+     PRINT Q+RECIPNICKNAME(TMPLOOP)+Q
+     NEWLINE
+     CALL JSONOBJEND
+
+     TMPCOUNT=TMPCOUNT+1
+    END [IF RECIPLISTEXPIREDATE(TMPLOOP)=DATENULL]
+  END [FOR TMPLOOP=1 TO RECIPCOUNT]
+
+ CALL JSONARRAYEND [END savedRecipients]
+END
+
+PROCEDURE JSONSUCCESSTRAN
+[* Generate JSON output for a successful transaction in states: STATECREATETRAN, STATEEDITTRAN and STATEDELETETRAN
+*]
+
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+
+ JSONPROPNAME="history"
+ CALL JSONPROP
+ CALL JSONOBJ
+
+ JSONPROPNAME="change"
+ CALL JSONPROPFIRST
+ CALL JSONOBJ
+
+ JSONPROPNAME="application"
+ CALL JSONPROPFIRST
+ PRINT Q+"member-to-member-transfers-poweron"+Q
+ NEWLINE
+
+ IF @RGSTATE=STATECREATETRAN THEN
+  DO
+   JSONPROPNAME="name"
+   CALL JSONPROP
+   IF TRANTYPE=TRANTYPEIMMEDIATE THEN
+    PRINT Q+"MemberToMemberTransferScheduled"+Q
+   ELSE
+    PRINT Q+"MemberToMemberTransferScheduled"+Q
+  END
+ ELSE IF @RGSTATE=STATEDELETETRAN THEN
+  DO
+   JSONPROPNAME="name"
+   CALL JSONPROP
+   PRINT Q+"MemberToMemberTransferDeleted"+Q
+  END
+ ELSE IF @RGSTATE=STATEEDITTRAN THEN
+  DO
+   JSONPROPNAME="name"
+   CALL JSONPROP
+   PRINT Q+"MemberToMemberTransferUpdated"+Q
+  END
+ NEWLINE
+
+ JSONPROPNAME="toMemberName"
+ CALL JSONPROP
+ PRINT Q+NEWTRANRECIPLONGNAME+Q
+ NEWLINE
+
+ JSONPROPNAME="amount"
+ CALL JSONPROP
+ BNOAMT=NEWTRANAMOUNT
+ CALL BNOAMTTEXT
+ PRINT BNOTEXT
+ NEWLINE
+
+ JSONPROPNAME="toAccountName"
+ CALL JSONPROP
+ PRINT Q+NEWTRANSLDESCRIPTION+Q
+ NEWLINE
+
+ JSONPROPNAME="fromAccountNumberMasked"
+ CALL JSONPROP
+ TMPCHR=NEWTRANSRCACCT+NEWTRANSRCIDTYPE+NEWTRANSRCID
+ TMPCHR="X"+SEGMENT(TMPCHR,LENGTH(TMPCHR)-6,LENGTH(TMPCHR))
+ PRINT Q+TMPCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="toAccountNumberMasked"
+ CALL JSONPROP
+ TMPCHR=NEWTRANRECIPACCT+NEWTRANRECIPSLIDTYPECHR+NEWTRANRECIPSLID
+ TMPCHR="X"+SEGMENT(TMPCHR,LENGTH(TMPCHR)-6,LENGTH(TMPCHR))
+ PRINT Q+TMPCHR+Q
+ NEWLINE
+
+ JSONPROPNAME="nextTransferDate"
+ CALL JSONPROP
+ PRINT Q+FORMAT("99/99/9999",NEWTRANSTARTDATE)+Q
+ NEWLINE
+
+ IF NEWTRANFREQ<>0 THEN
+  DO
+   JSONPROPNAME="frequency"
+   CALL JSONPROP
+   PRINT Q+NEWTRANFREQCHR+Q
+   NEWLINE
+
+   BNOTEXT=""
+   IF NEWTRANDAY1>0 THEN
+    DO
+     BNONUM=NEWTRANDAY1
+     CALL BNONUMTEXT
+    END
+   JSONPROPNAME="day1"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+
+   BNOTEXT=""
+   IF NEWTRANDAY2>0 THEN
+    DO
+     BNONUM=NEWTRANDAY2
+     CALL BNONUMTEXT
+    END
+   JSONPROPNAME="day2"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+  END
+
+ CALL JSONOBJEND [END change]
+ CALL JSONOBJEND [END history]
+
+ JSONPROPNAME="results"
+ CALL JSONPROP
+ CALL JSONOBJ
+
+ JSONPROPNAME="success"
+ CALL JSONPROPFIRST
+ PRINT JSONBOOLEAN(TRUE)
+ NEWLINE
+
+ JSONPROPNAME="memoMode"
+ CALL JSONPROP
+ PRINT JSONBOOLEAN(SYSMEMOMODE)
+ NEWLINE
+
+ JSONPROPNAME="transferLoc"
+ CALL JSONPROP
+ BNONUM=NEWSLTRANSFERLOC
+ CALL BNONUMTEXT
+ PRINT Q+BNOTEXT+Q
+ NEWLINE
+
+ IF NEWTRANRECIPLOC>0 THEN
+  BNONUM=NEWTRANRECIPLOC
+ ELSE
+  BNONUM=NEWRECIPACCTLOC
+ CALL BNONUMTEXT 
+ IF @RGSTATE<>STATEEDITTRAN AND
+    @RGSTATE<>STATEDELETETRAN THEN
+  DO
+   JSONPROPNAME="recipientLoc"
+   CALL JSONPROP
+   PRINT Q+BNOTEXT+Q
+   NEWLINE
+  END
+
+ WHILELIMIT=1000000
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   CALL READPREFSETTINGS
+   CALL CALCLIMITS
+   IF BNOERRORCODE=0 THEN
+    DO
+     CALL BUILDSHARELOANLIST
+     CALL BUILDRECIPLIST
+     CALL BUILDSLTRANSFERLIST
+    END
+  END
+ CALL JSONCURRENTSTATE
+
+ CALL JSONOBJEND [END results]
+END [PROCEDURE]
+
+PROCEDURE JSONSUCCESSDELETERECIP
+
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+
+ JSONPROPNAME="results"
+ CALL JSONPROP
+ CALL JSONOBJ
+
+ JSONPROPNAME="success"
+ CALL JSONPROPFIRST
+ PRINT JSONBOOLEAN(TRUE)
+ NEWLINE
+
+ BNONUM=RGRECIPLOCATOR
+ CALL BNONUMTEXT
+ JSONPROPNAME="recipientLoc"
+ CALL JSONPROP
+ PRINT Q+BNOTEXT+Q
+ NEWLINE
+
+ WHILELIMIT=1000000
+ FOR ACCOUNT ACCOUNT:NUMBER
+  DO
+   CALL READPREFSETTINGS
+   CALL CALCLIMITS
+   IF BNOERRORCODE=0 THEN
+    DO
+     CALL BUILDSHARELOANLIST
+     CALL BUILDRECIPLIST
+     CALL BUILDSLTRANSFERLIST
+    END
+  END
+ CALL JSONCURRENTSTATE
+
+ CALL JSONOBJEND [END results]
+END
+
+PROCEDURE JSONERROR
+[* Output the JSON for an error response
+*]
+
+ CALL BNOERRGETMESSAGE
+
+ IF JSONWRAPINRESULTS=TRUE THEN
+  DO
+   JSONPROPNAME="results"
+   CALL JSONPROPFIRST
+   CALL JSONOBJ
+   NEWLINE
+  END 
+ 
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+
+ JSONPROPNAME="errorCode"
+ CALL JSONPROP
+ PRINT FORMAT("999",BNOERRCODE)
+ NEWLINE
+
+ JSONPROPNAME="loggingErrorMessage"
+ CALL JSONPROP
+ PRINT QQ+BNOERRMESSAGE
+ IF BNOERRMODIFIER<>"" THEN
+  PRINT ": "+BNOERRMODIFIER
+ PRINT QQ
+ NEWLINE
+
+ CALL GETBNOERRDISPLAYMSG
+
+[* Fall back to English message if no Spanish message defined for the error display message
+*]
+ IF BNOERRDISPLAYMSGCOUNT=0 AND
+    USELANGUAGE=PARAMMSGTAGSPANISH THEN
+  DO
+   USELANGUAGE=PARAMMSGTAGENGLISH
+   CALL GETBNOERRDISPLAYMSG
+  END  
+ 
+ IF BNOERRDISPLAYMSGCOUNT>0 THEN
+  DO
+   JSONPROPNAME="errorDisplayMessage"
+   CALL JSONPROP
+
+   CALL JSONARRAY
+   FOR TMPLOOP=1 TO BNOERRDISPLAYMSGCOUNT
+    DO
+     BNOTEXT=BNOERRDISPLAYMSG(TMPLOOP)
+     CALL BNONTS
+     PRINT QQ+BNOTEXT+QQ
+     IF TMPLOOP<BNOERRDISPLAYMSGCOUNT THEN
+      PRINT ","
+     NEWLINE
+    END
+   CALL JSONARRAYEND
+  END
+
+ IF JSONWRAPINRESULTS=TRUE THEN
+  CALL JSONOBJEND [results property]
+END [PROCEDURE]
+
+PROCEDURE JSONSUCCESSPRELOADDATA
+[* Output the JSON for successful responses in the PRELOADDATA state
+*]
+
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+ CALL JSONCURRENTSTATE
+END [PROCEDURE]
+
+PROCEDURE JSONSUCCESSVERIFYMEMBER
+[* Output the JSON for successful responses in the PROCESSDATA state
+*]
+
+ JSONPROPNAME="results"
+ CALL JSONPROPFIRST
+ CALL JSONOBJ
+ NEWLINE
+
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+
+ JSONPROPNAME="verified"
+ CALL JSONPROP
+ PRINT JSONBOOLEAN(TRUE)
+ NEWLINE
+
+ JSONPROPNAME="recipientAccountId"
+ CALL JSONPROP
+ PRINT Q+RGTARGETSLID+Q
+ NEWLINE
+
+ CALL JSONOBJEND [END results property]
+END [PROCEDURE]
+
+PROCEDURE JSONGENERALSPECS
+[* Output the generalSpecifications JSON object
+*]
+
+ JSONPROPNAME="generalSpecifications"
+ CALL JSONPROP
+ CALL JSONOBJ
+ NEWLINE
+
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONPROGRAMINFO
+ CALL JSONSYSTEMINFO
+
+ CALL JSONOBJEND
+END [PROCEDURE]
+
+PROCEDURE JSONPROGRAMINFO
+[* Output the programInfo JSON object
+*]
+
+ JSONPROPNAME="programInfo"
+ CALL JSONPROP
+ CALL JSONOBJ
+ NEWLINE
+
+ JSONPROPNAME="name"
+ CALL JSONPROPFIRST
+ PRINT QQ+BNOPROGRAMNAME+QQ
+ NEWLINE
+ JSONPROPNAME="version"
+ CALL JSONPROP
+ PRINT QQ+BNOPROGRAMVERSION+QQ
+ NEWLINE
+ JSONPROPNAME="lastModDate"
+ CALL JSONPROP
+ PRINT QQ+FORMAT("99/99/99 ",BNOLASTMODDATE)+BNOLASTMODTIME+QQ
+ NEWLINE
+ JSONPROPNAME="language"
+ CALL JSONPROP
+ PRINT USELANGUAGE
+ NEWLINE
+
+ IF BNOPROGRAMNOTE1<>"" THEN
+  DO
+   JSONPROPNAME="note1"
+   CALL JSONPROP
+   PRINT QQ+BNOPROGRAMNOTE1+QQ
+   NEWLINE
+  END 
+ IF BNOPROGRAMNOTE2<>"" THEN
+  DO
+   JSONPROPNAME="note2"
+   CALL JSONPROP
+   PRINT QQ+BNOPROGRAMNOTE2+QQ
+   NEWLINE
+  END 
+
+ CALL JSONOBJEND
+END [PROCEDURE]
+
+PROCEDURE JSONSYSTEMINFO
+[* Output the systemInfo JSON object
+*]
+
+ JSONPROPNAME="systemInfo"
+ CALL JSONPROP
+ CALL JSONOBJ
+ NEWLINE
+
+ JSONPROPNAME="systemDate"
+ CALL JSONPROPFIRST
+ PRINT QQ+FORMAT("99/99/9999",SYSTEMDATE)+QQ
+ NEWLINE
+
+ JSONPROPNAME="slidLength"
+ CALL JSONPROP
+ PRINT BNOIDLENGTH
+ NEWLINE
+
+ JSONPROPNAME="memoMode"
+ CALL JSONPROP
+ PRINT JSONBOOLEAN(SYSMEMOMODE)
+ NEWLINE
+
+ CALL JSONOBJEND
+END [PROCEDURE]
+
+PROCEDURE JSONMSGARRAYS
+ 
+ PARAMMSGTAGINDEX=1 
+ WHILE PARAMMSGTAGINDEX<=PARAMMSGTAGSCOUNT
+  DO
+   MSGTAGSELECTED=FALSE
+   IF PARAMMSGOPTIONAL(PARAMMSGTAGINDEX)=FALSE OR
+     (PARAMMSGOPTIONAL(PARAMMSGTAGINDEX)=TRUE AND
+      PARAMMSGDEFINED(PARAMMSGTAGINDEX)=TRUE) THEN
+    MSGTAGSELECTED=TRUE
+
+   IF MSGTAGSELECTED=TRUE AND
+      PARAMMSGPROPS(PARAMMSGTAGINDEX)="" THEN
+    MSGTAGSELECTED=FALSE
+
+   IF MSGTAGSELECTED=TRUE AND
+      MSGPROPSELECTLIST<>"" THEN
+    DO
+     MSGTAGSELECTED=FALSE
+     BNODATALINE=MSGPROPSELECTLIST
+     BNODLDELIMITER=","
+     CALL BNOPARSEDATALINE
+     FOR BNODLINDEX=1 TO BNODLFIELDCOUNT
+      DO
+       TMPCHR=BNODLFIELD(BNODLINDEX)
+       COLONPOS=CHARACTERSEARCH(TMPCHR,":")
+       IF COLONPOS>1 AND COLONPOS<LENGTH(TMPCHR) THEN
+        DO
+         TMPMSGPROP=SEGMENT(TMPCHR,1,COLONPOS-1)
+         TMPMSGTAG=SEGMENT(TMPCHR,COLONPOS+1,LENGTH(TMPCHR))
+        END
+       ELSE
+        DO 
+         TMPMSGPROP=TMPCHR
+         TMPMSGTAG=""
+        END 
+       
+       IF TMPMSGPROP=PARAMMSGPROPS(PARAMMSGTAGINDEX) AND
+         (TMPMSGTAG="" OR
+          TMPMSGTAG=PARAMMSGTAGS(PARAMMSGTAGINDEX)) THEN
+        MSGTAGSELECTED=TRUE  
+      END
+    END
+
+   IF MSGTAGSELECTED=TRUE THEN 
+    DO
+     JSONPROPNAME=PARAMMSGPROPS(PARAMMSGTAGINDEX)
+     CALL JSONPROP
+     CALL JSONARRAY
+     NEWLINE
+  
+     LINECOUNT=0
+     FOR PARAMMSGALLINDEX=1 TO PARAMMSGALLCOUNT
+      DO
+       IF PARAMMSGALLTAGSLANG(PARAMMSGALLINDEX)=USELANGUAGE AND
+          PARAMMSGALLTAGS(PARAMMSGALLINDEX)=PARAMMSGTAGS(PARAMMSGTAGINDEX) AND
+          LINECOUNT<PARAMMSGMAX(PARAMMSGTAGINDEX) THEN
+        DO
+         LINECOUNT=LINECOUNT+1
+         IF LINECOUNT<>1 THEN
+          PRINT ","
+         PRINT QQ+PARAMMSGALL(PARAMMSGALLINDEX)+QQ
+         NEWLINE 
+        END
+      END
+     CALL JSONARRAYEND
+    END  
+   
+   PARAMMSGTAGINDEX=PARAMMSGTAGINDEX+1
+  END
+
+ MSGPROPSELECTLIST="" 
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  JSON Procedures - Common
+**  --------------------------------------------------------------------
+*]
+PROCEDURE JSONOPEN
+[* Output JSON open char
+*]
+ PRINT "{"
+ NEWLINE
+END [PROCEDURE]
+
+PROCEDURE JSONCLOSE
+[* Output JSON close char
+*]
+ PRINT "}"
+ NEWLINE
+END [PROCEDURE]
+
+PROCEDURE JSONOBJ
+[* Output JSON object open char
+*]
+ PRINT "{"
+END [PROCEDURE]
+
+PROCEDURE JSONOBJEND
+[* Output JSON object close char
+*]
+ PRINT "}"
+ NEWLINE
+END [PROCEDURE]
+
+PROCEDURE JSONARRAY
+[* Output JSON array open char
+*]
+ PRINT "["
+END [PROCEDURE]
+
+PROCEDURE JSONARRAYEND
+[* Output JSON array close char
+*]
+ PRINT "]"
+ NEWLINE
+END [PROCEDURE]
+
+PROCEDURE JSONPROPFIRST
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONPROP
+END
+
+PROCEDURE JSONPROP
+[* Output JSON property name
+*]
+ IF JSONOBJFIRSTPROP=FALSE THEN
+  PRINT ","
+ PRINT QQ+JSONPROPNAME+QQ+":"
+ JSONOBJFIRSTPROP=FALSE
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Debug/Error Processing Procedures
+**  --------------------------------------------------------------------
+*]
+
+PROCEDURE BNOERRINIT
+[* Initialize BNOERR variables
+*]
+
+ BNOERRCOUNT=0
+ BNOERRMESSAGE=""
+ BNOERRDISPLAYMSGCOUNT=0
+END [PROCEDURE]
+
+PROCEDURE BNOERRADD
+[* Adds an error code to the valid list of error codes
+**
+**  PASS    BNOERRCODE       Numeric error code
+**  PASS    BNOERRMESSAGE    Error description
+*]
+
+ IF BNOERRCOUNT<BNOERRMAX THEN
+  DO
+   BNOERRCOUNT=BNOERRCOUNT+1
+   BNOERRCODES(BNOERRCOUNT)=BNOERRCODE
+   BNOERRMESSAGES(BNOERRCOUNT)=BNOERRMESSAGE
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOERRUPDATE
+[* Updates an error code error message.  Used to override the error code
+** message that was assigned in the SETUP division of the PowerOn.
+**
+**  PASS    BNOERRCODE       Numeric error code
+**  PASS    BNOERRMESSAGE    Error description
+*]
+
+ BNOERRTMPCOUNT=1
+ BNOERRFOUND=FALSE
+ WHILE BNOERRTMPCOUNT<=BNOERRCOUNT AND 
+       BNOERRFOUND=FALSE
+  DO
+   IF BNOERRCODES(BNOERRTMPCOUNT)=BNOERRCODE THEN
+    DO
+     BNOERRFOUND=TRUE
+     BNOERRMESSAGES(BNOERRTMPCOUNT)=BNOERRMESSAGE
+    END
+   BNOERRTMPCOUNT=BNOERRTMPCOUNT+1
+  END
+ BNOERRMESSAGE=""
+END [PROCEDURE]
+
+PROCEDURE BNOERRGETMESSAGE
+[* Gets the error message associated with the BNOERRORCODE
+**
+**  PASS    BNOERRORCODE     Numeric error code
+**  PASS    BNOERRORMODIFIER Msg modifier
+**
+**  RETURN  BNOERRCODE       Error code
+**  RETURN  BNOERRMESSAGE    Error description
+**  RETURN  BNOERRMODIFIER   Msg modifier
+*]
+
+ BNOERRMESSAGE=BNOERRUNDEFINED
+ BNOERRMODIFIER=""
+ BNOERRCODE=BNOERRORCODE
+ BNOERRTMPCOUNT=1
+ WHILE BNOERRTMPCOUNT<=BNOERRCOUNT AND 
+       BNOERRMESSAGE=BNOERRUNDEFINED
+  DO
+   IF BNOERRCODES(BNOERRTMPCOUNT)=BNOERRORCODE THEN
+    DO
+     BNOERRMESSAGE=BNOERRMESSAGES(BNOERRTMPCOUNT)
+     IF BNOERRORMODIFIER<>"" THEN
+      BNOERRMODIFIER=BNOERRORMODIFIER
+    END 
+   BNOERRTMPCOUNT=BNOERRTMPCOUNT+1
+  END
+END [PROCEDURE]
+
+PROCEDURE BNODEBUGMSGADD
+[* Add a message line to the debug message array
+**
+** PASS    BNODEBUGMSGMAX     Current array index max lines allowed
+** PASS    BNODEBUGMSG        Debug message to add to array
+**
+** RETURN  BNODEBUGCOUNT      Count of debug message lines
+** RETURN  BNODEBUGMSGLIST(A) Debug lines of data to print
+*]
+ IF BNODEBUGCOUNT<BNODEBUGMSGMAX THEN
+  DO
+   BNODEBUGCOUNT=BNODEBUGCOUNT+1
+   BNODEBUGMSGLIST(BNODEBUGCOUNT)=BNODEBUGMSG
+   BNODEBUGMSG=""
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOJSONRGDATA
+[* Print @RGUSER[CHR,NUM] data passed from the UX in proper JSON format
+**
+**  PASS    DEBUGMODE        Boolean: Print debug data, T/F
+*]
+
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
+  DO
+   JSONPROPNAME="rgData"
+   CALL JSONPROP
+   CALL JSONARRAY
+   NEWLINE
+   PRINT QQ+"CHR1:'"+@RGUSERCHR1+"' "+
+            "CHR2:'"+@RGUSERCHR2+"'"+QQ+","
+   NEWLINE
+   PRINT QQ+"CHR3:'"+@RGUSERCHR3+"' "+
+            "CHR4:'"+@RGUSERCHR4+"'"+QQ+","
+                     
+   NEWLINE
+   PRINT QQ+"CHR5:'"+@RGUSERCHR5+"' "+
+            "NUM1:"+FORMAT("#########9 ",@RGUSERNUM1)+
+            "NUM2:"+FORMAT("#########9 ",@RGUSERNUM2)+
+            "NUM3:"+FORMAT("#########9 ",@RGUSERNUM3)+
+            "NUM4:"+FORMAT("#########9 ",@RGUSERNUM4)+
+            "NUM5:"+FORMAT("#########9",@RGUSERNUM5)+QQ
+   NEWLINE
+   CALL JSONARRAYEND
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOJSONDEBUGDATA
+[* Print debug output in proper JSON format. Requires DEBUGMODE to be
+** on (or true).
+**
+**  PASS  DEBUGMODE           Boolean: Print debug data, T/F
+**  PASS  BNODEBUGMSGLIST(A)  Array of debug messages to print
+**  PASS  BNODEBUGCOUNT       Number of debug lines to print
+*]
+ IF BNODEBUGMODE=BNODEBUGMODEON THEN
+  DO
+   JSONPROPNAME="debugData"
+   CALL JSONPROP
+   CALL JSONARRAY
+   NEWLINE
+   PRINT QQ+"Debug note: Debug lines truncated to 126 characters"+QQ
+   NEWLINE
+   FOR BNODEBUGLOOP=1 TO BNODEBUGCOUNT
+    DO
+     PRINT ","+QQ+Segment(BNODEBUGMSGLIST(BNODEBUGLOOP),1,126)+QQ
+     NEWLINE
+    END
+   CALL JSONARRAYEND
+  END
+END [PROCEDURE]
+
+[*
+**  --------------------------------------------------------------------
+**  Utility Procedures
+**  --------------------------------------------------------------------
+*]
+PROCEDURE BNONLTS
+[* Remove leading and trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ CALL BNONTS
+ CALL BNONLS
+END [PROCEDURE]
+
+PROCEDURE BNONLS
+[* Remove leading spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF LENGTH(BNOTEXT)=0 THEN
+  BNOTEXT=""
+ ELSE
+  DO
+   WHILE (LENGTH(BNOTEXT)>0 AND
+          SEGMENT(BNOTEXT,1,1)=" ")
+    DO
+     BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNONTS
+[* Remove trailing spaces
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  BNOTEXT=SEGMENT(BNOTEXT,1,LENGTH(BNOTEXT))
+END [PROCEDURE]
+
+PROCEDURE BNONLZ
+[* Removes leading zeros. Does not remove leading spaces.
+** '00123' results in '123'.
+** ' 0123' results in ' 0123'
+** '00000' results in ''.
+** As a byproduct, trailing spaces are also removed.
+**
+**  PASS       BNOTEXT
+**  RETURN     BNOTEXT
+*]
+ IF BNOTEXT<>"" THEN
+  DO
+   WHILE (SEGMENT(BNOTEXT,1,1)="0")
+    DO
+     IF LENGTH(BNOTEXT)=1 THEN
+      BNOTEXT=""
+     ELSE
+      BNOTEXT=SEGMENT(BNOTEXT,2,LENGTH(BNOTEXT))
+    END
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOAMTTEXT
+[* Formats an amount string with dollars/cents and decimal and no leading spaces
+**  PASS       BNOAMT
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("#######9.99",BNOAMT)
+ CALL BNONLS
+ IF BNOAMT<$0.00 THEN
+  BNOTEXT="-"+BNOTEXT
+END [PROCEDURE]
+
+PROCEDURE BNOAMTTEXTTRAIL
+[* Formats an amount string with dollars/cents and decimal and no leading spaces
+**  PASS       BNOAMT
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("#######9.99",BNOAMT)
+ CALL BNONLS
+ IF BNOAMT<$0.00 THEN
+  BNOTEXT=BNOTEXT+"-"
+END [PROCEDURE]
+
+PROCEDURE BNOAMTTEXTDISPLAY
+[* Formats an amounts string for display
+**  PASS       BNOAMT
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("##,###,##9.99",BNOAMT)
+ CALL BNONLS
+ BNOTEXT="$"+BNOTEXT
+ IF BNOAMT<$0.00 THEN
+  BNOTEXT="-"+BNOTEXT
+END [PROCEDURE]
+
+PROCEDURE BNORATETEXT
+[* Formats an rate string with 3 decimal places and no leading spaces
+**  PASS       BNORATE
+**  RETURN     BNOTEXT
+*]
+ 
+ BNOTEXT=FORMAT("##9.999",BNORATE)
+ CALL BNONLS
+END [PROCEDURE]
+
+PROCEDURE BNORATETEXTDISPLAY
+[* Formats an rate string for display
+**  PASS       BNORATE
+**  RETURN     BNOTEXT
+*]
+
+ CALL BNORATETEXT
+ BNOTEXT=BNOTEXT+"%"
+END [PROCEDURE]
+
+PROCEDURE BNONUMTEXT
+[* Formats a number string with leading neg sign(-) for negative numbers.  No commas
+** or spaces.
+**  PASS       BNONUM
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("#########9",BNONUM)
+ CALL BNONLS
+ IF BNONUM<0 THEN
+  BNOTEXT="-"+BNOTEXT
+END [PROCEDURE]
+
+PROCEDURE BNONUMTEXTTRAIL
+[* Formats a number string with trailing neg sign(-) for negative numbers.  No commas
+** or spaces.
+**  PASS       BNONUM
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("#########9",BNONUM)
+ CALL BNONLS
+ IF BNONUM<0 THEN
+  BNOTEXT=BNOTEXT+"-"
+END [PROCEDURE]
+
+PROCEDURE BNONUMTEXTDISPLAY
+[* Formats a number string for display
+**  PASS       BNONUM
+**  RETURN     BNOTEXT
+*]
+
+ BNOTEXT=FORMAT("#,###,###,##9",BNONUM)
+ CALL BNONLS
+ IF BNONUM<0 THEN
+  BNOTEXT="-"+BNOTEXT
+END [PROCEDURE]
+
+PROCEDURE BNOCLEANUPINIT
+
+ LELISTINPUT=BNOCLEANVALIDCHRLIST
+ CALL LISTEXPAND
+ FOR BNOCLEANLOOP=0 TO BNOCLEANVALIDCHRMAX
+  DO
+   BNOCLEANVALIDCHRS(BNOCLEANLOOP)=LELIST(BNOCLEANLOOP)
+  END
+END [PROCEDURE]
+
+PROCEDURE BNOCLEANUPTEXT
+[* Check character string and remove out any characters or hidden characters which have an ASCII value
+** which is not established in the BNOCLEANVALIDCHRLIST string in the SETUP division . This is to avoid
+** display issues with displaying the terms or conditions. Additionally, if a back-slash or double 
+** quote is encountered, add a preceding backslash.
+**
+**  PASS       BNOTEXT   String to test
+**  RETURN     BNOTEXT   Updated string
+*]
+ 
+ TMPCHR=""
+ FOR BNOCLEANLOOP=1 TO LENGTH(BNOTEXT)
+  DO
+   CHRVAL=CHRVALUE(SEGMENT(BNOTEXT,BNOCLEANLOOP,BNOCLEANLOOP))
+   IF  BNOCLEANVALIDCHRS(CHRVAL)=TRUE THEN
+    DO
+[* Check for back-slash or double-quote. If found, precede with a back-slash
+*]
+     IF CHRVAL=CHRVALBACKSLASH OR CHRVAL=CHRVALQUOTE THEN
+      TMPCHR=TMPCHR+CTRLCHR(CHRVALBACKSLASH)+SEGMENT(BNOTEXT,BNOCLEANLOOP,BNOCLEANLOOP)
+     ELSE
+      TMPCHR=TMPCHR+SEGMENT(BNOTEXT,BNOCLEANLOOP,BNOCLEANLOOP)
+    END
+  END
+ BNOTEXT=TMPCHR
+END [PROCEDURE]
+
+PROCEDURE BNOPARSEDATALINE
+[* Parse through a line of delimited data and store individual fields into an array
+**
+**  PASS    BNODATALINE       Line of data to be parsed
+**  PASS    BNODLDELIMITER    Field delimiter (defaults to "|" of not set)
+**  RETURN  BNODLFIELD        Array of data elements from the parsed BNODATALINE
+**  RETURN  BNODLFIELDCOUNT   Number of elements in the BNODLFIELD array
+*]
+
+ IF BNODLDELIMITER="" THEN
+  BNODLDELIMITER="|"
+
+ BNODLFIELDCOUNT=0
+ FOR BNODLINDEX=0 TO BNODLFIELDMAX
+  DO
+   BNODLFIELD(BNODLINDEX)=""
+  END
+ WHILE BNODATALINE<>""
+  DO
+   BNODLPOS=CHARACTERSEARCH(BNODATALINE,BNODLDELIMITER)
+   BNODLFIELDCOUNT=BNODLFIELDCOUNT+1
+   IF BNODLPOS=0 THEN
+    DO
+     BNODLFIELD(BNODLFIELDCOUNT)=BNODATALINE
+     BNODATALINE=""
+    END
+   ELSE
+    DO
+     BNODLFIELD(BNODLFIELDCOUNT)=SEGMENT(BNODATALINE,1,BNODLPOS-1)
+     BNODATALINE=SEGMENT(BNODATALINE,BNODLPOS+1,LENGTH(BNODATALINE))
+    END
+  END
+END [PROCEDURE]
+
+#INCLUDE "RB.LISTEXPAND"
+#INCLUDE "BNOLB.SLLISTBUILD.PRO"
