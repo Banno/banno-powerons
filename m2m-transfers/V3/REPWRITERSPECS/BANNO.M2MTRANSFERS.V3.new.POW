@@ -709,7 +709,12 @@ END [SETUP]
 PRINT TITLE=BNOPROGRAMNAME
 
  CALL INITIALIZEDATA
+ 
+ [* The loading of RGDATA is serviced by these two procedures.  GETRGDATA sets RG varialbes based on state -- basic mapping.
+ ** TRANSFORMRGDATA further breaks out RG variables into more granular variables used downstream in the program.
+ *]
  CALL GETRGDATA
+ CALL TRANSFORMRGDATA
 
  CALL BNOCFGFILEREAD
 
