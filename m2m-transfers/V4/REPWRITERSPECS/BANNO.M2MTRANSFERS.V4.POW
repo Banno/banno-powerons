@@ -81,93 +81,8 @@
 **
 **  --------------------------------------------------------------------
 **  Modification History:
-**   Ver. 1.0.0  07/21/21 T. Kainz - Original Programming
-**   Ver. 1.1.0  10/11/21 T. Kainz - Adding check for service code for
-**               transfer in on credited share. Added check for IRS code
-**               on credited share - must be 0. Added parameter options
-**               to allow transfers into clubs or certs. Corrected issue
-**               preventing recurring transfers to loans. Set debugmode
-**               to on as default for first 45 days after latest update.
-**               Removed ability for the user to send funds to account
-**               type only, now requiring a specific share or loan ID
-**   Ver. 1.1.1  12/03/21 T. Kainz - Corrected transfer locator format
-**               issue in JSON output when locator is over 999. Added
-**               S/L ID Length to JSON output. Added procedure to
-**               normalize S/L ID length. Added check for same account
-**               transfer (not allowed). If tran counts are being
-**               enforced, and transfer initiated on system date is
-**               deleted (expired) or edited, adjust transfer count and
-**               transfer amount total accordingly. Added immed. transfer
-**               comment parameter.
-**   Ver. 1.1.2  3/28/2022 J. Carson - Corrected issue with CREATETRANSFER
-**               procedure where a stale transfer record is created if the
-**               start date is before the system date (GOODNIGHT has changed
-**               the date before midnight). Fix will perform an immediate
-**               transfer in that case.
-**   Ver. 1.1.3  03/29/2022 T. Kainz - Corrected issue where a saved
-**               recipient with a loan as a target was being recalled
-**               as a share
-**   Ver. 3.0.0  10/10/2022 T. Kainz
-**               * Program ver. bumped to v 3.0.0 to correspond with UX
-**                 version update to v3.
-**               * Added JSON flag for cross-accounts for UX use.
-**               * Modified logic determining if a transfer is immediate or
-**                  scheduled based upon UX request.
-**               * Added Reg E flag to be set to true for immediate transfer
-**               * Added Share transfer user created check to logic determining
-**                  whether to allow edit of manually created share transfers.
-**   Ver. 3.1.0  04/19/2023 R. Robison - Added support for label soft text on
-**               the member name and id input.  These labels are for the sub-title
-**               text under the main labels.
-**   Ver. 3.2.0  11/02/2023 R. Robison - Code refactor including framework for
-**               the optional share ID feature.
-**   Ver. 3.2.1  01/31/2024 T. Kainz -
-**               * Corrected issue where cross-account loans were being allowed
-**                 when only shares were requested.
-**               * Updated last name verification to properly process last names
-**                 stored with one or more spaces at the beginning.
-**               * Forced limitation of comment length for immediate transfers
-**                 to 39 characters to avoid failed xfers.
-**               * Updated procedures for building Share/Loan list.
-**               * Check for double-quotes in Share/Loan description and
-**                 nickname fields and replace with single-quotes.
-**   Ver. 3.2.2  07/10/2024 J. Keenan -
-**               * Corrected issue so that the loggingErrorMessage
-**                 for ineligible account type now indicates when the
-**                 account type is invalid and lists the account type.
-**               * Added Program Installation Date parameter setting.
-**               * Set debugmode to on as default for first 90 days after
-**                 latest update. Can be overridden by hidden parameter  "DB:".
-**   Ver. 3.2.3  09/04/2024 JuCarson - Banno
-**               * Fixed error where backslashes from share nickname or description
-**                 caused json error.
-**   Ver. 3.2.4  10/14/2024 T. Kainz -
-**               * Modified logic used to determine transfer record editability.
-**                 * Program now matches the user number who created the transfer
-**                   record against the SymXchange user number and if it matches, then
-**                   transfer record is automatically editable.
-**                 * Modified AE parameter setting to also allow a list entry in addition
-**                   to a TRUE/FALSE entry. If the transfer record was created by one
-**                   of the user numbers listed, transfer is editable.
-**               * Modified external record creation to only occur when member elects
-**                 to save the record (nickname field is not blank).
-**               * Added additional checks for invalid characters in Share/Loan Nicknames
-**                 and descriptions.
-**   Ver. 3.2.5  10/28/2024 T. Kainz - Banno
-**               * Modified displayed description of recipient S/L when existing transfer
-**                 references a saved account with an external account record which has
-**                 been expired or deleted.
-**   Ver. 3.2.6  12/11/2024 T. Kainz - Banno
-**               * Corrected issue where program was erring when no transfer record FM
-**                 history was found indicating the record creation date
-**   Ver. 3.3.0  02/19/2025 R. Robison - Banno
-**               * Adding support for errorDisplayMessage to accommodate memo mode message
-**               * Major refactor as there were multiple paths that produced invalid json
-**               * New param to prevent m2m transfer when system is in memo mode
-**   Ver. 3.3.1  12/17/2025 T. Kainz - Banno
-**               * Corrected JSON output error when deleting saved account
-**   Ver. 3.4.0  02/10/2026 R. Robison - Banno
-**               * Spanish language support
+**   Ver. 4.0.0  02/12/2026 R. Robison: Original V4 version of m2m transfer PowerOn
+**               * Feature set based on: BANNO.M2MTRANSFERS.V3.POW Ver. 3.3.1  12/17/2025
 **    
 *]
 SYMCONNECT
@@ -180,11 +95,11 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '02/10/26'
- BNOLASTMODTIME            = "22:00 MT"
+ BNOLASTMODDATE            = '02/12/26'
+ BNOLASTMODTIME            = "12:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
- BNOPROGRAMVERSION         = "3.4.0"
+ BNOPROGRAMVERSION         = "4.0.0"
  BNOPROGRAMNOTE1           = "spanish language support"
  BNOPROGRAMNOTE2           = ""
 
@@ -3742,11 +3657,8 @@ PROCEDURE JSONSUCCESSTRAN
 [* Generate JSON output for a successful transaction in states: STATECREATETRAN, STATEEDITTRAN and STATEDELETETRAN
 *]
 
- JSONOBJFIRSTPROP=TRUE
- CALL JSONGENERALSPECS
-
  JSONPROPNAME="history"
- CALL JSONPROP
+ CALL JSONPROPFIRST
  CALL JSONOBJ
 
  JSONPROPNAME="change"
@@ -3854,8 +3766,11 @@ PROCEDURE JSONSUCCESSTRAN
  CALL JSONPROP
  CALL JSONOBJ
 
+ JSONOBJFIRSTPROP=TRUE
+ CALL JSONGENERALSPECS
+
  JSONPROPNAME="success"
- CALL JSONPROPFIRST
+ CALL JSONPROP
  PRINT JSONBOOLEAN(TRUE)
  NEWLINE
 
@@ -3904,15 +3819,15 @@ END [PROCEDURE]
 
 PROCEDURE JSONSUCCESSDELETERECIP
 
+ JSONPROPNAME="results"
+ CALL JSONPROPFIRST
+ CALL JSONOBJ
+
  JSONOBJFIRSTPROP=TRUE
  CALL JSONGENERALSPECS
 
- JSONPROPNAME="results"
- CALL JSONPROP
- CALL JSONOBJ
-
  JSONPROPNAME="success"
- CALL JSONPROPFIRST
+ CALL JSONPROP
  PRINT JSONBOOLEAN(TRUE)
  NEWLINE
 
