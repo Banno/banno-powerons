@@ -84,7 +84,13 @@ Any and all errors should be conveyed via the following structure:
 ### Client Error Message
 _Returned in the `clientErrorMessage` json property_
 
-This is the error text that is presented to the end user.  Currently the PowerOn code returns the following `clientErrorMessage` for all errors: 
+This is the error text that is presented to the end user.
+The PowerOn returns the following `clientErrorMessage` for the Program running in memo mode error
+and can also be soft-coded the configuration file:
+```
+Nightly processing is underway. We are unable to complete your skip a pay request.
+```
+Currently the PowerOn code returns the following `clientErrorMessage` for all other errors: 
 ```
 We're sorry we've encountered an error. Please contact your credit union.
 ```
@@ -101,6 +107,7 @@ _Returned in the `loggingErrorMessage` json property_
 | Test mode on but no test account(s) defined                        | Configuration error when TNC (test newest changes) CFG file setting is TRUE, but TML (test member list) is blank |
 | Invalid start/end date(s)                                          |                                                                                                                  |
 | Error Opening Letterfile [config file name]: [sys generated error] |                                                                                                                  |
+| Program running in memo mode                                       | Error when memo mode is active                                                                                   |
 | Invalid loan id: [loan id]                                         | This set of errors is for skip payment processing errors                                                         |
 | Attempt to skip a payment on an ineligible loan: [loan id]         |                                                                                                                  |
 | Invalid fee share id: [share id]                                   |                                                                                                                  |
