@@ -1,25 +1,46 @@
-# JSON contract for BANNO.M2MTRANSFERS.V4.POW
+# Member to Member Transfer V4 JSON contract
 
-## GET PRELOADDATA STATE
+## PRELOADDATA state
 
-### Client Request (PRELOADDATA)
+### UX Request (PRELOADDATA)
 
-```jsonc
+```json
 {
   "rgState": "PRELOADDATA",
-  "powerOnFileName": "BANNO.M2MTRANSFERS.V4.POW",
+  "powerOnFilename": "BANNO.M2MTRANSFERS.V4.POW",
   "userChrList": [], // userchar[1-5] is unused
-  "userNumList": [{ "id": 1, "value": 3 }], //  ux version #
+  "userNumList": [], // usernum[1-5] is unused
   "rgSession": 1
 }
 ```
 
-### PowerOn Successful Response (PRELOADDATA)
+**Request Detail:**
+
+- userCharList[1-5]: unused
+- userCharList[1-5]: unused
+
+### PowerOn Response (PRELOADDATA)
+
+#### Success (PRELOADDATA)
 
 list of institution and member limits, eligible shares, list of scheduled transfers, list of saved recipients
 
-```jsonc
+```json
 {
+  "generalSpecifications": {
+    "programInfo": {
+      "name": "BANNO.M2MTRANSFERS.V4.POW",
+      "version": "0.1.0",
+      "lastModDate": "01/31/24 16:00 MT",
+      "language": 1,
+      "note1": "New PowerOn"
+    },
+    "systemInfo": {
+      "systemDate": "02/01/2024",
+      "slidLength": 4,
+      "memoMode": false
+    }
+  },
   "currentState": {
     "slidLength": 4,
     "systemDate": "11/30/2021",
@@ -122,76 +143,150 @@ list of institution and member limits, eligible shares, list of scheduled transf
 }
 ```
 
-### PowerOn Error Responses (PRELOADDATA)
+**Response detail:**
 
-#### PowerOn response - Configuration File read error
+- generalSpecifications: Program and system info
+  - programInfo:
+    - name: PowerOn Name
+    - version: PowerOn version
+    - lastModDate: Last modification date/time
+    - language: 1 = English, 2 = Spanish
+    - note1: Note 1
+    - note2: Note 2
+  - systemInfo:
+    - systemDate: Current Episys system date in mm/dd/yyyy format
+    - slidLength: The length of the share/loan ID the system is currently using (numeric, 2 or 4)
+    - memoMode: boolean - true/false. Is the system in memo mode?
+- currentState: currentState object
+
+#### Errors (PRELOADDATA)
+
+Configuration File read error
 
 ```jsonc
 {
+  "generalSpecifications": {
+    "programInfo": {
+      // object details excluded -- see details above
+    },
+    "systemInfo": {
+      // object details excluded -- see details above
+    },
+  },
   "errorCode": "501",
-  "loggingErrorMessage": "Error [opening/reading] from config file: [error msg]"
+  "loggingErrorMessage": "Config file error: BANNO.M2MTRANSFERS.V4.CFG open error - No such file or directory",
 }
 ```
 
-### PowerOn response - Invalid Account (by Account Warning)
+Invalid Account (by Account Warning)
 
 ```jsonc
 {
+  "generalSpecifications": {
+    "programInfo": {
+      // object details excluded -- see details above
+    },
+    "systemInfo": {
+      // object details excluded -- see details above
+    },
+  },
   "errorCode": "502",
-  "loggingErrorMessage": "Invalid Account - account warning xxx"
+  "loggingErrorMessage": "Invalid Account - account warning xxx",
 }
 ```
 
-### PowerOn response - No Eligible Share(s) found
+No Eligible Share(s) found
 
 ```jsonc
 {
+  "generalSpecifications": {
+    "programInfo": {
+      // object details excluded -- see details above
+    },
+    "systemInfo": {
+      // object details excluded -- see details above
+    },
+  },
   "errorCode": "503",
-  "loggingErrorMessage": "No eligible shares found"
+  "loggingErrorMessage": "No eligible shares found",
 }
 ```
 
-## VERIFY MEMBER DETAILS
+## VERIFYMEMBER state
 
-### Client Request (VERIFYMEMBER)
+### UX Request (VERIFYMEMBER)
 
 ```jsonc
 {
   "rgState": "VERIFYMEMBER",
   "powerOnFileName": "BANNO.M2MTRANSFERS.V4.POW",
   "userChrList": [
-    { "id": 1, "value": "9876543210|HUB|accountType|0234" } // [member id][first 3 of last name or business name][accountType][accountId]
+    { "id": 1, "value": "9876543210|HUB|accountType|0234" }, // [member id]|[first 3 of last name or business name]|[accountType]|[accountId]
   ],
   "userNumList": [],
-  "rgSession": 1
+  "rgSession": 1,
 }
 ```
 
-### Poweron Successful Response (VERIFYMEMBER)
+**Request Detail:**
 
-```jsonc
+- userCharList[1]: Member verification information
+
+### PowerOn Response (VERIFYMEMBER)
+
+#### Success (VERIFYMEMBER)
+
+```json
 {
   "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        // object details excluded -- see details above
+      },
+      "systemInfo": {
+        // object details excluded -- see details above
+      }
+    },
     "verified": true,
     "recipientAccountId": "0010" // account ID
   }
 }
 ```
 
-### Poweron Error Response (VERIFYMEMBER)
+**Response detail:**
+
+- results: results object
+  - generalSpecifications: **See above**
+  - verified: boolean - true/false. Was the request verified?
+  - recipientAccountId: Verified account Id
+
+#### Errors (VERIFYMEMBER)
 
 ```jsonc
 {
-  "results": {
-    "errorCode": "509",
-    "loggingErrorMessage": "member verification failed"
-  }
+  "generalSpecifications": {
+    "programInfo": {
+      // object details excluded -- see details above
+    },
+    "systemInfo": {
+      // object details excluded -- see details above
+    },
+  },
+  "errorCode": "509",
+  "loggingErrorMessage": "Member verification failed: Name verification failed",
 }
 ```
 
-## CREATE TRANSFER REQUEST STATE
+## CREATETRAN state
 
-### Client Request (CREATETRAN)
+Create new transfer with new or existing recipient
+
+- Existing Recipient: recipientLoc will be present
+- New Recipient: if nickname is present, create new
+- All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
+- One-time immediate transfers have an optional internal memo field.
+
+### UX Request (CREATETRAN)
 
 ```jsonc
 {
@@ -200,26 +295,28 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "userChrList": [
     {
       "id": 1,
-      "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15"
+      "value": "1234567890S0001|9876543210|L0001|weekly|12/31/2021|1|15",
     }, // [sourceAccount][recipient member id][recipient S/L id][frequency]|[startDate or "soonest" ]|[day1]|[day2]
-    { "id": 2, "value": "HUB|nickname" }, // [first 3][nickname]
+    { "id": 2, "value": "HUB|nickname" }, // [first 3]|[nickname]
     { "id": 3, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers (max 132 characters)
-    { "id": 4, "value": "1000.51" } // transfer amount
+    { "id": 4, "value": "1000.51" }, // transfer amount
   ],
   "userNumList": [
-    { "id": 1, "value": 395 } // recipientLoc if available
+    { "id": 1, "value": 395 }, // recipientLoc if available
   ],
-  "rgSession": 1
+  "rgSession": 1,
 }
 ```
 
-- CREATETRAN - Create new transfer with new or existing recipient
-  - Existing Recipient: recipientLoc will be present
-  - New Recipient: if nickname is present, create new
-  - All recipients: sourceAccount, destinationAccount, transferAmt, transferFrequency, startDate, day1, day2
-  - One-time immediate transfers have an optional internal memo field.
+**Request Detail:**
 
-### PowerOn Successful Response (CREATETRAN)
+- userCharList[1]: Transfer details
+- userCharList[2]: First name/nickname
+- userCharList[3]: Transfer memo
+- userCharList[4]: Transfer amount
+- userNumList[1]: Recipient locator
+
+### PowerOn Response (CREATETRAN)
 
 ```jsonc
 {
@@ -236,20 +333,43 @@ list of institution and member limits, eligible shares, list of scheduled transf
       "nextTransferDate": "08/07/2021",
       "frequency": "weekly", // included if frequency is not "once"
       "day1": "", // included if frequency is not "once"
-      "day2": "" // included if frequency is not "once"
-    }
+      "day2": "", // included if frequency is not "once"
+    },
   },
   "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        // object details excluded -- see details above
+      },
+      "systemInfo": {
+        // object details excluded -- see details above
+      },
+    },
     "success": true,
     "memoMode": false,
     "transferLoc": "395",
     "recipientLoc": "54315431",
-    "currentState": "[PRELOADDATA]"
-  }
+    "currentState": "[PRELOADDATA]",
+  },
 }
 ```
 
-### Client Request (EDITTRAN)
+**Response detail:**
+
+- history: history object
+- results: results object
+  - generalSpecifications: **See above**
+  - success: boolean - true/false. Was transaction successful?
+  - memoMode: boolean - true/false. Is the system in memo mode?
+  - transferLoc: Transfer locator
+  - recipientLoc: Recipient locator
+  - currentState: **See currentState definition in PRELOADDATA response**
+
+## EDITTRAN state
+
+Edit existing transaction (expire existing transfer & create a new transfer) \* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2
+
+### UX Request (EDITTRAN)
 
 ```jsonc
 {
@@ -258,18 +378,23 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "userChrList": [
     { "id": 1, "value": "weekly|12/31/2021|1|15" }, // [transferFrequency]|[startDate]|[day1]|[day2] max 132 characters
     { "id": 2, "value": "internal memo for immediate transfers" }, // internal memo for immediate transfers only
-    { "id": 3, "value": "1000.51" } // transfer amount
+    { "id": 3, "value": "1000.51" }, // transfer amount
   ],
   "userNumList": [
-    { "id": 1, "value": 395 } // transferLoc
+    { "id": 1, "value": 395 }, // transferLoc
   ],
-  "rgSession": 1
+  "rgSession": 1,
 }
 ```
 
-EDITTRAN - Edit existing transaction (expire existing transfer & create a new transfer) \* transferLoc, sourceAccount, transferAmt, transferFrequency, endDate, day1, day2
+**Request Detail:**
 
-### PowerOn Successful Response (EDITTRAN)
+- userCharList[1]: Transfer edit details
+- userCharList[2]: Transfer memo/immediate transfers
+- userCharList[3]: Transfer amount
+- userNumList[1]: Transfer locator
+
+### PowerOn Response (EDITTRAN)
 
 ```jsonc
 {
@@ -286,18 +411,39 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
       "nextTransferDate": "08/07/2021",
       "frequency": "weekly", // included if frequency is not "once"
       "day1": "", // include dif frequency is not "once"
-      "day2": "" // include dif frequency is not "once"
-    }
+      "day2": "", // include dif frequency is not "once"
+    },
   },
   "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        // object details excluded -- see details above
+      },
+      "systemInfo": {
+        // object details excluded -- see details above
+      },
+    },
     "success": true,
+    "memoMode": false,
     "transferLoc": "395",
-    "currentState": "[PRELOADDATA]"
-  }
+    "currentState": "[PRELOADDATA]",
+  },
 }
 ```
 
-### Client Request (DELETERECIP)
+**Response detail:**
+
+- history: history object
+- results: results object
+  - generalSpecifications: **See above**
+  - success: boolean - true/false. Was transaction edit successful?
+  - memoMode: boolean - true/false. Is the system in memo mode?
+  - transferLoc: Transfer locator
+  - currentState: **See currentState definition in PRELOADDATA response**
+
+## DELETERECIP state
+
+### UX Request (DELETERECIP)
 
 ```jsonc
 {
@@ -305,23 +451,47 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "powerOnFileName": "BANNO.M2MTRANSFERS.V4.POW",
   "userChrList": [],
   "userNumList": [
-    { "id": 1, "value": 395 } // recipientLoc
+    { "id": 1, "value": 395 }, // recipientLoc
   ],
-  "rgSession": 1
+  "rgSession": 1,
 }
 ```
 
-### PowerOn Successful Response (DELETERECIP)
+**Request Detail:**
+
+- userNumList[1]: Recipient locator
+
+### PowerOn Response (DELETERECIP)
 
 ```jsonc
+{
   "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        // object details excluded -- see details above
+      },
+      "systemInfo": {
+        // object details excluded -- see details above
+      },
+    },
     "success": true,
     "recipientLoc": 395,
-    "currentState": "[PRELOADDATA]"
-  }
+    "currentState": "[PRELOADDATA]",
+  },
+}
 ```
 
-### Client Request (DELETETRAN)
+**Response detail:**
+
+- results: results object
+  - generalSpecifications: **See above**
+  - success: boolean - true/false. Was delete recipient successful?
+  - recipientLoc: Recipient locator
+  - currentState: **See currentState definition in PRELOADDATA response**
+
+## DELETETRAN state
+
+### UX Request (DELETETRAN)
 
 ```jsonc
 {
@@ -329,13 +499,17 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
   "powerOnFileName": "BANNO.M2MTRANSFERS.V4.POW",
   "userChrList": [],
   "userNumList": [
-    { "id": 1, "value": 395 } // transferLoc
+    { "id": 1, "value": 395 }, // transferLoc
   ],
-  "rgSession": 1
+  "rgSession": 1,
 }
 ```
 
-### PowerOn Successful Response (DELETETRAN)
+**Request Detail:**
+
+- userNumList[1]: Transfer locator
+
+### PowerOn Response (DELETETRAN)
 
 ```jsonc
 {
@@ -352,84 +526,147 @@ EDITTRAN - Edit existing transaction (expire existing transfer & create a new tr
       "nextTransferDate": "08/07/2021",
       "frequency": "weekly", // included if frequency is not "once"
       "day1": "", // include dif frequency is not "once"
-      "day2": "" // include dif frequency is not "once"
-    }
+      "day2": "", // include dif frequency is not "once"
+    },
   },
   "results": {
+    "generalSpecifications": {
+      "programInfo": {
+        // object details excluded -- see details above
+      },
+      "systemInfo": {
+        // object details excluded -- see details above
+      },
+    },
     "success": true,
+    "memoMode": false,
     "transferLoc": 395,
-    "currentState": "[PRELOADDATA]"
-  }
+    "currentState": "[PRELOADDATA]",
+  },
 }
 ```
 
-### PowerOn Error Response (CREATETRAN,EDITTRAN,DELETERECIP,DELETETRAN)
+**Response detail:**
 
-```jsonc
+- history: history object
+- results: results object
+  - generalSpecifications: **See above**
+  - success: boolean - true/false. Was delete transfer successful?
+  - memoMode: boolean - true/false. Is the system in memo mode?
+  - transferLoc: Transfer locator
+  - currentState: **See currentState definition in PRELOADDATA response**
+
+## Errors
+
+All errors should be conveyed via one of the following structures.
+
+### Error - `results` Object
+
+```json
 {
   "results": {
-    "errorCode": "5xx",
-    "loggingErrorMessage": "error code description"
+    "generalSpecifications": {
+      "programInfo": {
+        "name": "BANNO.M2MTRANSFERS.V4.POW",
+        "version": "0.1.0",
+        "lastModDate": "01/31/24 16:00 MT",
+        "note1": "New PowerOn"
+      },
+      "systemInfo": {
+        "systemDate": "02/01/2024",
+        "slidLength": 4,
+        "memoMode": false
+      }
+    },
+    "errorCode": 500,
+    "errorMessage": "if error processing, something to log",
+    "errorDisplayMessage": ["Optional member display message - see below"]
   }
 }
 ```
 
-### Error Codes
+### Error - No `results` Object
 
-\*See the Modifier section for additional details.
-The Modifier is appended to the main Logging Error Message.
+```json
+{
+  "generalSpecifications": {
+    "programInfo": {
+      "name": "BANNO.M2MTRANSFERS.V4.POW",
+      "version": "0.1.0",
+      "lastModDate": "01/31/24 16:00 MT",
+      "note1": "New PowerOn"
+    },
+    "systemInfo": {
+      "systemDate": "02/01/2024",
+      "slidLength": 4,
+      "memoMode": false
+    }
+  },
+  "errorCode": 500,
+  "errorMessage": "if error processing, something to log",
+  "errorDisplayMessage": ["Optional member display message - see below"]
+}
+```
 
-| Error Code | Logging Error Message             | Modifier                                                                                   | Additional Notes As Needed                                     |
-| ---------- | --------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| 500        | Program running in memo mode      |                                                                                            |                                                                |
-| 501        | Config file error                 | : [configuration file name] open error - [system generated letter file read error message] |                                                                |
-|            |                                   | : [configuration file name] read error - [system generated letter file read error message] |                                                                |
-|            |                                   | : Invalid Parameter in CFG file                                                            |                                                                |
-| 502        | Invalid Source Account            | : Pref Access type 3 not found                                                             |                                                                |
-|            |                                   | : Acct Warning 1234                                                                        |                                                                |
-|            |                                   | : No eligible transfer from shares/loans                                                   |                                                                |
-|            |                                   | : Acct Type 1234                                                                           |                                                                |
-| 503        | Invalid Recipient Account         |                                                                                            |                                                                |
-| 504        | Insufficient Information          | : Cannot calc member limits.                                                               |                                                                |
-| 505        | Invalid Input                     |                                                                                            |                                                                |
-| 506        | Error Processing Recipient Record |                                                                                            | Error creating/deleting recipient                              |
-| 507        | Error Processing Transfer Record  | No Modifier. Error Code 507 does not always provide a Modifier.                            | This set of errors is for creating/updating/deleting transfers |
-|            |                                   | : Target s/l xfer Loc 1234567 not found                                                    |                                                                |
-|            |                                   | : Target ID not found or invalid                                                           |                                                                |
-| 508        | Undefined Error                   |                                                                                            |                                                                |
-| 509        | Member verification failed        | : Member account not found                                                                 | This set of errors is for member unverified                    |
-|            |                                   | : Account Closed - 99/99/99                                                                |                                                                |
-|            |                                   | : Name verification failed                                                                 |                                                                |
-|            |                                   | : Must be a different member account number                                                |                                                                |
-|            |                                   | : S/L closed or charged-off - 99/99/99                                                     |                                                                |
-|            |                                   | : S/L ID not found                                                                         |                                                                |
-|            |                                   | : No valid share or loan found                                                             |                                                                |
-|            |                                   | : S/L missing service code                                                                 |                                                                |
-|            |                                   | : Invalid S/L type                                                                         |                                                                |
-|            |                                   | : Invalid share code                                                                       |                                                                |
-|            |                                   | : Loan has $0.00 payoff                                                                    |                                                                |
-|            |                                   | : Invalid IRS code                                                                         |                                                                |
-| 510        | Account ID incorrect              |                                                                                            |                                                                |
-| 511        | Request exceeds limits            |                                                                                            |                                                                |
+- errorCode: Error code generated (numeric)
+- errorMessage: Error message - text description of the errorCode
+- errorDisplayMessage: **\*\*Optional** An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message. **Must be supported by UX code**
 
-### Transfer Frequencies
+## Error Codes
+
+| Error Code | Logging Error Message             | Modifier                                                                                 | Additional Notes As Needed                                     |
+| ---------- | --------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 500        | Program running in memo mode      |                                                                                          |                                                                |
+| 501        | Config file error                 | [configuration file name] open error - [system generated letter file read error message] |                                                                |
+|            |                                   | [configuration file name] read error - [system generated letter file read error message] |                                                                |
+|            |                                   | Invalid Parameter in CFG file                                                            |                                                                |
+| 502        | Invalid Source Account            | Pref Access type 3 not found                                                             |                                                                |
+|            |                                   | Acct Warning 1234                                                                        |                                                                |
+|            |                                   | No eligible transfer from shares/loans                                                   |                                                                |
+|            |                                   | Acct Type 1234                                                                           |                                                                |
+| 503        | Invalid Recipient Account         |                                                                                          |                                                                |
+| 504        | Insufficient Information          | Cannot calc member limits.                                                               |                                                                |
+| 505        | Invalid Input                     |                                                                                          |                                                                |
+| 506        | Error Processing Recipient Record |                                                                                          | Error creating/deleting recipient                              |
+| 507        | Error Processing Transfer Record  | No Modifier. Error Code 507 does not always provide a Modifier.                          | This set of errors is for creating/updating/deleting transfers |
+|            |                                   | Target s/l xfer Loc 1234567 not found                                                    |                                                                |
+|            |                                   | Target ID not found or invalid                                                           |                                                                |
+| 508        | Undefined Error                   |                                                                                          |                                                                |
+| 509        | Member verification failed        | Member account not found                                                                 | This set of errors is for member unverified                    |
+|            |                                   | Account Closed - 99/99/99                                                                |                                                                |
+|            |                                   | Name verification failed                                                                 |                                                                |
+|            |                                   | Must be a different member account number                                                |                                                                |
+|            |                                   | S/L closed or charged-off - 99/99/99                                                     |                                                                |
+|            |                                   | S/L ID not found                                                                         |                                                                |
+|            |                                   | No valid share or loan found                                                             |                                                                |
+|            |                                   | S/L missing service code                                                                 |                                                                |
+|            |                                   | Invalid S/L type                                                                         |                                                                |
+|            |                                   | Invalid share code                                                                       |                                                                |
+|            |                                   | Loan has $0.00 payoff                                                                    |                                                                |
+|            |                                   | Invalid IRS code                                                                         |                                                                |
+| 510        | Account ID incorrect              |                                                                                          |                                                                |
+| 511        | Request exceeds limits            |                                                                                          |                                                                |
+| 512        | Config file validation error      | Duplicate Param file entry([parameter name])                                             |                                                                |
+|            |                                   | Invalid Param Value([parameter name])                                                    |                                                                |
+
+## Transfer Frequencies
 
 _The following strings are all valid transfer frequencies:_
 
-- once
-- weekly
-- monthly
-- semiMonthly
-- biweekly
-- quarterly
-- yearly
+- `once`
+- `weekly`
+- `monthly`
+- `semiMonthly`
+- `biweekly`
+- `quarterly`
+- `yearly`
 
-### Account types
+## Account types
 
 The recipient member's account id is optional when creating a new transfer and when displaying saved recipients
 
 _Available account types are:_
 
-- savings
-- checking
-- loan
+- `savings`
+- `checking`
+- `loan`
