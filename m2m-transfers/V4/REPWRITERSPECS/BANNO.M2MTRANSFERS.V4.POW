@@ -613,10 +613,9 @@ SETUP
 **  - Optionally set PARAMMSGOPT to mark a message as optional. Message will not be returned in
 **.   json response if no message lines found in the CFG.
 *]
- [CALL PARAMMSGINIT
- PARAMMSGTAG="IT"     PARAMMSGPROP="introText"          [Intro Text Message]
- PARAMMSGMAXLINES=10
- CALL PARAMMSGTAGADD]
+ PARAMMSGTAG="CMMS"   PARAMMSGPROP="memoModeSuccessMessage"          [Custom Memo Mode Success Message]
+ PARAMMSGMAXLINES=5   PARAMMSGOPT=TRUE
+ CALL PARAMMSGTAGADD
 
  CALL SETUPDATA
 END [SETUP]
@@ -1149,8 +1148,7 @@ END [PROCEDURE]
 
 PROCEDURE FINDFREQNUM
 [* Find the numeric frequency corresponding to the Banno text version of the frequency
-**  PASS    NEWTRANFREQCHR    Transer frequency in character format
-**  RETURN  NEWTRANFREQFOUND  Matching frequency found? Boolean TRUE/FALSE
+**  PASS    NEWTRANFREQCHR    Transfer frequency in character format
 **  RETURN  NEWTRANFREQ       Corresponding Share Transfer frequency number
 *]
  
@@ -3783,6 +3781,10 @@ PROCEDURE JSONSUCCESSTRAN
  PRINT JSONBOOLEAN(SYSMEMOMODE)
  NEWLINE
 
+ MSGPROPSELECT="memoModeSuccessMessage"
+ CALL MSGPROPSELECTADD
+ CALL JSONMSGARRAYS
+
  JSONPROPNAME="transferLoc"
  CALL JSONPROP
  BNONUM=NEWSLTRANSFERLOC
@@ -3878,10 +3880,10 @@ PROCEDURE JSONERROR
 
  JSONPROPNAME="errorCode"
  CALL JSONPROP
- PRINT QQ+FORMAT("999",BNOERRCODE)+QQ
+ PRINT FORMAT("999",BNOERRCODE)
  NEWLINE
 
- JSONPROPNAME="loggingErrorMessage"
+ JSONPROPNAME="errorMessage"
  CALL JSONPROP
  PRINT QQ+BNOERRMESSAGE
  IF BNOERRMODIFIER<>"" THEN
