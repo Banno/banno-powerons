@@ -81,7 +81,7 @@
 **
 **  --------------------------------------------------------------------
 **  Modification History:
-**   Ver. 4.0.0  02/12/2026 R. Robison: Original V4 version of m2m transfer PowerOn
+**   Ver. 4.0.0  02/17/2026 R. Robison: Original V4 version of m2m transfer PowerOn
 **               * Feature set based on: BANNO.M2MTRANSFERS.V3.POW Ver. 3.3.1  12/17/2025
 **    
 *]
@@ -95,8 +95,8 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '02/12/26'
- BNOLASTMODTIME            = "19:00 MT"
+ BNOLASTMODDATE            = '02/17/26'
+ BNOLASTMODTIME            = "16:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
  BNOPROGRAMVERSION         = "4.0.0"
