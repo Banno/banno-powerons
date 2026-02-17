@@ -347,6 +347,7 @@ Create new transfer with new or existing recipient
     },
     "success": true,
     "memoMode": false,
+    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
     "transferLoc": "395",
     "recipientLoc": "54315431",
     "currentState": "[PRELOADDATA]",
@@ -361,6 +362,7 @@ Create new transfer with new or existing recipient
   - generalSpecifications: **See above**
   - success: boolean - true/false. Was transaction successful?
   - memoMode: boolean - true/false. Is the system in memo mode?
+  - memoModeSuccessMessage: Message that will display if transfer completed during memo mode
   - transferLoc: Transfer locator
   - recipientLoc: Recipient locator
   - currentState: **See currentState definition in PRELOADDATA response**
@@ -425,6 +427,7 @@ Edit existing transaction (expire existing transfer & create a new transfer) \* 
     },
     "success": true,
     "memoMode": false,
+    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
     "transferLoc": "395",
     "currentState": "[PRELOADDATA]",
   },
@@ -438,6 +441,7 @@ Edit existing transaction (expire existing transfer & create a new transfer) \* 
   - generalSpecifications: **See above**
   - success: boolean - true/false. Was transaction edit successful?
   - memoMode: boolean - true/false. Is the system in memo mode?
+  - memoModeSuccessMessage: Message that will display if transfer completed during memo mode
   - transferLoc: Transfer locator
   - currentState: **See currentState definition in PRELOADDATA response**
 
