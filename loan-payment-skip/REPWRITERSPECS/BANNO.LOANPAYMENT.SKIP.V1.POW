@@ -68,7 +68,7 @@
 **             and account and loan warning code numbers.
 **  Ver. 1.3.0 09/17/2024: TKainz - Banno
 **             Added Max Skips per Loan Life parameter.
-**  Ver. 1.3.1 02/11/2026: JKeenan – Banno
+**  Ver. 1.3.1 02/20/2026: JKeenan – Banno
 **             Disabled Skip a Pay during memo mode and added logic
 **             to display the custom memo mode message to the member.
 **             Also, sanitized custom/soft text for debug messages
@@ -323,13 +323,9 @@ PRINT TITLE="Banno Skip a Loan Payment"
    NEWLINE
    PRINT Q+"memoMode"+Q+":"
    IF SYSMEMOMODE=0 THEN
-    DO
-     PRINT "false"
-    END
+    PRINT "false"
    ELSE
-    DO
-     PRINT "true"
-    END 
+    PRINT "true"
    NEWLINE
   END
  ELSE
@@ -887,8 +883,8 @@ PROCEDURE READCONFIGFILESETTINGS
        TMPPARAMVAL=TEXT1
        IF BNOINCLUDEPARMINDEBUG=TRUE THEN
         DO
-	 TMPCHR=TMPPARAMVAL
-	 CALL CLEANUPTEXT
+	       TMPCHR=TMPPARAMVAL
+	       CALL CLEANUPTEXT
          BNODEBUGMSG=TMPPARAM+":"+TMPCHR
          CALL BNODEBUGMSGADD
         END
@@ -1208,7 +1204,7 @@ PROCEDURE READCONFIGFILESETTINGS
         DO
          TMPCHR=TMPPARAMVAL
          CALL CLEANUPTEXT
-	 IF TMPCHR<>"" THEN
+	       IF TMPCHR<>"" THEN
           CUSTMEMOMESSAGE=TMPCHR
         END
 

@@ -86,7 +86,7 @@ _Returned in the `clientErrorMessage` json property_
 
 This is the error text that is presented to the end user.
 The PowerOn returns the following `clientErrorMessage` for the Program running in memo mode error
-and can also be soft-coded the configuration file:
+and can also be soft-coded in the configuration file:
 ```
 Nightly processing is underway. We are unable to complete your skip a pay request.
 ```
