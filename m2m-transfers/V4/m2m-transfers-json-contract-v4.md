@@ -30,7 +30,7 @@ list of institution and member limits, eligible shares, list of scheduled transf
   "generalSpecifications": {
     "programInfo": {
       "name": "BANNO.M2MTRANSFERS.V4.POW",
-      "version": "0.1.0",
+      "version": "4.0.0",
       "lastModDate": "01/31/24 16:00 MT",
       "language": 1,
       "note1": "New PowerOn"
@@ -572,7 +572,7 @@ All errors should be conveyed via one of the following structures.
     "generalSpecifications": {
       "programInfo": {
         "name": "BANNO.M2MTRANSFERS.V4.POW",
-        "version": "0.1.0",
+        "version": "4.0.0",
         "lastModDate": "01/31/24 16:00 MT",
         "note1": "New PowerOn"
       },
@@ -596,7 +596,7 @@ All errors should be conveyed via one of the following structures.
   "generalSpecifications": {
     "programInfo": {
       "name": "BANNO.M2MTRANSFERS.V4.POW",
-      "version": "0.1.0",
+      "version": "4.0.0",
       "lastModDate": "01/31/24 16:00 MT",
       "note1": "New PowerOn"
     },
