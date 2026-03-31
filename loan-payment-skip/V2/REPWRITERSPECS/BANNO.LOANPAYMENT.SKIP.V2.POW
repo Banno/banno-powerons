@@ -6,7 +6,11 @@
 **  --------------------------------------------------------------------
 **  Program Summary
 **  --------------------------------------------------------------------
-**  [enter program summary information here]
+**  This Banno service PowerOn allow the user to select one or more
+**  eligible loans and, for a fee, have the loan due date advanced
+**  by 28 days, 1 month or one payment cycle, depending upon the
+**  parameter settings. Once the new due date has been calculated, the
+**  loan maturity date will also be advanced accordingly.
 **
 **  --------------------------------------------------------------------
 **  Program states and JSON returns
@@ -207,7 +211,6 @@ DEFINE
  PARAMTPENDDATE=DATE
  PARAMFEECOMMENT=CHARACTER
  PARAMDUEDATECALCTYPE=CHARACTER ARRAY(13)
-
 
 [* CFG Parameter variables -- common
 *]
@@ -754,7 +757,6 @@ PROCEDURE INITIALIZEDATA
  MSGTAGSELECT=""
 END [PROCEDURE]
 
-
 PROCEDURE RGLOANIDNEXTINIT
 
  RGLOANIDINDEX=0
@@ -1094,7 +1096,6 @@ PROCEDURE BNOINITPARAMVALS
    PARAMDUEDATECALCTYPE(TMPLOOP)="M"
   END
 
-
  PARAMERRDISPLAYCOUNT=0
  PARAMLANGSPANISH=FALSE
  PARAMDEBUGMODE=BNODEBUGMODEUNDEFINED
@@ -1192,7 +1193,6 @@ PROCEDURE BNOSETPARAMVALS
  CALL BNOGETPARAMVAL
  IF BNOPARAMFOUND=TRUE THEN
   PARAMMAXSKIPSYEAR=VALUE(BNOPARAMVAL)
-
 
 [* Max skips per loan life 
 *]
@@ -1724,7 +1724,6 @@ PROCEDURE SKIPCRITERIAFREQ
                          FORMAT("  OLD MAT:99/99/9999",LMATURITYDATE)+
                          FORMAT("  NEW MAT:99/99/9999",LNEWMATURITYDATE)
  CALL  BNODEBUGMSGADD
-
 END [PROCEDURE]
 
 PROCEDURE SKIPCRITERIAMONTH
