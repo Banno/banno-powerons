@@ -403,7 +403,6 @@ DEFINE
  DEFAULTFEECOMMENT         = ""
  DEFAULTLOANMINPAYMENT     = $0.00
  DEFAULTLOANMAXPAYMENT     = $0.00
- DEFAULTCUSTMEMOMESSAGE    = "Nightly processing is underway. We are unable to complete your skip a pay request."
 
  INELIGIBLECODESET         = 0  [loan ineligible flag]
  INELIGIBLECODELOANTYPE    = 1  [Incorrect loan type]
