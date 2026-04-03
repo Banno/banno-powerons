@@ -42,7 +42,7 @@
     "availableStartDate": "8/29/2019",
     "availableEndDate": "12/29/2019",
     "feePerPaymentSkip": "35.00",
-    "terms": ["strings ", "with ", "spaces."],
+    "termsMsg": ["strings ", "with ", "spaces."],
     "availableLoans": [
       {
         "name": "NEW MOTOR HOME",
@@ -90,7 +90,7 @@
 - availableStartDate
 - availableEndDate
 - feePerPaymentSkip
-- terms: array of terms messages
+- termsMsg: array of terms messages
 - availableLoans: array of available loans
   - name
   - paymentAmount
@@ -149,6 +149,7 @@ Handles the skip payment request
         "memoMode": false
       }
     },
+    "successMsg": ["Custom success message line 1","Custom success message line 2"],
     "loansWithPaymentsSkipped": [
       {
         "name": "NEW MOTOR HOME",
@@ -179,6 +180,7 @@ Handles the skip payment request
     - memoMode: boolean - true/false. Is the system in memo mode?
 - errorCode: Displays an error code if error condition exists
 - errorMessage: Displays an error message if error condition exists
+- successMsg: array of success messages
 - loansWithPaymentsSkipped: array of loans that had payments skipped
   - name
   - accountId
