@@ -149,7 +149,7 @@ Handles the skip payment request
         "memoMode": false
       }
     },
-    "successMsg": ["Custom success message line 1","Custom success message line 2"],
+    "toastSuccessMsg": ["Custom success message line 1","Custom success message line 2"],
     "loansWithPaymentsSkipped": [
       {
         "name": "NEW MOTOR HOME",
@@ -180,7 +180,7 @@ Handles the skip payment request
     - memoMode: boolean - true/false. Is the system in memo mode?
 - errorCode: Displays an error code if error condition exists
 - errorMessage: Displays an error message if error condition exists
-- successMsg: array of success messages
+- toastSuccessMsg: array of success messages
 - loansWithPaymentsSkipped: array of loans that had payments skipped
   - name
   - accountId
