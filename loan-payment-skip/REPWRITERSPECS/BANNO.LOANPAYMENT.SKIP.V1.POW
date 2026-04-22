@@ -73,6 +73,9 @@
 **             to display the custom memo mode message to the member.
 **             Also, sanitized custom/soft text for debug messages
 **             with CLEANUPTEXT.
+**  Ver. 1.3.2 04/15/2026: TKainz - Banno CUS-4499
+**             Modified to use Share and Loan nicknames when available instead
+**             of the Share and Loan descriptions
 **
 **  For more information check
 **  https://github.com/Banno/banno-powerons
@@ -503,7 +506,9 @@ PROCEDURE PROCGETPRELOADDATA
                       SHARE:AVAILABLEBALANCE>=FEEAMOUNT AND
                       SHARETYPES(SHARE:TYPE)=TRUE)
   DO
-   TMPCHR=SHARE:DESCRIPTION
+   TMPCHR=SHARE:NICKNAME
+   IF TMPCHR="" THEN
+    TMPCHR=SHARE:DESCRIPTION
    CALL CLEANUPTEXT
 
    IF SHAREDISPLAYED=TRUE THEN
@@ -633,7 +638,9 @@ PROCEDURE PROCPERFORMSKIPAPAYMENT
          NEWLINE
          FOR EACH SHARE WITH (SHARE:ID=@RGUSERCHR2)
           DO
-           TMPCHR=SHARE:DESCRIPTION
+           TMPCHR=SHARE:NICKNAME
+           IF TMPCHR="" THEN
+            TMPCHR=SHARE:DESCRIPTION
            CALL CLEANUPTEXT
 
            PRINT ","+Q+"shareDebited"+Q+": "+Q+TMPCHR+Q
@@ -1198,7 +1205,7 @@ PROCEDURE READCONFIGFILESETTINGS
             BNODEBUGMODE=BNODEBUGMODEON
           END
         END
-	
+
 [ Custom memo mode message ]
        ELSE IF TMPPARAM="CMMM" THEN
         DO
@@ -1475,7 +1482,9 @@ PROCEDURE GETSKIPCRITERIA
    LDUEDATE=LOAN:DUEDATE
    LPAYMENT=LOAN:PAYMENT
    LMATURITYDATE=LOAN:MATURITYDATE
-   TMPCHR=LOAN:DESCRIPTION
+   TMPCHR=LOAN:NICKNAME
+   IF TMPCHR="" THEN
+    TMPCHR=LOAN:DESCRIPTION
    CALL CLEANUPTEXT
 
    LDESCRIPTION=TMPCHR
@@ -1781,11 +1790,11 @@ PROCEDURE GETNEXTLID
 END [PROCEDURE]
 
 PROCEDURE VALIDATESYSMEMOMODE
-[* Checks whether the system is in MemoMode. If MemoMode is active: 
+[* Checks whether the system is in MemoMode. If MemoMode is active:
 **  - A JSON field "memoMode: true" will later be returned for logging purposes.
-**  - The corresponding user-facing message is stored in ERRORMSGUSER, which will 
+**  - The corresponding user-facing message is stored in ERRORMSGUSER, which will
 **    later populate the JSON field "clientErrorMessage".
-**  - The logging-specific error message is stored in READCONFIGERRORMSG, which 
+**  - The logging-specific error message is stored in READCONFIGERRORMSG, which
 **    will later populate the JSON field "loggingErrorMessage".
 *]
 SYSTEMMEMOMODE=SYSMEMOMODE
