@@ -47,7 +47,7 @@
 **
 **  --------------------------------------------------------------------
 **  Modification History:
-**   Ver. 2.0.0  04/13/2026 R. Robison: Original V2 version of Loan Payment Skip PowerOn
+**   Ver. 2.0.0  05/01/2026 R. Robison: Original V2 version of Loan Payment Skip PowerOn
 **               * Feature set based on: BANNO.LOANPAYMENT.SKIP.V1.POW Ver. 1.3.1 02/19/2026: JKeenan – Banno
 **                       
 **    
@@ -61,8 +61,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '04/13/26'
- BNOLASTMODTIME            = "10:30 MT"
+ BNOLASTMODDATE            = '05/01/26'
+ BNOLASTMODTIME            = "11:30 MT"
  BNOPROGRAMNAME            = "BANNO.LOANPAYMENT.SKIP.V2.POW"
  BNOCFGFILENAME            = "BANNO.LOANPAYMENT.SKIP.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
