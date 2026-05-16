@@ -1,6 +1,6 @@
 # Withdraw by check JSON contract
 
-_program version 1.2.1 - 06/07/24_
+_program version 1.2.1 - 05/15/26_
 
 ## STATESTART state
 
@@ -53,7 +53,8 @@ _program version 1.2.1 - 06/07/24_
       "50613",
       "ADDRESS 6"
     ],
-    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."]
+    "disclaimerText": ["disclaimer ", "lines ", "with ", "spaces."],
+    "memoMode": false
   }
 }
 ```
@@ -73,6 +74,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - owner: The primary member's long name (NAME:LONGNAME)
 - address: The system calculated mailing address (ACCOUNT:PAYEELINE[1-6])
 - disclaimerText: Custom terms and conditions as set up in the parameter settings Letter file.
+- memoMode: Is the system in MemoMode? (boolean)
 
 **When error condition is encountered:**
 
@@ -80,7 +82,8 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 {
   "errorCode": 999,
   "loggingErrorMessage": "error message detail",
-  "displayErrorMessage": ["display error message detail"]
+  "displayErrorMessage": ["display error message detail"],
+  "memoMode": true
 }
 ```
 
@@ -91,6 +94,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 - errorCode: error code generated (numeric)
 - loggingErrorMessage: Error message specific to the error code
 - displayErrorMessage: An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display message.
+- memoMode: Is the system in MemoMode? (boolean)
 
 **Error Code detail:**
 
@@ -110,6 +114,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |            | Share Warning Found | : [3-digit comma separated share warning list] ||
 |            | Loan Warning Found | : [3-digit comma separated loan warning list] ||
 | 505        | Cross Account WD Attempted |||
+| 510        | Program running in memo mode |||
 
 ## PERFORMWITHDRAW state
 
@@ -149,6 +154,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 {
   "results": {
     "success": true,
+    "successMessage":["an","array","of","lines"],
     "memoMode": false
   }
 }
@@ -157,6 +163,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 **Results detail:**
 
 - success: Was the attempt successful? (boolean)
+- successMessage: CU customizable. An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display success message.
 - memoMode: Is the system in MemoMode? (boolean)
 
 **When error condition is encountered:**
@@ -166,6 +173,7 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
   "errorCode": 999,
   "loggingErrorMessage": "error message detail",
   "displayErrorMessage": ["display error message detail"],
+  "memoMode": false,
   "requested": "123456.00",
   "minWdAmount": "123456.00",
   "maxWdAmount": "123456.00"
@@ -208,9 +216,11 @@ Unless otherwise noted, all values will be passed as double-quote encapsulated c
 |            | TRANPERFORM Error | : NSF | Insufficient Funds |
 | 508        | Unhandled Error || (catch-all) |
 | 509        | TRANPERFORM Error | : [transaction posting system error message] | other transaction posting system error |
+| 510        | Program running in memo mode |||
 
 ## Additional Information
 
 - The UX input values userChrList[1-5] and userNumList[1-5] are referenced by the PowerOn as @RGUSERCHAR[1-5] and @RGUSERNUM[1-5]. Eg: TARGETACCOUNT=@RGUSERCHR1.
 - Additional JSON is included in the PowerOn output as debug and program/system information.
   - The additional debug information will only be included for the first 90 days after the latest program version date.
+
