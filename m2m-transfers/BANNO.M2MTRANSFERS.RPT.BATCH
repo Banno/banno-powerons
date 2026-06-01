@@ -1,4 +1,4 @@
-[* Copyright 2024 Jack Henry and Associates
+[* Copyright 2024-2026 Jack Henry and Associates
 **
 **  PowerOn Name: BANNO.M2MTRANSFERS.RPT.BATCH
 **
@@ -8,15 +8,17 @@
 **   This batch program looks through FM history and transaction history
 **   to generate a report of immediate and/or future dated one-time
 **   and recurring transfers created through the member's use of the Banno
-**   home banking program 'BANNO.M2MTRANSFERS.V3.POW'. The related
-**   configuration Letter file ('BANNO.M2MTRANSFERS.V3.CFG') contains a
+**   home banking program 'BANNO.M2MTRANSFERS.V[x].POW'. The related
+**   configuration Letter file ('BANNO.M2MTRANSFERS.V[x].CFG') contains a
 **   number of settings, a couple of which are also used by this program:
+**
 **     'TRANSACTION DESCRIPTION/COMMENT DEFAULT' (as TC:)
 **        This setting must have a non-blank value and represents the
 **        share/loan comment this program is targeting. In lieu of this
 **        setting containing a value, this program's prompt 'Enter
 **        transaction comment to target' must contain a non-blank
 **        value.
+**
 **     'CROSS ACCOUNT ACCESS' (as XA:)
 **        This setting is used to determine which accounts will be
 **        searched through looking for the target transactions/transfers.
@@ -34,7 +36,7 @@
 **     This is the transaction comment attached to the targeted
 **     transactions which will be included in this report. If this value
 **     is left blank, then the value of the "TC:" parameter setting
-**     in the 'BANNO.M2MTRANSFERS.V3.CFG' Letter file will be used.
+**     in the 'BANNO.M2MTRANSFERS.V[x].CFG' Letter file will be used.
 **       DEFAULT: Left blank. The value from the 'TC:' setting in
 **       the noted Letter file will be used. If both the Letter file
 **       value and this prompt are blank, program run will be terminated
@@ -62,6 +64,10 @@
 **  --------------------------------------------------------------------
 **  Additional Info:
 **  --------------------------------------------------------------------
+**   Be sure to update the CFGFILENAME variable in the SETUP division
+**   below so that it matches the correct configuration Letter file used
+**   by the BANNO.M2MTRANSFERS.V[x].POW program currently in use.
+**
 **   The transaction posting date and the share transfer FM history
 **   posting date are used to qualify the transactions/Share transfer
 **   records.
@@ -72,6 +78,12 @@
 **  Modification History
 **  --------------------------------------------------------------------
 **   Ver. 1.0.0 05/08/24  TKainz - Original Programming
+**   Ver. 1.1.0 03/26/26  TKainz - Added setup option to determine which
+**                        config Letter file to get parameter settings
+**                        from. Corrected issue with program reading
+**                        subsequent transactions incorrectly after
+**                        reading a non-targeted transaction. Added
+**                        additional debug code.
 *]
 
 TARGET=ACCOUNT
@@ -343,6 +355,11 @@ SETUP
 *]
  DEBUGMODE=FALSE
 
+[* Update the CFGFILENAME to match the version of the BANNO.M2MTRANSFERS.V[x].POW
+** program that you're currently using - i.e: BANNO.M2MTRANSFERS.V4.CFG
+*]
+ CFGFILENAME="BANNO.M2MTRANSFERS.V3.CFG"
+
  CALL INITIALIZATIONS
  CALL PROGRAMPROMPTS
  CALL FETCHLETTERFILEPARAMS
@@ -398,10 +415,10 @@ PROCEDURE PROGRAMPROMPTS
 
  TARGETCOMMENT=CHARACTERREAD("",
                              "Enter transaction comment to match. If left",
-                             "blank then 'TC' parameter value",
-                             "from BANNO.M2MTRANSFERS.V3.CFG Letter",
+                             "blank then the 'TC' parameter value",
+                             "from the BANNO.M2MTRANSFERS.V[x].CFG Letter",
                              "file will be used",
-                             "Enter transaction comment to target []")
+                             "Enter transaction comment to match []")
  IF TARGETCOMMENT<>"" THEN
   DO
    BNOTEXT=TARGETCOMMENT
@@ -435,10 +452,10 @@ PROCEDURE PROGRAMPROMPTS
 END [PROCEDURE]
 
 PROCEDURE FETCHLETTERFILEPARAMS
-[* Open Letter file BANNO.M2MTRANSFERS.V3.CFG to retrieve needed
-** parameter settings:
+[* Open the Letter file assigned to the CFGFILENAME variable in the SETUP
+** division to retrieve the needed parameter settings:
 ** 'TC:' (tran comment to search for)
-** 'XA:' (cross accounts allowed flag
+** 'XA:' (cross accounts allowed flag)
 *]
  XACCTACCESS=FALSE
 
@@ -583,6 +600,30 @@ PROCEDURE GETTRANSACTIONS
                                     SHARE TRANSACTION:VOIDCODE=0 AND
                                     SHARE TRANSACTION:USERNUMBER=TARGETSYMXUSER)
     DO
+     IF DEBUGMODE=TRUE AND
+        TESTACCOUNTS<>"" THEN
+      DO
+       COL=001 REPEATCHR("=",132)
+       NEWLINE
+       PRINT "TCCOUNT="
+       PRINT TCCOUNT
+       PRINT " / ACCOUNT#="+ACCOUNT:NUMBER
+       PRINT " / TCIDTYPE(TCCOUNT)="
+       PRINT TCIDTYPE(TCCOUNT)
+       PRINT " / TCID(TCCOUNT)="+TCID(TCCOUNT)
+       PRINT " / TCCOMMENT(TCCOUNT)="+TCCOMMENT(TCCOUNT)
+       NEWLINE
+       PRINT "COMMENT CODE:"
+       PRINT SHARE TRANSACTION:COMMENTCODE
+       PRINT " / POST DATE="
+       PRINT SHARE TRANSACTION:POSTDATE
+       PRINT " / POST TIME="
+       PRINT SHARE TRANSACTION:POSTTIME
+       PRINT " / TRAN AMOUNT="
+       PRINT SHARE TRANSACTION:TRANAMOUNT
+       NEWLINE
+      END
+
      IF SHARE TRANSACTION:COMMENTCODE=1 THEN
       DO
        IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
@@ -626,8 +667,9 @@ PROCEDURE GETTRANSACTIONS
              IF ISCROSSACCOUNT=FALSE THEN
               CALL PRINTTRANTOREPORT
 
-             CALL CLEARTRANVARS
-            END
+            END [IF CHARACTERSEARCH(SHARE TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0]
+           CALL CLEARTRANVARS
+
           END [IF TCCOUNT=1 THEN...]
          ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
           DO
@@ -656,8 +698,9 @@ PROCEDURE GETTRANSACTIONS
              IF ISCROSSACCOUNT=FALSE THEN
               CALL PRINTTRANTOREPORT
 
-             CALL CLEARTRANVARS
-            END
+            END [IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0]
+           CALL CLEARTRANVARS
+
           END [IF TCCOUNT=2]
         END [IF SHARE TRANSACTION:ACTIONCODE<>"W"]
       END [SHARE TRANSACTION:COMMENTCODE<>1]
@@ -677,6 +720,29 @@ PROCEDURE GETTRANSACTIONS
                                     LOAN TRANSACTION:VOIDCODE=0 AND
                                     LOAN TRANSACTION:USERNUMBER=TARGETSYMXUSER)
     DO
+     IF DEBUGMODE=TRUE AND
+        TESTACCOUNTS<>"" THEN
+      DO
+       COL=001 REPEATCHR("=",132)
+       NEWLINE
+       PRINT "TCCOUNT="
+       PRINT TCCOUNT
+       PRINT " / ACCOUNT#="+ACCOUNT:NUMBER
+       PRINT " / TCIDTYPE(TCCOUNT)="
+       PRINT TCIDTYPE(TCCOUNT)
+       PRINT " / TCID(TCCOUNT)="+TCID(TCCOUNT)
+       PRINT " / TCCOMMENT(TCCOUNT)="+TCCOMMENT(TCCOUNT)
+       NEWLINE
+       PRINT "COMMENT CODE:"
+       PRINT LOAN TRANSACTION:COMMENTCODE
+       PRINT " / POST DATE="
+       PRINT LOAN TRANSACTION:POSTDATE
+       PRINT " / POST TIME="
+       PRINT LOAN TRANSACTION:POSTTIME
+       PRINT " / TRAN AMOUNT="
+       PRINT LOAN TRANSACTION:TRANAMOUNT
+       NEWLINE
+      END
      IF LOAN TRANSACTION:COMMENTCODE=1 THEN
       DO
        IF TCCOUNT<TCCOUNTMAX THEN [store pertinant data for future use]
@@ -720,8 +786,8 @@ PROCEDURE GETTRANSACTIONS
              IF ISCROSSACCOUNT=FALSE THEN
               CALL PRINTTRANTOREPORT
 
-             CALL CLEARTRANVARS
-            END
+            END [IF CHARACTERSEARCH(LOAN TRANSACTION:STMTDESC:1,TARGETCOMMENT)>0]
+           CALL CLEARTRANVARS
           END [IF TCCOUNT=1 THEN...]
          ELSE IF TCCOUNT=2 THEN [transaction with tran comment]
           DO
@@ -750,8 +816,8 @@ PROCEDURE GETTRANSACTIONS
              IF ISCROSSACCOUNT=FALSE THEN
               CALL PRINTTRANTOREPORT
 
-             CALL CLEARTRANVARS
-            END
+            END [IF CHARACTERSEARCH(TCCOMMENT(1),TARGETCOMMENT)>0 THEN]
+           CALL CLEARTRANVARS
           END [IF TCCOUNT=2]
         END [IF LOAN TRANSACTION:ACTIONCODE<>"A"]
       END [LOAN TRANSACTION:COMMENTCODE<>1]
@@ -965,12 +1031,9 @@ PROCEDURE PROCESSRECORD
 
 END [PROCEDURE]
 
-
 PROCEDURE INITIALIZATIONS
 [* Variable and array initializations
 *]
- CFGFILENAME="BANNO.M2MTRANSFERS.V3.CFG"
-
  FREQUENCIESCHR(0)="Demand"
  FREQUENCIESCHR(1)="Annual"
  FREQUENCIESCHR(2)="Semiannual"
