@@ -25,7 +25,7 @@
 **                           accounts/shares/loans and ineligible warning codes to include the 
 **                           share/loan type and account/share/loan warning code numbers.
 **                           Also, added Program Installation Date parameter setting
-**   Ver. 1.2.2  05/15/2026: J. Keenan - Added MMCW parameter to allow/deny check 
+**   Ver. 1.3.0  06/04/2026: J. Keenan - Added MMCW parameter to allow/deny check 
 **                           withdrawals in memo mode (returns err 510). 
 **                           Added memo mode message (CMMS) and success message (CSM)
 **                           parameters for configurable soft text success messages,
@@ -233,11 +233,11 @@ SETUP
  Q=CTRLCHR(34)
  QQ=CTRLCHR(34)
 
- BNOLASTMODDATE='05/15/26'
- BNOLASTMODTIME="17:00 PT"
+ BNOLASTMODDATE='06/04/26'
+ BNOLASTMODTIME="12:00 PT"
  BNOPROGRAMNAME="BANNO.CHECK.WITHDRAW.V1.POW"
  BNOCFGFILENAME="BANNO.CHECK.WITHDRAW.V1.CFG"
- BNOPROGRAMVERSION="1.2.2"
+ BNOPROGRAMVERSION="1.3.0"
  BNOPRINTDEBUGINFODAYS=90
 
  JSONBOOLEAN(TRUE)="true"
