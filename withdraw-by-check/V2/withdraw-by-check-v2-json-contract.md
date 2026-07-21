@@ -138,7 +138,6 @@
     },
     "success": true,
     "successMessage": ["an", "array", "of", "lines"],
-    "memoMode": false
   }
 }
 ```
@@ -161,7 +160,6 @@
 - errorMessage: Displays an error message if error condition exists
 - success: Was the operation successful? (boolean) - true/false
 - successMessage: CU customizable. An array of up to 5 display lines. If included, this message will display in place of the hard-coded UX display success message.
-- memoMode: Is the system in MemoMode? (boolean) - true/false
 
 ## Errors
 
