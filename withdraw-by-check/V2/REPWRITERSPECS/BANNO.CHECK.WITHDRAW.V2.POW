@@ -47,7 +47,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 ** 
-**    Ver. 2.0.0  07/20/2026 R. Robison: Original V2 version of Withdraw by Check PowerOn
+**    Ver. 2.0.0  07/21/2026 R. Robison: Original V2 version of Withdraw by Check PowerOn
 **                           Feature set based on: BANNO.CHECK.WITHDRAW.V1.POW Ver. 1.2.1  06/07/2024
 **                       
 **    
@@ -61,8 +61,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '07/20/26'
- BNOLASTMODTIME            = "17:00 MT"
+ BNOLASTMODDATE            = '07/21/26'
+ BNOLASTMODTIME            = "13:00 MT"
  BNOPROGRAMNAME            = "BANNO.CHECK.WITHDRAW.V2.POW"
  BNOCFGFILENAME            = "BANNO.CHECK.WITHDRAW.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
