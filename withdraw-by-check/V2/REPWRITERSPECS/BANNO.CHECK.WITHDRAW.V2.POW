@@ -878,7 +878,7 @@ END [PROCEDURE]
 
 [*
 **  --------------------------------------------------------------------
-**  Transaction Perfrom Procedures
+**  Transaction Perform Procedures
 **  --------------------------------------------------------------------
 *]
 PROCEDURE DOTRANPERFORM
