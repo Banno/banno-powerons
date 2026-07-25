@@ -1037,20 +1037,46 @@ END
 
 PROCEDURE RATEPOOLADD
 
+ bnodebugmsg="in RATEPOOLADD"
+           call BNODEBUGMSGADD
+
  RATEPOOLFULL=FALSE
  IF RATEPOOLNEWRATEBLOCK=TRUE THEN
   DO
    IF RATEPOOLCOUNT<RATEPOOLMAX THEN
     RATEPOOLCOUNT=RATEPOOLCOUNT+1
    ELSE
+  DO 
+   bnodebugmsg="RATEPOOLFULL=TRUE"
+           call BNODEBUGMSGADD
     RATEPOOLFULL=TRUE 
+  END  
   END
+
+bnodebugmsg=FORMAT("ratepoolcount=99",ratepoolcount)
+           call BNODEBUGMSGADD
 
  IF RATEPOOLFULL=FALSE THEN
   DO
    IF RATEPOOLRATECOUNT(RATEPOOLCOUNT)<RATEPOOLRATEMAX THEN
     DO
      RATEPOOLRATECOUNT(RATEPOOLCOUNT)=RATEPOOLRATECOUNT(RATEPOOLCOUNT)+1
+     bnodebugmsg=format("ratepoolratecount=99",ratepoolratecount)
+     call BNODEBUGMSGADD
+     
+     bnodebugmsg=format("RATEPOOLGROUPt=99",RATEPOOLGROUP(RATEPOOLCOUNT))
+     call BNODEBUGMSGADD
+     bnodebugmsg=format("RATEPOOLGROUPTYPE=99",RATEPOOLGROUPtype(RATEPOOLCOUNT))
+     call BNODEBUGMSGADD
+
+     bnodebugmsg=format("ADDRATEPOOLRATE=999.999",ADDRATEPOOLRATE)
+     call BNODEBUGMSGADD
+ bnodebugmsg=format("ADDRATEPOOLMINBAL=999999.99",ADDRATEPOOLMINBAL)
+     call BNODEBUGMSGADD
+bnodebugmsg=format("ADDRATEPOOLMAXBAL=999999.99",ADDRATEPOOLMAXBAL)
+     call BNODEBUGMSGADD
+
+
      RATEPOOLGROUP(RATEPOOLCOUNT)=ADDRATEPOOLGROUP
      RATEPOOLGROUPTYPE(RATEPOOLCOUNT)=ADDRATEPOOLGROUPTYPE
      RATEPOOLRATE(RATEPOOLCOUNT,RATEPOOLRATECOUNT(RATEPOOLCOUNT))=ADDRATEPOOLRATE
@@ -1107,6 +1133,11 @@ PROCEDURE GETSHARERATES
              DR=1
              DONE=FALSE
            
+           bnodebugmsg=format("group 99",i)
+           call BNODEBUGMSGADD
+           bnodebugmsg=format("temp type 99",i)
+           call BNODEBUGMSGADD
+
              RATEPOOLNEWRATEBLOCK=TRUE
              WHILE DR<RATEPOOLRATEMAX AND DONE=FALSE
               DO
@@ -1117,6 +1148,8 @@ PROCEDURE GETSHARERATES
                   DIVDEFRATE=0.000% AND
                   DIVDEFBALCUTOFF>$0.00 THEN
                 DO
+                bnodebugmsg="section 1"
+           call BNODEBUGMSGADD
                  RATESELECTED=TRUE
                  ADDRATEPOOLGROUP=I
                  ADDRATEPOOLGROUPTYPE=J
@@ -1130,6 +1163,8 @@ PROCEDURE GETSHARERATES
                IF DIVDEFRATE>0.000% AND
                   DIVDEFBALCUTOFF>$0.00 THEN
                 DO
+                 bnodebugmsg="section 2"
+           call BNODEBUGMSGADD
                  RATESELECTED=TRUE
                  ADDRATEPOOLGROUP=I
                  ADDRATEPOOLGROUPTYPE=J
@@ -1143,6 +1178,8 @@ PROCEDURE GETSHARERATES
                IF DIVDEFRATE>0.000% AND
                   DIVDEFBALCUTOFF=$0.00 THEN
                 DO
+                 bnodebugmsg="section 3"
+           call BNODEBUGMSGADD
                  RATESELECTED=TRUE
                  ADDRATEPOOLGROUP=I
                  ADDRATEPOOLGROUPTYPE=J
