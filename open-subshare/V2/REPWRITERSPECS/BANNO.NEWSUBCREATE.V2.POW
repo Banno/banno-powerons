@@ -3,8 +3,8 @@
 **  PowerOn Name:             BANNO.NEWSUBCREATE.V2.POW
 **  Datafile Name:            BANNO.NEWSUBCREATE.V1.CFG
 **  Letterfile Name:          BANNO.NEWSUBCREATE.V2.CFG
-**  Letterfile Name:          BANNO.NEWSUBCREATE.TERMS.00-19
-**  Letterfile Name:          BANNO.NEWSUBCREATE.FEEDISC.00-19
+**  Letterfile Name:          BANNO.NEWSUBACCT.TERMS.00-19
+**  Letterfile Name:          BANNO.NEWSUBACCT.FEEDISC.00-19
 **  Fee Display PowerOn Name: BANNO.NEWSUBCREATE.FEES.V2.POW (template)**
 **  --------------------------------------------------------------------
 **  Program Summary
@@ -83,7 +83,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **
-**    Ver. 2.0.0  07/23/2026 R. Robison: Original V2 version of Open Subshare PowerOn
+**    Ver. 2.0.0  07/28/2026 R. Robison: Original V2 version of Open Subshare PowerOn
 **                           Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
 **                       
 **    
@@ -97,7 +97,7 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '07/23/26'
+ BNOLASTMODDATE            = '07/28/26'
  BNOLASTMODTIME            = "20:00 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V2.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V2.CFG"
