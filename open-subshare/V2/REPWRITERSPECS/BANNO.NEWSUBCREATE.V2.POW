@@ -306,7 +306,10 @@ DEFINE
  PARSEARRAYMAX             = NUMBER
  PRIMARYSHORTNAME          = CHARACTER
 
- COPYNAMELIST=CHARACTER ARRAY(36,20)
+ COPYNAMELIST              = CHARACTER ARRAY(36,20)
+ COPYNAMELISTERROR         = CHARACTER ARRAY(20)
+ CNLERRORCHR               = CHARACTER
+ COPYNAMELISTCOUNT         = NUMBER
 
  LFNUM=NUMBER
  LFERROR=CHARACTER
@@ -595,6 +598,43 @@ DEFINE
  MAXNAMETYPES=99
 
  COPYNAMECOUNTMAX=15
+ CNLSSN                    = 0
+ CNLLAST                   = 1
+ CNLFIRST                  = 2
+ CNLSTREET                 = 3
+ CNLEXTRAADDRESS           = 4
+ CNLCITY                   = 5
+ CNLSTATE                  = 6
+ CNLZIPCODE                = 7
+ CNLLOC                    = 8
+ CNLMBRADDRNUMLINK         = 9
+ CNLMEMBERNUMLINK          = 10
+ CNLTYPE                   = 11
+ CNLSOURCE                 = 12
+ CNLBIRTHDATE              = 13
+ CNLLOCATOR                = 14
+ CNLSHORTNAME              = 15
+ CNLLONGNAME               = 16
+ CNLADDRESSTYPE            = 17
+ CNLSUBTYPE                = 18
+ CNLNAMEFORMAT             = 19
+ CNLSSNTYPE                = 20
+ CNLSSNOVERRIDE            = 21
+ CNLSSNCERTIFICATION       = 22
+ CNLFOREIGNTIN             = 23
+ CNLUSPERSONFLAG           = 24
+ CNLTITLE                  = 25
+ CNLMIDDLE                 = 26
+ CNLSUFFIX                 = 27
+ CNLPHONETYPE              = 28
+ CNLHOMEPHONE              = 29
+ CNLCARRIERROUTE           = 30
+ CNLCOUNTRYCODE            = 31
+ CNLCOUNTRY                = 32
+ CNLRESTRICT               = 33
+ CNLLASTADDRVERIFDATE      = 34
+ CNLSEX                    = 35
+ CNLDUPLICATED             = 36
  
  CHRVALQUOTE=34
  CHRVALBACKSLASH=92
