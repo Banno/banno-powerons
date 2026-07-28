@@ -124,7 +124,7 @@ The UX returns the member's selected share group and share type.
   "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
   "userChrList": [
     { "id": 1, "value": "groupNumber" },
-    { "id": 2, "value": "shareType" },
+    { "id": 2, "value": "shareType" }
   ],
   "userNumList": [],
   "rgSession": 1
@@ -238,13 +238,7 @@ Here the UX is returning the total user selections to this point - the group, sh
 {
   "rgState": "NAMEPRELOAD",
   "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
-  "userChrList": [
-    {"id": 1, "value": "groupNumber"},
-    {"id": 2, "value": "shareType"},
-    {"id": 3, "value": "fundingType"},
-    {"id": 4, "value": "fundingMemberAccountNumber"},
-    {"id": 5, "value": "fundingAmount"}
-  ],
+  "userChrList": [],
   "userNumList": [],
   "rgSession": 1
 }
@@ -252,11 +246,7 @@ Here the UX is returning the total user selections to this point - the group, sh
 
 **Request Detail:**
 
-- userChrList[1]: Member's selected group number (category)
-- userChrList[2]: Member's selected share type
-- userChrList[3]: Type of funding (electronic, check or later)
-- userChrList[4]: Funding source (10-digit account,S/L for Share or Loan and the Share or Loan ID)
-- userChrList[5]: Funding amount
+- userChrList[1-5]: not used
 - userNumList[1-5]: not used
 
 ### PowerOn Response (NAMEPRELOAD)
@@ -457,7 +447,7 @@ Returns the results of the attempt. Because it's possible for the share to be cr
 - names: array of new name recors either created or copied over to the new Share
   - nameType: Name type description
   - name: Name attached to the new name record
-  - created: Was the creation successful? (boolean)  
+  - created: Was the creation successful? (boolean)
 
 ## Errors
 
@@ -515,3 +505,4 @@ Possible error codes include:
 | 515        | No existing open Shares/Loans on the account |                                                                                          |
 | 516        | Config file validation error                 | Duplicate Param file entry([parameter name])                                             |
 |            |                                              | Invalid Param Value([parameter name])                                                    |
+| 517        | Invalid RGDATA                               |                                                                                          |

@@ -29,12 +29,9 @@
 **
 **    STATE:  NAMEPRELOAD
 **  PROCESS:  Process NAMEPRELOAD state and create json response
-**     PASS:  @RGUSERCHR1 Member's selected group number (category)
-**            @RGUSERCHR2 Member's selected share type
-**            @RGUSERCHR3 Type of funding (electronic, check or later)
-**            @RGUSERCHR4 Funding source (10-digit account,S/L for Share or Loan and the Share or Loan ID)
-**            @RGUSERCHR5 Funding amount
+**     PASS:  @RGUSERCHR1 n/a
 **            @RGUSERNUM1 n/a
+**
 **   RETURN:  Provides UX NAMEPRELOAD response
 **
 **    STATE:  CREATESHARE
