@@ -494,15 +494,14 @@ Possible error codes include:
 | 504        | No eligible shares to be created             |                                                                                          |
 | 505        | Error reading ToC for group                  | Share Grp [2-digit group/category] [system generated letter file read error message]     |
 | 506        | No Shares with sufficient funds to xfer      |                                                                                          |
-| 507        | Error reading passed name info               |                                                                                          |
+| 507        | Invalid RGDATA                               |                                                                                          |
 | 508        | Next ID calculation error                    |                                                                                          |
 | 509        | Error getting new share rate                 |                                                                                          |
 | 510        | Could not calculate new maturity date        |                                                                                          |
 | 511        | Error creating new share                     | [share create error detail message]                                                      |
 | 512        | Maximum share limit error                    |                                                                                          |
-| 513        | Error calculating fee                        |                                                                                          |
+| 513        | Error calculating fee                        | Fee specfile error - [system generated fee specfile error]                               |
 | 514        | Error reading fee disclosure for group       | Share Grp [2-digit group/category] [system generated letter file read error message]     |
 | 515        | No existing open Shares/Loans on the account |                                                                                          |
 | 516        | Config file validation error                 | Duplicate Param file entry([parameter name])                                             |
 |            |                                              | Invalid Param Value([parameter name])                                                    |
-| 517        | Invalid RGDATA                               |                                                                                          |
