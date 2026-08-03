@@ -79,7 +79,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **
-**    Ver. 2.0.0  07/28/2026 R. Robison: Original V2 version of Open Subshare PowerOn
+**    Ver. 2.0.0  08/03/2026 R. Robison: Original V2 version of Open Subshare PowerOn
 **                           Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
 **                       
 **    
@@ -93,8 +93,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '07/28/26'
- BNOLASTMODTIME            = "20:00 MT"
+ BNOLASTMODDATE            = '08/03/26'
+ BNOLASTMODTIME            = "18:00 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V2.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V2.CFG"
  [TODO: figure out naming -- using V1 for the datafile is kinda weird]
@@ -326,7 +326,6 @@ DEFINE
  COPYERRORTEXT             = CHARACTER
  COPYINDEX                 = NUMBER
  COPYNAMELISTLOOP          = NUMBER
- COPYNAMESCHR              = CHARACTER
  NAMECOPYLOOP              = NUMBER
  NAMEFOUND                 = NUMBER
  NAMESCOPIEDCOUNT          = NUMBER
@@ -346,10 +345,8 @@ DEFINE
  CNLERRORCHR               = CHARACTER
  COPYNAMELISTCOUNT         = NUMBER
 
- SHAREDETAILSCHR=CHARACTER
  COPYNAMESCHR=CHARACTER
-
-
+ SHAREDETAILSCHR=CHARACTER
 
  LFNUM=NUMBER
  LFERROR=CHARACTER
@@ -705,8 +702,6 @@ SETUP
  BNOERRCODE=BNOERRCODENSF                 BNOERRMESSAGE="No Shares with sufficient funds to xfer"
  CALL BNOERRADD
  BNOERRCODE=BNOERRCODEINVALIDRGDATA       BNOERRMESSAGE="Invalid RGDATA"
- CALL BNOERRADD
- BNOERRCODE=BNOERRCODEREADNAMEINFO        BNOERRMESSAGE="Error reading passed name info"
  CALL BNOERRADD
  BNOERRCODE=BNOERRCODENEXTIDCALC          BNOERRMESSAGE="Next ID calculation error"
  CALL BNOERRADD
