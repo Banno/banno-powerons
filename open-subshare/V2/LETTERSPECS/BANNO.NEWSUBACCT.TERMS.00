@@ -13,6 +13,8 @@
 * For backwards compatibility, a single blank line will be interpreted as a new line and two blank lines in a row
 * will be interpreted as a new paragraph
 *
+* Optionally prefix lines with either "_EN:" or "_SP:" to support English and/or Spanish disclosure lines.
+*
 * Use this ruler as a guideline when setting up your messages. Do not extend past the end of this line (120 characters).
 *
 *        10        20        30        40        50        60        70        80        90        100       110       120
