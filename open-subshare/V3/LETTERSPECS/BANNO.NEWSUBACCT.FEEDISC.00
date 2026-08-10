@@ -1,10 +1,10 @@
 ************************************************************************************************************************
-* BANNO.NEWSUBCREATE.V1.POW Terms or Conditions (TOC) Letter file
+* BANNO.NEWSUBCREATE.V3.POW Fee Disclosure Letter file
 *
-* One of these Terms and Conditions Letter files is required for each share group defined by the
-* BANNO.NEWSUBCREATE.V1.CONFIG on-demand program.
+* One of these fee disclosure letter files is required for each share group (for which a fee is being charged) defined
+* by the BANNO.NEWSUBCREATE.V1.CONFIG on-demand program.
 *
-* Each line started by an asterisk in this Letter file will be treated as a comment and ignored by the program
+* Each line started by an asterisk in this letter file will be treated as a comment and ignored by the program
 *
 * Data will be displayed as written. The following HTML tags may be utilized to facilitate text formatting:
 *   <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <b>, <strong>, <i>, <u>, <ul>, <ol>, <li>, <br>, <p>, <a> and <hr>.
@@ -20,10 +20,5 @@
 *        10        20        30        40        50        60        70        80        90        100       110       120
 *23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 *--------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|
-<h3>Savings Shares</h3>
-<ul>
-<li>Condition 1</li>
-<li>Condition 2</li>
-</ul>
-<br>
-Refer to <a href='https://www.w3schools.com'>W3Schools.com</a> for assistance and tips with using HTML tags<br>
+_EN:A fee will be charged when the new account is opened.
+_SP:A fee will be charged when the new account is opened.

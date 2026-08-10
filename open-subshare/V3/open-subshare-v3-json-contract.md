@@ -1,4 +1,4 @@
-# Open Subshare v2 JSON contract
+# Open Subshare v3 JSON contract
 
 ## PRELOADDATA state
 
@@ -7,7 +7,7 @@
 ```json
 {
   "rgState": "PRELOADDATA",
-  "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
+  "powerOnFilename": "BANNO.NEWSUBCREATE.V3.POW",
   "userCharList": [],
   "userNumList": [],
   "rgSession": 1
@@ -28,7 +28,7 @@ Returns member's eligibility and categories of shares, their related share types
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.NEWSUBCREATE.V2.POW",
+        "name": "BANNO.NEWSUBCREATE.V3.POW",
         "version": "0.1.0",
         "lastModDate": "01/31/24 16:00 MT",
         "language": 1,
@@ -121,7 +121,7 @@ The UX returns the member's selected share group and share type.
 ```json
 {
   "rgState": "GETTERMSFUNDING",
-  "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
+  "powerOnFilename": "BANNO.NEWSUBCREATE.V3.POW",
   "userChrList": [
     { "id": 1, "value": "groupNumber" },
     { "id": 2, "value": "shareType" }
@@ -147,7 +147,7 @@ Returns the specific terms (if any) pertaining to the selected share type, the m
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.NEWSUBCREATE.V2.POW",
+        "name": "BANNO.NEWSUBCREATE.V3.POW",
         "version": "0.1.0",
         "lastModDate": "01/31/24 16:00 MT",
         "language": 1,
@@ -237,7 +237,7 @@ Here the UX is returning the total user selections to this point - the group, sh
 ```json
 {
   "rgState": "NAMEPRELOAD",
-  "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
+  "powerOnFilename": "BANNO.NEWSUBCREATE.V3.POW",
   "userChrList": [],
   "userNumList": [],
   "rgSession": 1
@@ -258,7 +258,7 @@ Returns name record information: existing account level names, name types which 
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.NEWSUBCREATE.V2.POW",
+        "name": "BANNO.NEWSUBCREATE.V3.POW",
         "version": "0.1.0",
         "lastModDate": "01/31/24 16:00 MT",
         "language": 1,
@@ -342,7 +342,7 @@ All necessary information is passed back from the UX to create and fund the new 
 ```json
 {
   "rgState": "CREATESHARE",
-  "powerOnFilename": "BANNO.NEWSUBCREATE.V2.POW",
+  "powerOnFilename": "BANNO.NEWSUBCREATE.V3.POW",
   "userChrList": [
     { "id": 1, "value": "0038;0000;100.00;0010^123;425;1256;24578;125899" },
     { "id": 2, "value": "04;Mary;Quite;Contrary;JR;333222111;mary@aol.com" },
@@ -382,7 +382,7 @@ Returns the results of the attempt. Because it's possible for the share to be cr
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.NEWSUBCREATE.V2.POW",
+        "name": "BANNO.NEWSUBCREATE.V3.POW",
         "version": "0.1.0",
         "lastModDate": "01/31/24 16:00 MT",
         "language": 1,
@@ -458,7 +458,7 @@ Any and all errors should be conveyed via the following structure:
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.NEWSUBCREATE.V2.POW",
+        "name": "BANNO.NEWSUBCREATE.V3.POW",
         "version": "0.1.0",
         "lastModDate": "01/31/24 16:00 MT",
         "note1": "New PowerOn"

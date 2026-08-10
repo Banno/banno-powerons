@@ -1,9 +1,9 @@
 [*
-**  PowerOn Name:       BANNO.NEWSUBCREATE.FEES.V2.POW
+**  PowerOn Name:       BANNO.NEWSUBCREATE.FEES.V3.POW
 **
 **  Copyright 2026 Jack Henry & Associates, Inc.
 **
-**  This Banno subroutine PowerOn is called by the main BANNO.NEWSUBCREATE.V2.POW PowerOn.  It can be modified
+**  This Banno subroutine PowerOn is called by the main BANNO.NEWSUBCREATE.V3.POW PowerOn.  It can be modified
 **  to return a custom fee amount, description and User-defined GL Code to the UX for fee display and posting.
 **
 **  For more information check
@@ -72,7 +72,7 @@ SETUP
  CALL SACFEEINIT
 END
 
-PRINT TITLE="BANNO.NEWSUBCREATE.FEES.V2.POW"
+PRINT TITLE="BANNO.NEWSUBCREATE.FEES.V3.POW"
 
 [*
 **  Custom fee logic should be added here.  To add a custom fee for display in the UX,
