@@ -1,4 +1,4 @@
-[*  Copyright 2024-2026 Jack Henry and Associates
+[*  Copyright 2026 Jack Henry and Associates
 **
 **  PowerOn Name:                     BANNO.CHECK.WITHDRAW.V2.POW
 **  Configuration Letterfile Name:    BANNO.CHECK.WITHDRAW.V2.CFG
@@ -47,7 +47,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 ** 
-**    Ver. 2.0.0  07/21/2026 R. Robison: Original V2 version of Withdraw by Check PowerOn
+**    Ver. 2.0.0  08/10/2026 R. Robison: Original V2 version of Withdraw by Check PowerOn
 **                           ** Feature set based on: BANNO.CHECK.WITHDRAW.V1.POW Ver. 1.2.1  06/07/2024 **
 **                           - Also includes memo mode changes from https://github.com/Banno/banno-powerons/pull/237.
 **                             Ver. 1.3.0  06/04/2026 of BANNO.CHECK.WITHDRAW.V1.POW.
@@ -64,8 +64,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '07/21/26'
- BNOLASTMODTIME            = "13:00 MT"
+ BNOLASTMODDATE            = '08/10/26'
+ BNOLASTMODTIME            = "23:00 MT"
  BNOPROGRAMNAME            = "BANNO.CHECK.WITHDRAW.V2.POW"
  BNOCFGFILENAME            = "BANNO.CHECK.WITHDRAW.V2.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
@@ -1152,13 +1152,11 @@ PROCEDURE PARAMPOSTPROCESS
   END
  PARAMMSGALLLANG=PARAMMSGTAGSPANISH
  CALL PARAMMSGALLFIND
-[* TODO: need the Spanish translation for the below
-*]
  IF PARAMMSGALLTAGFOUND=FALSE THEN
   DO
-   PARAMMSGALLVAL="Nightly processing is underway.  Your check withdrawal has been processed"
+   PARAMMSGALLVAL="El procesamiento nocturno est&aacute; en curso. Su retiro mediante cheque ha sido"
    CALL PARAMMSGALLADD
-   PARAMMSGALLVAL="and will be reflected the next business day."
+   PARAMMSGALLVAL="procesado y se ver&aacute; reflejado el pr&oacute;ximo día h&aacute;bil."
    CALL PARAMMSGALLADD
   END
 
