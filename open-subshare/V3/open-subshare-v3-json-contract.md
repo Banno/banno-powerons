@@ -8,7 +8,7 @@
 {
   "rgState": "PRELOADDATA",
   "powerOnFilename": "BANNO.NEWSUBCREATE.V3.POW",
-  "userCharList": [],
+  "userChrList": [],
   "userNumList": [],
   "rgSession": 1
 }

@@ -15,7 +15,8 @@
 **  DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU'RE DOING!
 **
 **  Modification History:
-**    Ver. 1.0.0  01/04/23 R. Robison - Original Programming
+**    Ver. 3.0.0  08/20/2026 R. Robison: Original V3 version of Open Subshare Fee PowerOn
+**                           Feature set based on: BANNO.NEWSUBCREATE.FEES.V1.POW Ver. 1.0.0  01/04/23
 **
 **  Data will be passed to the subroutine specfile as follows:
 **
