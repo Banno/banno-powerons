@@ -94,7 +94,7 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
 
  BNOLASTMODDATE            = '08/20/26'
- BNOLASTMODTIME            = "14:00 MT"
+ BNOLASTMODTIME            = "17:30 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V3.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V3.CFG"
  [TODO: figure out naming -- using V1 for the datafile is kinda weird]
@@ -812,13 +812,10 @@ SETUP
 **  - Optionally set PARAMMSGOPT to mark a message as optional. Message will not be returned in
 **.   json response if no message lines found in the CFG.
 *]
- CALL PARAMMSGINIT
+[CALL PARAMMSGINIT
  PARAMMSGTAG="IT"     PARAMMSGPROP="introText"          [Intro Text Message]
  PARAMMSGMAXLINES=10
- CALL PARAMMSGTAGADD
- PARAMMSGTAG="CT"     PARAMMSGPROP="confirmText"        [Confirm Text Message]
- PARAMMSGOPT=TRUE
- CALL PARAMMSGTAGADD
+ CALL PARAMMSGTAGADD]
 
  CALL SETUPDATA
 END [SETUP]
