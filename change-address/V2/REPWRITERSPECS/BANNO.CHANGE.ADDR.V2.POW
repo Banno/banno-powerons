@@ -41,7 +41,6 @@
 **
 **    Ver. 2.0.0  08/26/2026 R. Robison: Original V2 version of Change Address PowerOn
 **                           ** Feature set based on: BANNO.CHANGE.ADDR.V1.POW Ver. 1.5.0  02/03/26 **
-
 **                       
 **    
 *]
@@ -1347,7 +1346,7 @@ PROCEDURE OVERRIDECONVERSATIONS
    EMAILLINE("Account : xxxxxx"+SEGMENT(ACCOUNT:NUMBER,7,10)+" "+NAME:SHORTNAME,EMAILSENDERROR)
    EMAILLINE("<br />",EMAILSENDERROR)
    EMAILLINE("Error Code : "+FORMAT("999",BNOERRCODE),EMAILSENDERROR)
-   EMAILLINE("<br /><br />",EMAILSENDERROR)
+   EMAILLINE("<br />",EMAILSENDERROR)
    EMAILLINE("Error Detail : "+ERRORDETAIL,EMAILSENDERROR)
    EMAILLINE("<br /><br />",EMAILSENDERROR)
    EMAILLINE("New address information can be found in the account notes.",EMAILSENDERROR)
