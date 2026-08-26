@@ -101,6 +101,8 @@ Below is the inclusive list of Response Codes that may be returned by the PowerO
 |               |                                    | Acct Type [4-digit account type]                                                         |
 | 504           | Successful Address Update          | [# of name record updates] Name Record                                                   |
 |               |                                    | Name LOC [name record locator]                                                           |
+|               |                                    | Conversations override email sent to [override email address]                            |
+|               |                                    | Override email error - [email send error]                                                |
 | 505           | Error validating requested changes | Acct Warning [4-digit account warning]                                                   |
 |               |                                    | No allowed name records found                                                            |
 |               |                                    | Tracking 8 not found                                                                     |
@@ -108,7 +110,7 @@ Below is the inclusive list of Response Codes that may be returned by the PowerO
 |               |                                    | Address entry exceeds Episys limits                                                      |
 |               |                                    | Missing data in required field                                                           |
 |               |                                    | Attempt to enter PO Box as street address                                                |
-|               |                                    | Targeted name loc [targeted locator] not found                                           |
+|               |                                    | Targeted name LOC [targeted locator] not found                                           |
 | 506           | Error processing requested changes | Could not locate name LOC [name locator]                                                 |
 |               |                                    | Name FM - [system generated fm error]                                                    |
 |               |                                    | [match level] LOC [name locator] FM - [system generated fm error]                        |
