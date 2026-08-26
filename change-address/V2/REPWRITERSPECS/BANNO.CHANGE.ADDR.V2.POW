@@ -173,6 +173,7 @@ DEFINE
  LOCATORCHR=CHARACTER
  INDEX=NUMBER
  ERRORDETAIL=CHARACTER
+ FIRST=NUMBER
 
  NAMESMAX=999
  NAMECOUNT=NUMBER
@@ -526,16 +527,16 @@ PRINT TITLE=BNOPROGRAMNAME
        IF BNOERRORCODE=BNOERRCODESUCCESS THEN
         CALL POSTFMPROCESS
       END
+    END
+  END  
 
 [* The Override Conversations parameter allows errors to be handled by sending email with 
 ** error details vs. sending the member to Conversations in Banno. So the OVERRIDECONVERSATIONS 
 ** function both resets the error to success and sends error email.
 *]      
-     IF BNOERRORCODE<>BNOERRCODESUCCESS AND
-        PARAMOVERRIDECONVS=TRUE THEN
-      CALL OVERRIDECONVERSATIONS 
-    END
-  END  
+ IF BNOERRORCODE<>BNOERRCODESUCCESS AND
+    PARAMOVERRIDECONVS=TRUE THEN
+  CALL OVERRIDECONVERSATIONS
 
 [* Output JSON 
 *]
