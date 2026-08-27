@@ -74,8 +74,6 @@ DEFINE
 
 [* Error code setup
 *]
-[* Error code setup
-*]
  BNOERRCODEMEMOMODE        = 500
  BNOERRCODECONFIGREAD      = 501
   BNOERRMODOPEN            = "[configuration file name] open error - [system generated letter file read error message]"
