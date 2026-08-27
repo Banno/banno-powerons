@@ -331,6 +331,8 @@ DEFINE
 *]
  BNOERRORCODE=NUMBER
  BNOERRORMODIFIER=CHARACTER
+ BNOERRORCODESAVE=NUMBER
+ BNOERRORMODIFIERSAVE=CHARACTER
  BNOERRCODE=NUMBER
  BNOERRMESSAGE=CHARACTER
  BNOERRMODIFIER=CHARACTER
@@ -538,7 +540,9 @@ PRINT TITLE=BNOPROGRAMNAME
 [* The Override Conversations parameter allows errors to be handled by sending email with 
 ** error details vs. sending the member to Conversations in Banno. So the OVERRIDECONVERSATIONS 
 ** function both resets the error to success and sends error email.
-*]      
+*]   
+ BNOERRORCODESAVE=BNOERRORCODE
+ BNOERRORMODIFIERSAVE=BNOERRORMODIFIER
  IF BNOERRORCODE<>BNOERRCODESUCCESS AND
     PARAMOVERRIDECONVS=TRUE THEN
   CALL OVERRIDECONVERSATIONS
@@ -2496,6 +2500,8 @@ PROCEDURE PARAMPOSTPROCESS
   DO
    ADDNOTETEXTADD="Cfg file invalid"
    CALL ADDNOTEADD
+   ADDNOTETEXTADD=BNOERRORMODIFIER
+   CALL ADDNOTEADD
    CALL ADDNOTECREATE
   END   
 END [PROCEDURE]
@@ -2978,6 +2984,14 @@ PROCEDURE JSONRESPONSE
  
  JSONOBJFIRSTPROP=TRUE
  CALL JSONGENERALSPECS
+
+[* For the errorCode and errorMessage we want to use the original/raw error code for logging purposes.
+** This is usefule since the responseCode and loggingErrorMessage above may reflect success when
+** the Override Conversations cfg is set to TRUE.
+*]
+ BNOERRORCODE=BNOERRORCODESAVE
+ BNOERRORMODIFIER=BNOERRORMODIFIERSAVE
+ CALL BNOERRGETMESSAGE
 
  JSONPROPNAME="errorCode"
  CALL JSONPROP
