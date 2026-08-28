@@ -79,7 +79,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **
-**    Ver. 3.0.0  08/20/2026 R. Robison: Original V3 version of Open Subshare PowerOn
+**    Ver. 3.0.0  08/28/2026 R. Robison: Original V3 version of Open Subshare PowerOn
 **                           Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
 **                       
 **    
@@ -93,8 +93,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '08/20/26'
- BNOLASTMODTIME            = "17:30 MT"
+ BNOLASTMODDATE            = '08/28/26'
+ BNOLASTMODTIME            = "17:00 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V3.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V3.CFG"
  [TODO: figure out naming -- using V1 for the datafile is kinda weird]
@@ -632,6 +632,8 @@ DEFINE
  USELANGUAGE=NUMBER
  COLONPOS=NUMBER
  DISPLAYEXISTINGNAMETYPES=NUMBER ARRAY(99)
+ FEEAMTCHR=CHARACTER
+ FEEUSERGLCODECHR=CHARACTER
  
  SYMXINSTANCE=NUMBER
  SYMXCLIENTNUM=NUMBER
@@ -2289,10 +2291,21 @@ PROCEDURE PERFORMFEE
   END
  IF FEETRANERRORTEXT<>"" THEN
   DO
+    BNOAMT=SACFEEAMT(1)
+    CALL BNOAMTTEXT
+    FEEAMTCHR=BNOTEXT
+    BNONUM=SACFEEUSERGLCODE(1)
+    CALL BNONUMTEXT
+    FEEUSERGLCODECHR=BNOTEXT
     FMPERFORM CREATE SHARE NEWSHAREID NOTE LOC 0 (0,0,NOTELOC,FMERROR)
      DO
       SET TEXT:1 TO "Fee Posting Error:"
       SET TEXT:2 TO FEETRANERRORTEXT
+      SET TEXT:3 TO "From Acct: "+ACCOUNT:NUMBER
+      SET TEXT:4 TO "From Share: S"+RGNEWSHAREFEEFROMID
+      SET TEXT:5 TO "Amount: "+FEEAMTCHR
+      SET TEXT:6 TO "Comment: "+SACFEEDESC(1)
+      SET TEXT:7 TO "User GL Code: "+FEEUSERGLCODECHR
      END
   END
 END [PROCEDURE PERFORM TRANSFER]
