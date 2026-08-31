@@ -79,7 +79,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **
-**    Ver. 3.0.0  08/28/2026 R. Robison: Original V3 version of Open Subshare PowerOn
+**    Ver. 3.0.0  08/31/2026 R. Robison: Original V3 version of Open Subshare PowerOn
 **                           Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
 **                       
 **    
@@ -93,7 +93,7 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '08/28/26'
+ BNOLASTMODDATE            = '08/31/26'
  BNOLASTMODTIME            = "17:00 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V3.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V3.CFG"
@@ -167,6 +167,7 @@ DEFINE
  RGNEWSHAREFEEFROMID=CHARACTER
  RGCOPYNAMECOUNT=NUMBER
  RGCOPYNAMELOC=NUMBER ARRAY(19)
+ RGMATURITYSHAREID=CHARACTER
 
  RGNEWNAMECOUNT=NUMBER
  RGNEWNAMETYPE=NUMBER ARRAY(2)
@@ -676,6 +677,7 @@ DEFINE
  BNODELIMCOMMA=","
  BNODELIMCARET="^"
  BNODELIMSEMICOLON=";"
+ BNODELIMPIPE="|"
 
  MAXWARNINGS=999
  MAXACCTTYPES=9999
@@ -1085,8 +1087,19 @@ PROCEDURE TRANSFORMRGDATA
  RGCOPYNAMECOUNT=0
  IF @RGSTATE=STATECREATESHARE THEN
   DO
-   BNODLDELIMITER=BNODELIMCARET
+[* Check for pipe delimeter. If found, any value after that represents the share ID the 
+** new certificate's funds will be transferred to upon maturity.  This parsing exists in
+** the baseline since the UX sends pipe always but the baseline version does not actually
+** have the custom maturity share id code.  See v 1.4.3c.
+*]
+   BNODLDELIMITER=BNODELIMPIPE
    BNODATALINE=RGNEWSHAREDETAILS
+   CALL BNOPARSEDATALINE
+   SHAREDETAILSCHR=BNODLFIELD(1)
+   RGMATURITYSHAREID=BNODLFIELD(2)
+
+   BNODLDELIMITER=BNODELIMCARET
+   BNODATALINE=SHAREDETAILSCHR
    CALL BNOPARSEDATALINE
    SHAREDETAILSCHR=BNODLFIELD(1)
    COPYNAMESCHR=BNODLFIELD(2)
