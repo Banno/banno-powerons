@@ -2193,15 +2193,11 @@ PROCEDURE BNOINITPARAMVALS
  PARAMOVERRIDEEMAIL=""
  PARAMEMAILTYPE=EMAILTYPETEXT
  PARAMEMAILSUBJECT(PARAMMSGTAGENGLISH)="Address Update Notice"
- [* TODO: might want a Spanish translation for this
- *]
- PARAMEMAILSUBJECT(PARAMMSGTAGSPANISH)="Address Update Notice"
+ PARAMEMAILSUBJECT(PARAMMSGTAGSPANISH)="Aviso de actualizaci&oacute;n de direcci&oacute;n"
  PARAMEMAILLINESCOUNT=0
 
  PARAMMEMOEMAILSUBJECT(PARAMMSGTAGENGLISH)="Update to Financial Institution Address Scheduled"
- [* TODO: might want a Spanish translation for this
- *]
- PARAMMEMOEMAILSUBJECT(PARAMMSGTAGSPANISH)="Update to Financial Institution Address Scheduled"
+ PARAMMEMOEMAILSUBJECT(PARAMMSGTAGSPANISH)="Actualizaci&oacute;n de la direcci&oacuten de la instituci&oacute;n financiera programada"
  PARAMMEMOEMAILLINESCOUNT=0
 
  PARAMPOBOXLISTFOUND=FALSE
@@ -2504,13 +2500,14 @@ PROCEDURE PARAMPOSTPROCESS
  CALL PARAMMSGALLFIND
  IF PARAMMSGALLTAGFOUND=FALSE THEN
   DO
-[* TODO: Should add Spanish translations here 
-*]  
-   PARAMMSGALLVAL="Nightly processing is underway. Your financial institution address information has been updated"
+   PARAMMSGALLVAL=
+    "El procesamiento nocturno est&aacute; en curso. La informaci&oacute;n de la direcci&oacuten de su instituci&oacute;n"
    CALL PARAMMSGALLADD
-   PARAMMSGALLVAL="and will be reflected the next business day."
+   PARAMMSGALLVAL=
+    "financiera ha sido actualizada y se ver&aacute; reflejada el pr&oacute;ximo d&iacute;a h&aacute;bil. Por favor,"
    CALL PARAMMSGALLADD
-   PARAMMSGALLVAL="Please contact us immediately if you did not make these changes: (xxx) xxx-xxxx"
+   PARAMMSGALLVAL=
+    "comun&iacute;quese con nosotros de inmediato si usted no realiz&oacute; estos cambios: (XXX) XXX-XXXX."
    CALL PARAMMSGALLADD
   END
 
