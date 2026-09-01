@@ -45,7 +45,7 @@
 **  --------------------------------------------------------------------
 **  Modification History
 **
-**    Ver. 2.0.0  08/27/2026 R. Robison: Original V2 version of Change Address PowerOn
+**    Ver. 2.0.0  09/01/2026 R. Robison: Original V2 version of Change Address PowerOn
 **                           ** Feature set based on: BANNO.CHANGE.ADDR.V1.POW Ver. 1.5.0  02/03/26 **
 **                       
 **    
@@ -59,8 +59,8 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '08/27/26'
- BNOLASTMODTIME            = "17:00 MT"
+ BNOLASTMODDATE            = '09/01/26'
+ BNOLASTMODTIME            = "10:00 MT"
  BNOPROGRAMNAME            = "BANNO.CHANGE.ADDR.V1.POW"
  BNOCFGFILENAME            = "BANNO.CHANGE.ADDR.V1.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
