@@ -1,7 +1,7 @@
 [*  Copyright 2026 Jack Henry and Associates
 **
-**  PowerOn Name:                     BANNO.CHANGE.ADDR.V2.POW
-**  Configuration Letterfile Name:    BANNO.CHANGE.ADDR.V2.CFG
+**  PowerOn Name:                     BANNO.CHANGE.ADDR.V1.POW
+**  Configuration Letterfile Name:    BANNO.CHANGE.ADDR.V1.CFG
 **
 **  --------------------------------------------------------------------
 **  Program Summary
@@ -61,8 +61,8 @@ DEFINE
 
  BNOLASTMODDATE            = '08/27/26'
  BNOLASTMODTIME            = "17:00 MT"
- BNOPROGRAMNAME            = "BANNO.CHANGE.ADDR.V2.POW"
- BNOCFGFILENAME            = "BANNO.CHANGE.ADDR.V2.CFG"
+ BNOPROGRAMNAME            = "BANNO.CHANGE.ADDR.V1.POW"
+ BNOCFGFILENAME            = "BANNO.CHANGE.ADDR.V1.CFG"
  BNOPROGRAMVERSION         = "2.0.0"
  BNOPROGRAMNOTE1           = "initial v2 version of change address"
  BNOPROGRAMNOTE2           = ""

@@ -1,5 +1,7 @@
 # Change Address V2 JSON contract
 
+**Note:** This is a V2 version of change address but V1 is still used for the names of the POW and CFG. Banno hard-codes the PowerOn name so we can not currently install this as V2.
+
 ## PROCESSADDRCHANGE state
 
 ### UX Request (PROCESSADDRCHANGE)
@@ -7,7 +9,7 @@
 ```json
 {
   "rgState": "PROCESSADDRCHANGE",
-  "powerOnFilename": "BANNO.CHANGE.ADDR.V2.POW",
+  "powerOnFilename": "BANNO.CHANGE.ADDR.V1.POW",
   "userCharList": [
     { "id": 1, "value": "0123456789" }, //street address|extra address
     { "id": 2, "value": "0123456789" }, //city|state|zipcode
@@ -38,7 +40,7 @@
   "results": {
     "generalSpecifications": {
       "programInfo": {
-        "name": "BANNO.CHANGE.ADDR.V2.POW",
+        "name": "BANNO.CHANGE.ADDR.V1.POW",
         "version": "2.0.0",
         "lastModDate": "01/31/26 16:00 MT",
         "language": 1,
@@ -79,7 +81,9 @@
 
 See the Modifier section for additional details. The Modifier is appended to the main Logging Error Message.
 
-Below is the inclusive list of Response Codes that may be returned by the PowerOn:
+Below is the inclusive list of Response Codes that may be returned by the PowerOn.
+
+**Special Note on Response Code 504:**: Reponse code 504 is a success response code but may also be returned if a change address error occurs when the "Override Conversations" CFG parameters is set to TRUE.
 
 | Response Code | Logging Error Message              | Modifier                                                                                 |
 | ------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -99,10 +103,10 @@ Below is the inclusive list of Response Codes that may be returned by the PowerO
 |               |                                    | Invalid email address specified for Conversations override                               |
 | 503           | Ineligible Account                 | Acct Warning [4-digit account warning]                                                   |
 |               |                                    | Acct Type [4-digit account type]                                                         |
-| 504           | Successful Address Update          | [# of name record updates] Name Record                                                   |
-|               |                                    | Name LOC [name record locator]                                                           |
-|               |                                    | Conversations override email sent to [override email address]                            |
-|               |                                    | Override email error - [email send error]                                                |
+| 504           | Successful Address Update          | [# of name record updates] Name Record **SUCCESS Condition**                             |
+|               |                                    | Name LOC [name record locator] **SUCCESS Condition**                                     |
+|               |                                    | Conversations override email sent to [override email address] **ERROR Condition**        |
+|               |                                    | Override email error - [email send error] **ERROR Condition**                            |
 | 505           | Error validating requested changes | Acct Warning [4-digit account warning]                                                   |
 |               |                                    | No allowed name records found                                                            |
 |               |                                    | Tracking 8 not found                                                                     |
