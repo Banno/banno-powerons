@@ -44,6 +44,7 @@
 **                                     If a specific name record is targeted, it's locator code is passed
 **                                     back in @RGUSERNUM1. If @RGUSERNUM1 is >0, name matching will not occur.
 **                                     If @RGUSERNUM1 is 0, existing logic will be utilized.
+**    Ver. 1.5.1  09/11/26 J. Keenan - CUS-4998 Added missing hyphen back to 9-digit zip code.
 **
 *]
 SYMCONNECT
@@ -267,11 +268,11 @@ SETUP
 
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
- PROGRAMVERSION="1.5.0"
- LASTMODDATE='02/03/26'
- LASTMODTIME="12:00 PT"
- PROGRAMUPDATENOTE1="Added ability to target name record to change by locator"
- PROGRAMUPDATENOTE2="passed back by the UX in @RGUSERNUM1"
+ PROGRAMVERSION="1.5.1"
+ LASTMODDATE='09/11/26'
+ LASTMODTIME="17:00 PT"
+ PROGRAMUPDATENOTE1="Added missing hyphen back to 9-digit zip code"
+ PROGRAMUPDATENOTE2=""
 
  DEBUGMODEDAYS=90 [If revising this value, make sure the CFG Letter file's
                    references to this value are updated as needed]
@@ -1490,6 +1491,13 @@ PROCEDURE PULLRGDATA
    NEWCITY=UPPERCASE(DATALINEFIELD(1))
    NEWSTATE=UPPERCASE(DATALINEFIELD(2))
    NEWZIPCODE=DATALINEFIELD(3)
+[CUS-4998 Begin, add "-" back at position 6 if it was removed]
+   IF LENGTH(NEWZIPCODE)=9 THEN
+    DO
+     IF LENGTH(FORMAT("########9",VALUE(NEWZIPCODE)))=9 THEN
+      NEWZIPCODE=SEGMENT(NEWZIPCODE,1,5)+"-"+SEGMENT(NEWZIPCODE,6,9)
+    END
+[CUS-4998 End]
    BNODEBUGMSG="RG2:"+@RGUSERCHR2
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="CITY:"+NEWCITY+
