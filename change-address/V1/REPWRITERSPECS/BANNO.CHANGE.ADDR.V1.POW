@@ -44,7 +44,7 @@
 **                                     If a specific name record is targeted, it's locator code is passed
 **                                     back in @RGUSERNUM1. If @RGUSERNUM1 is >0, name matching will not occur.
 **                                     If @RGUSERNUM1 is 0, existing logic will be utilized.
-**    Ver. 1.5.1  09/11/26 J. Keenan - CUS-4998 Added missing hyphen back to 9-digit zip code.
+**    Ver. 1.5.1  09/14/26 J. Keenan - CUS-4998 Added missing hyphen back to 9-digit zip code.
 **
 *]
 SYMCONNECT
@@ -269,8 +269,8 @@ SETUP
  TRUEFALSECHR(TRUE)="TRUE"
  TRUEFALSECHR(FALSE)="FALSE"
  PROGRAMVERSION="1.5.1"
- LASTMODDATE='09/11/26'
- LASTMODTIME="17:00 PT"
+ LASTMODDATE='09/14/26'
+ LASTMODTIME="08:00 PT"
  PROGRAMUPDATENOTE1="Added missing hyphen back to 9-digit zip code"
  PROGRAMUPDATENOTE2=""
 
@@ -342,6 +342,7 @@ PRINT TITLE="BANNO.CHANGE.ADDR.V1.POW"
          IF NAMELOC>0 THEN
           DO
            FMERRORCOUNT=0
+           CALL ZIPHYPHEN9DIGADJ
 
            FMPERFORM REVISE NAME LOC NAMELOC (0,0,FMERROR)
             DO
@@ -406,6 +407,7 @@ PROCEDURE FINDANDSETNAMEBYLOC
 *]
  FMATTEMPTED=FALSE
  ADDRCHGSUCCESSFUL=FALSE
+ CALL ZIPHYPHEN9DIGADJ
 
  BNODEBUGMSG="TARGETNAMELEVEL:"+TARGETNAMELEVEL+" - "+
              "TARGETNAMELEVELID:"+TARGETNAMELEVELID+" - "+
@@ -748,6 +750,7 @@ PROCEDURE NAMEFMBYLEVEL
 ** enabled.
 *]
  ADDRCHGSUCCESSFUL=FALSE
+ CALL ZIPHYPHEN9DIGADJ
 [ Account level name FM]
  IF MATCHACCTNAMES=TRUE AND
     ACCTNAMECOUNT>0 AND
@@ -1491,13 +1494,6 @@ PROCEDURE PULLRGDATA
    NEWCITY=UPPERCASE(DATALINEFIELD(1))
    NEWSTATE=UPPERCASE(DATALINEFIELD(2))
    NEWZIPCODE=DATALINEFIELD(3)
-[CUS-4998 Begin, add "-" back at position 6 if it was removed]
-   IF LENGTH(NEWZIPCODE)=9 THEN
-    DO
-     IF LENGTH(FORMAT("########9",VALUE(NEWZIPCODE)))=9 THEN
-      NEWZIPCODE=SEGMENT(NEWZIPCODE,1,5)+"-"+SEGMENT(NEWZIPCODE,6,9)
-    END
-[CUS-4998 End]
    BNODEBUGMSG="RG2:"+@RGUSERCHR2
    CALL BNODEBUGMSGADD
    BNODEBUGMSG="CITY:"+NEWCITY+
@@ -1624,8 +1620,8 @@ PROCEDURE VALIDATERGDATA
 **                         PO Box address
 ** RETURN  POBOXFOUND  Boolean flag
 ** RETURN  MISSINGDATA Boolean flag
-** RETURN  RESPONSECODE  Error code 503 if PO Box or missing data
-**                       is found.
+** RETURN  RESPONSECODE  Error code 503 if PO Box is found, missing data,
+**                       or zip is not 5 or 9 digits.
 *]
  MISSINGDATA=FALSE
  IF NEWSTREET="" OR
@@ -1688,6 +1684,27 @@ PROCEDURE VALIDATERGDATA
      @RGSTATE=STATEEND
      @RGDATATYPE=9
     END
+
+   IF RESPONSECODE=0 THEN
+    DO
+     IF LENGTH(NEWZIPCODE)<>5 AND LENGTH(NEWZIPCODE)<9 THEN
+      DO
+[* Zip can be 5 or 9 digits long.
+** Allowing length 10 in case Banno begins sending hyphen in zip
+*]
+       CALL JSONOPEN
+       CALL PRINTPROGRAMINFO
+       RESPONSECODE=503
+       ERROR503CHR="NEWZIPCODE must be 5 or 9 digits"
+       PARSEDTEXT(1)="NEWZIPCODE must be 5 or 9 digits"
+
+       CALL ERRORHANDLER
+       CALL CREATENOTERECORD
+       @RGSTATE=STATEEND
+       @RGDATATYPE=9
+      END
+    END
+
   END
 END [PROCEDURE]
 
@@ -1987,6 +2004,7 @@ PROCEDURE ADDADDRDETAILSNOTE
    ADDRDETAILTEXT(TMPLOOP)=""
   END
 
+ CALL ZIPHYPHEN9DIGADJ
  IF NEWSTREET<>"" OR NEWEXTRAADDR<>"" OR
     NEWCITY<>"" OR NEWSTATE<>"" OR
     NEWZIPCODE<>"" THEN
@@ -2989,6 +3007,23 @@ PROCEDURE SENDEMAIL
   END
  BNODEBUGMSG= "SEND EMAIL ERROR:"+EMAILSENDERROR
  CALL BNODEBUGMSGADD
+END [PROCEDURE]
+
+PROCEDURE ZIPHYPHEN9DIGADJ
+[* CUS-4998, If NEWZIPCODE is 9 long and all numbers,
+** add "-" back at position 6 as it was removed
+** PASS    NEWZIPCODE  Updated zipcode
+**
+** RETURN  NEWZIPCODE  If 9 long Updated zipcode with hyphen
+*]
+ TMPCHR=NEWZIPCODE
+ IF LENGTH(TMPCHR)=9 THEN
+  DO
+   TMPCHR=FORMAT("########9",VALUE(TMPCHR))
+   CALL NLS
+   IF LENGTH(TMPCHR)=9 THEN
+    NEWZIPCODE=SEGMENT(NEWZIPCODE,1,5)+"-"+SEGMENT(NEWZIPCODE,6,9)
+  END
 END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
