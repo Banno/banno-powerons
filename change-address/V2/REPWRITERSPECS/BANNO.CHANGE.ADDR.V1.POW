@@ -61,7 +61,7 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
 
  BNOLASTMODDATE            = '09/14/26'
- BNOLASTMODTIME            = "08:00 PT"
+ BNOLASTMODTIME            = "17:00 PT"
  BNOPROGRAMNAME            = "BANNO.CHANGE.ADDR.V1.POW"
  BNOCFGFILENAME            = "BANNO.CHANGE.ADDR.V1.CFG"
  BNOPROGRAMVERSION         = "2.0.1"
@@ -107,7 +107,7 @@ DEFINE
   BNOERRMODENTRYLIMIT      = "Address entry exceeds Episys limits"
   BNOERRMODMISSINGDATA     = "Missing data in required field"
   BNOERRMODPOBOX           = "Attempt to enter PO Box as street address or extra address"
-  BNOERRMODZIPLENGTH       = "RGNEWZIPCODE must be 5 or 9 digits"
+  BNOERRMODZIPLENGTH       = "Zipcode must be 5 or 9 digits"
   BNOERRMODTARGETNOTFOUND  = "Targeted name LOC [targeted locator] not found"
   BNOERRMODMBRADDRLINK     = "Could not locate name by Mbr Address Link [member address link]"
  BNOERRCODEPROCESSCHGS     = 506
@@ -200,6 +200,7 @@ DEFINE
  OLDCITY=CHARACTER
  OLDSTATE=CHARACTER
  OLDZIP=CHARACTER
+ ZIPVALID=NUMBER
 
 [* CFG Parameter variables specific to this PowerOn
 *]
@@ -718,7 +719,8 @@ PROCEDURE VALIDATERGDATA
 
    IF BNOERRORCODE=BNOERRCODESUCCESS THEN
     DO
-     IF LENGTH(RGNEWZIPCODE)<>5 AND LENGTH(RGNEWZIPCODE)<9 THEN
+     CALL VALIDATEZIP
+     IF ZIPVALID=FALSE THEN
       DO
 [* Zip can be 5 or 9 digits long.
 ** Allowing length 10 in case Banno begins sending hyphen in zip
@@ -3763,6 +3765,33 @@ PROCEDURE BNOPARSEDATALINE
  BNODLREMOVEPADDING=FALSE 
 END [PROCEDURE]
 
+PROCEDURE VALIDATEZIP
+[ Valide zipcode lengths are 5, 9 and 10 (when contains hyphen in pos 6.  Procedure will return either
+  a 5 or 9-digit zip in RGNEWZIPCODE.
+]
+
+ ZIPVALID=FALSE
+ IF LENGTH(RGNEWZIPCODE)=5 OR
+    LENGTH(RGNEWZIPCODE)=9 THEN
+  ZIPVALID=TRUE
+ ELSE IF LENGTH(RGNEWZIPCODE)=10 AND
+         SEGMENT(RGNEWZIPCODE,6,6)="-" THEN
+  DO       
+   ZIPVALID=TRUE
+   RGNEWZIPCODE=SEGMENT(RGNEWZIPCODE,1,5)+SEGMENT(RGNEWZIPCODE,7,10)
+  END 
+
+ [Now make sure we only have digits in the zip]
+ IF ZIPVALID=TRUE THEN
+  DO
+   FOR TMPLOOP=1 TO LENGTH(RGNEWZIPCODE)
+    DO
+     IF CHARACTERSEARCH("0123456789",SEGMENT(RGNEWZIPCODE,TMPLOOP,TMPLOOP))=0 THEN
+      ZIPVALID=FALSE
+    END  
+  END
+END
+
 PROCEDURE ZIPHYPHEN9DIGADJ
 [* CUS-4998, If RGNEWZIPCODE is 9 long and all numbers,
 ** add "-" back at position 6 as it was removed
@@ -3770,8 +3799,7 @@ PROCEDURE ZIPHYPHEN9DIGADJ
 **
 ** RETURN  RGNEWZIPCODE  If 9 long Updated zipcode with hyphen
 *]
- IF LENGTH(RGNEWZIPCODE)=9 AND 
-    FORMAT("999999999", VALUE(RGNEWZIPCODE))=RGNEWZIPCODE THEN
+ IF LENGTH(RGNEWZIPCODE)=9 THEN
   RGNEWZIPCODE=SEGMENT(RGNEWZIPCODE,1,5)+"-"+SEGMENT(RGNEWZIPCODE,6,9)
 END [PROCEDURE]
 
