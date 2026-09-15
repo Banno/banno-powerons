@@ -116,6 +116,7 @@ Below is the inclusive list of Response Codes that may be returned by the PowerO
 |               |                                    | Attempt to enter PO Box as street address or extra address                               |
 |               |                                    | Targeted name LOC [targeted locator] not found                                           |
 |               |                                    | Could not locate name by Mbr Address Link [member address link]                          |
+|               |                                    | Zipcode must be 5 or 9 digits                                                            |
 | 506           | Error processing requested changes | Name FM - [system generated fm error]                                                    |
 |               |                                    | [match level] LOC [name locator] FM - [system generated fm error]                        |
 | 507           | Invalid RG data                    |                                                                                          |
