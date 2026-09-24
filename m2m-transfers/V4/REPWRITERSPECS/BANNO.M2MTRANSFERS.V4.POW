@@ -90,7 +90,7 @@
 **                 for all other recipient verification failures (err 509).
 **   Ver. 4.1.1  07/29/2026 R. Robison:
 **               * Fix Spanish label parameters
-**   Ver. 4.1.2  09/24/2026 R. Robison:
+**   Ver. 4.2.0  09/24/2026 R. Robison:
 **               * cus-5039 scanning items
 **    
 *]
@@ -108,7 +108,7 @@ DEFINE
  BNOLASTMODTIME            = "16:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
- BNOPROGRAMVERSION         = "4.1.2"
+ BNOPROGRAMVERSION         = "4.2.0"
  BNOPROGRAMNOTE1           = "various fixes"
  BNOPROGRAMNOTE2           = ""
 
@@ -764,7 +764,7 @@ PRINT TITLE=BNOPROGRAMNAME
          BNOERRORCODE=BNOERRCODEMBRVERIFY
          IF VALIDATESTATUS=TARGETACCTWARNING THEN
           BNOERRORCODE=BNOERRCODEMBRVERIFYWC
-[* With release 4.1.2 we no longer return error modifiers to prevent certain types of exploits 
+[* With release 4.2.0 we no longer return error modifiers to prevent certain types of exploits 
 *]
          [CALL SETERRORCODEBYVALIDATESTATUS]
         END 
