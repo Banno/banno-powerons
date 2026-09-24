@@ -90,7 +90,7 @@
 **                 for all other recipient verification failures (err 509).
 **   Ver. 4.1.1  07/29/2026 R. Robison:
 **               * Fix Spanish label parameters
-**   Ver. 4.1.2  09/23/2026 R. Robison:
+**   Ver. 4.1.2  09/24/2026 R. Robison:
 **               * cus-5039 scanning items
 **    
 *]
@@ -104,8 +104,8 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '09/23/26'
- BNOLASTMODTIME            = "21:00 MT"
+ BNOLASTMODDATE            = '09/24/26'
+ BNOLASTMODTIME            = "16:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
  BNOPROGRAMVERSION         = "4.1.2"
