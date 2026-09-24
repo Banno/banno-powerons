@@ -39,6 +39,7 @@
 **  507: Fee Specfile Error
 **  508: Payoff date too many days in the future
 **  509: Invalid
+**  510: Cross Account Access Denied
 **
 **  --------------------------------------------------------------------
 **  Additional Information
@@ -63,6 +64,7 @@
 **                           Change max warnings from 99 to 999.  V2 version had max set incorrectly.
 **                           Fix GETCOLLATERAL to work for cross-accounts. V2 code was not repositioning on
 **                           the correct member number/account.
+**    Ver. 2.0.3  09/24/2026 J. Keenan: code-scanning 39
 **    
 *]
 SYMCONNECT
@@ -74,13 +76,13 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '09/17/26'
- BNOLASTMODTIME            = "11:00 MT"
+ BNOLASTMODDATE            = '09/24/26'
+ BNOLASTMODTIME            = "08:00 PT"
  BNOPROGRAMNAME            = "BANNO.LOAN.PAYOFF.V2.POW"
  BNOCFGFILENAME            = "BANNO.LOAN.PAYOFF.V2.CFG"
- BNOPROGRAMVERSION         = "2.0.2"
- BNOPROGRAMNOTE1           = "Fix max warnings"
- BNOPROGRAMNOTE2           = "Fix collateral logic"
+ BNOPROGRAMVERSION         = "2.0.3"
+ BNOPROGRAMNOTE1           = "code-scanning 39"
+ BNOPROGRAMNOTE2           = ""
 
  BNODEBUGPRINTINFODAYS     = 60
  BNODEBUGINCLUDEPARAMS     = 1
@@ -110,6 +112,7 @@ DEFINE
   BNOERRMODFEESPECFILE     = "[Banno loan payoff fees PowerOn generated error message]"
  BNOERRCODEBADPAYOFFDATE   = 508
  BNOERRCODEINVALID         = 509
+ BNOERRCODECROSSACCT       = 510
 
 [* RGUSER Pass variables - passed from UX code
 *]
@@ -312,6 +315,7 @@ DEFINE
  BNOERRORMODIFIER=CHARACTER
  BNOIDLENGTH=NUMBER
  BNOSLTYPELENGTH=NUMBER
+ BNOPREFACCESSMATCH=NUMBER
 
  JSONBOOLEAN=CHARACTER ARRAY(1)
  JSONPROPNAME=CHARACTER
@@ -395,6 +399,8 @@ SETUP
  BNOERRCODE=BNOERRCODEBADPAYOFFDATE       BNOERRMESSAGE="Payoff date too many days in the future"
  CALL BNOERRADD
  BNOERRCODE=BNOERRCODEINVALID             BNOERRMESSAGE="Invalid"
+ CALL BNOERRADD
+ BNOERRCODE=BNOERRCODECROSSACCT           BNOERRMESSAGE="Cross Account Access Denied"
  CALL BNOERRADD
 
  [* Set any errors that support display messages
@@ -537,11 +543,42 @@ PROCEDURE GETRGDATA
   END
 END [PROCEDURE]
 
+PROCEDURE VERIFYPREFACCESS
+ [Verify the authenticated user has explicit joint/cross-account access to the targeted member number]
+ BNOPREFACCESSMATCH=FALSE
+ IF RGMEMBERNUMBER=ACCOUNT:NUMBER THEN
+  BNOPREFACCESSMATCH=TRUE
+ ELSE
+  DO
+   FOR ACCOUNT ACCOUNT:NUMBER
+    DO
+    FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+     DO
+      FOR EACH PREFERENCE ACCESS WITH (PREFERENCE ACCESS:ACCESSTYPE=2 AND
+                                       ((PREFERENCE ACCESS:ACCOUNTNUMBER=RGMEMBERNUMBER AND
+                                         PREFERENCE ACCESS:IDTYPE=1 AND
+                                         PREFERENCE ACCESS:ID=RGSLID) OR
+                                        (PREFERENCE ACCESS:ACCOUNTNUMBER=RGMEMBERNUMBER AND
+                                         PREFERENCE ACCESS:IDTYPE=2)))
+       DO
+        BNOPREFACCESSMATCH=TRUE
+       END
+     END
+    END
+  END
+
+ IF BNOPREFACCESSMATCH=FALSE THEN
+  BNOERRORCODE=BNOERRCODECROSSACCT
+END [PROCEDURE]
+
 PROCEDURE VALIDATEPAYOFFDATA
 
  INVALIDWARNLIST=""
 
- IF RGPAYOFFDATE>SYSTEMDATE+PARAMFUTUREDAYSMAX THEN
+ CALL VERIFYPREFACCESS
+
+ IF BNOERRORCODE=0 AND
+    RGPAYOFFDATE>SYSTEMDATE+PARAMFUTUREDAYSMAX THEN
   BNOERRORCODE=BNOERRCODEBADPAYOFFDATE
 
  IF BNOERRORCODE=0 THEN

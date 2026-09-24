@@ -117,3 +117,4 @@ Any and all errors should be conveyed via the following structure:
 | Loan Warning Found | : [3-digit comma separated loan warning list] ||
 | Loan Projection Error | : [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for loan payoff processing errors |
 | Fee Specfile Error | : [Banno loan payoff fees PowerOn generated error message] ||
+| Cross Account Access Denied | | Returned if user attempts to query a cross account and loan without a valid PREFERENCE ACCESS record |
