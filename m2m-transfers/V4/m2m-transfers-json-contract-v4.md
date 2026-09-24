@@ -347,7 +347,10 @@ Create new transfer with new or existing recipient
     },
     "success": true,
     "memoMode": false,
-    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
+    "memoModeSuccessMessage": [
+      "memo mode success line 1",
+      "memo mode success line 2",
+    ],
     "transferLoc": "395",
     "recipientLoc": "54315431",
     "currentState": "[PRELOADDATA]",
@@ -427,7 +430,10 @@ Edit existing transaction (expire existing transfer & create a new transfer) \* 
     },
     "success": true,
     "memoMode": false,
-    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
+    "memoModeSuccessMessage": [
+      "memo mode success line 1",
+      "memo mode success line 2",
+    ],
     "transferLoc": "395",
     "currentState": "[PRELOADDATA]",
   },
@@ -648,10 +654,12 @@ All errors should be conveyed via one of the following structures.
 |            |                                   | Invalid share code                                                                       |                                                                |
 |            |                                   | Loan has $0.00 payoff                                                                    |                                                                |
 |            |                                   | Invalid IRS code                                                                         |                                                                |
+|            |                                   | Invalid attempts                                                                         |                                                                |
 | 510        | Account ID incorrect              |                                                                                          |                                                                |
 | 511        | Request exceeds limits            |                                                                                          |                                                                |
 | 512        | Config file validation error      | Duplicate Param file entry([parameter name])                                             |                                                                |
 |            |                                   | Invalid Param Value([parameter name])                                                    |                                                                |
+| 513        | Tracking file maintenance error   | Tracking FMPERFORM([system-generated error msg])                                         |                                                                |
 
 ## Transfer Frequencies
 
