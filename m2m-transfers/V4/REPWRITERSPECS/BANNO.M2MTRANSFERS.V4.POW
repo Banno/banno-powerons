@@ -92,6 +92,8 @@
 **               * Fix Spanish label parameters
 **   Ver. 4.2.0  09/25/2026 R. Robison:
 **               * cus-5039 scanning items
+**   Ver. 4.3.0  09/25/2026 R. Robison:
+**               * cus-5043 scanning items (medium)
 **    
 *]
 SYMCONNECT
@@ -105,10 +107,10 @@ DEFINE
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
  BNOLASTMODDATE            = '09/25/26'
- BNOLASTMODTIME            = "11:30 MT"
+ BNOLASTMODTIME            = "22:30 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
- BNOPROGRAMVERSION         = "4.2.0"
+ BNOPROGRAMVERSION         = "4.3.0"
  BNOPROGRAMNOTE1           = "various fixes"
  BNOPROGRAMNOTE2           = ""
 
