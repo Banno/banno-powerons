@@ -54,7 +54,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
     },
     "availableShares": [
       {
-        "transferSLId": "0000800005S0002",
+        "transferSLId": "45C5BBD31DA60E0D92B867B6E79340CE",
+        "transferSLIdDisplay": "x05S0002",
         "type": "savings",
         "name": "SUMMER SAVER",
         "available": "50.00",
@@ -62,7 +63,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "crossAccount": true
       },
       {
-        "transferSLId": "0000800005S0010",
+        "transferSLId": "EFDBAD58CD66F0AEF59527917A5DAAE0",
+        "transferSLIdDisplay": "x05S0010",
         "type": "checking",
         "name": "REGULAR CHECKING",
         "available": "500.00",
@@ -70,7 +72,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "crossAccount": false
       },
       {
-        "transferSLId": "0000800005S0015",
+        "transferSLId": "1B506D08797EA368B7AADDB4B0581653",
+        "transferSLIdDisplay": "x05S0015",
         "type": "checking",
         "name": "ULTIMATE CHECKING (10)",
         "available": "0.00",
@@ -347,7 +350,10 @@ Create new transfer with new or existing recipient
     },
     "success": true,
     "memoMode": false,
-    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
+    "memoModeSuccessMessage": [
+      "memo mode success line 1",
+      "memo mode success line 2",
+    ],
     "transferLoc": "395",
     "recipientLoc": "54315431",
     "currentState": "[PRELOADDATA]",
@@ -427,7 +433,10 @@ Edit existing transaction (expire existing transfer & create a new transfer) \* 
     },
     "success": true,
     "memoMode": false,
-    "memoModeSuccessMessage": ["memo mode success line 1","memo mode success line 2"],
+    "memoModeSuccessMessage": [
+      "memo mode success line 1",
+      "memo mode success line 2",
+    ],
     "transferLoc": "395",
     "currentState": "[PRELOADDATA]",
   },
@@ -618,40 +627,31 @@ All errors should be conveyed via one of the following structures.
 
 ## Error Codes
 
-| Error Code | Logging Error Message             | Modifier                                                                                 | Additional Notes As Needed                                     |
-| ---------- | --------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 500        | Program running in memo mode      |                                                                                          |                                                                |
-| 501        | Config file error                 | [configuration file name] open error - [system generated letter file read error message] |                                                                |
-|            |                                   | [configuration file name] read error - [system generated letter file read error message] |                                                                |
-|            |                                   | Invalid Parameter in CFG file                                                            |                                                                |
-| 502        | Invalid Source Account            | Pref Access type 3 not found                                                             |                                                                |
-|            |                                   | Acct Warning 1234                                                                        |                                                                |
-|            |                                   | No eligible transfer from shares/loans                                                   |                                                                |
-|            |                                   | Acct Type 1234                                                                           |                                                                |
-| 503        | Invalid Recipient Account         |                                                                                          |                                                                |
-| 504        | Insufficient Information          | Cannot calc member limits.                                                               |                                                                |
-| 505        | Invalid Input                     |                                                                                          |                                                                |
-| 506        | Error Processing Recipient Record |                                                                                          | Error creating/deleting recipient                              |
-| 507        | Error Processing Transfer Record  | No Modifier. Error Code 507 does not always provide a Modifier.                          | This set of errors is for creating/updating/deleting transfers |
-|            |                                   | Target s/l xfer Loc 1234567 not found                                                    |                                                                |
-|            |                                   | Target ID not found or invalid                                                           |                                                                |
-| 508        | Undefined Error                   |                                                                                          |                                                                |
-| 509        | Member verification failed        | Member account not found                                                                 | This set of errors is for member unverified                    |
-|            |                                   | Account Closed - 99/99/99                                                                |                                                                |
-|            |                                   | Name verification failed                                                                 |                                                                |
-|            |                                   | Must be a different member account number                                                |                                                                |
-|            |                                   | S/L closed or charged-off - 99/99/99                                                     |                                                                |
-|            |                                   | S/L ID not found                                                                         |                                                                |
-|            |                                   | No valid share or loan found                                                             |                                                                |
-|            |                                   | S/L missing service code                                                                 |                                                                |
-|            |                                   | Invalid S/L type                                                                         |                                                                |
-|            |                                   | Invalid share code                                                                       |                                                                |
-|            |                                   | Loan has $0.00 payoff                                                                    |                                                                |
-|            |                                   | Invalid IRS code                                                                         |                                                                |
-| 510        | Account ID incorrect              |                                                                                          |                                                                |
-| 511        | Request exceeds limits            |                                                                                          |                                                                |
-| 512        | Config file validation error      | Duplicate Param file entry([parameter name])                                             |                                                                |
-|            |                                   | Invalid Param Value([parameter name])                                                    |                                                                |
+| Error Code | Logging Error Message             | Modifier                                                                                 |
+| ---------- | --------------------------------- | ---------------------------------------------------------------------------------------- |
+| 500        | Program running in memo mode      |                                                                                          |
+| 501        | Config file error                 | [configuration file name] open error - [system generated letter file read error message] |
+|            |                                   | [configuration file name] read error - [system generated letter file read error message] |
+|            |                                   | Invalid Parameter in CFG file                                                            |
+| 502        | Invalid Source Account            | Pref Access type 3 not found                                                             |
+|            |                                   | Acct Warning 1234                                                                        |
+|            |                                   | No eligible transfer from shares/loans                                                   |
+|            |                                   | Acct Type 1234                                                                           |
+| 503        | Invalid Recipient Account         |                                                                                          |
+| 504        | Insufficient Information          | Cannot calc member limits.                                                               |
+| 505        | Invalid Input                     |                                                                                          |
+| 506        | Error Processing Recipient Record |                                                                                          |
+| 507        | Error Processing Transfer Record  | No Modifier. Error Code 507 does not always provide a Modifier.                          |
+|            |                                   | Target s/l xfer Loc 1234567 not found                                                    |
+|            |                                   | Target ID not found or invalid                                                           |
+| 508        | Undefined Error                   |                                                                                          |
+| 509        | Member verification failed        |                                                                                          |
+|            |                                   | Invalid attempts                                                                         |
+| 510        | Account ID incorrect              |                                                                                          |
+| 511        | Request exceeds limits            |                                                                                          |
+| 512        | Config file validation error      | Duplicate Param file entry([parameter name])                                             |
+|            |                                   | Invalid Param Value([parameter name])                                                    |
+| 513        | Tracking file maintenance error   | Tracking FMPERFORM([system-generated error msg])                                         |
 
 ## Transfer Frequencies
 
