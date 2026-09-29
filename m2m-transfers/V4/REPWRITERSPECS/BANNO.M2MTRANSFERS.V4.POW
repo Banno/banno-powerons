@@ -849,6 +849,11 @@ PRINT TITLE=BNOPROGRAMNAME
           NEWTRANNICKNAME<>"" THEN  [has elected to (nickname is not blank)      ]
         CALL CREATERECIPACCT
       END
+
+[* Rebuild the transfer list since a new transfer may have been added
+*]    
+    IF BNOERRORCODE=0 THEN
+      CALL BUILDSLTRANSFERLIST
     END
    ELSE IF @RGSTATE=STATEEDITTRAN THEN
     DO
@@ -870,12 +875,21 @@ PRINT TITLE=BNOPROGRAMNAME
      IF BNOERRORCODE=0 AND 
         PARAMENFORCELIMITS=TRUE THEN
       CALL UPDATEPREFTOTALS
+
+[* Rebuild the transfer list since a new transfer may have been edited
+*]    
+    IF BNOERRORCODE=0 THEN
+      CALL BUILDSLTRANSFERLIST
     END
    ELSE IF @RGSTATE=STATEDELETERECIP THEN
     DO
      CALL BUILDSLTRANSFERLIST
-
      CALL EXPIRERECIPIENT
+
+[* Rebuild the transfer list since recipient has been expired/deleted
+*]    
+    IF BNOERRORCODE=0 THEN
+      CALL BUILDSLTRANSFERLIST     
     END
    ELSE IF @RGSTATE=STATEDELETETRAN THEN
     DO
@@ -891,6 +905,11 @@ PRINT TITLE=BNOPROGRAMNAME
        CALL UPDATEPREFTOTALS
        CALL SETUPLIMITS
       END
+
+[* Rebuild the transfer list since a transfer was deleted
+*]    
+    IF BNOERRORCODE=0 THEN
+      CALL BUILDSLTRANSFERLIST    
     END       
   END  
 
