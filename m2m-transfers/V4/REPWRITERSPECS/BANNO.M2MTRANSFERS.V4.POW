@@ -107,7 +107,7 @@ DEFINE
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
  BNOLASTMODDATE            = '09/29/26'
- BNOLASTMODTIME            = "12:30 MT"
+ BNOLASTMODTIME            = "16:30 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
  BNOPROGRAMVERSION         = "4.3.0"
@@ -852,7 +852,7 @@ PRINT TITLE=BNOPROGRAMNAME
 
 [* Rebuild the transfer list since a new transfer may have been added
 *]    
-    IF BNOERRORCODE=0 THEN
+     IF BNOERRORCODE=0 THEN
       CALL BUILDSLTRANSFERLIST
     END
    ELSE IF @RGSTATE=STATEEDITTRAN THEN
@@ -878,7 +878,7 @@ PRINT TITLE=BNOPROGRAMNAME
 
 [* Rebuild the transfer list since a new transfer may have been edited
 *]    
-    IF BNOERRORCODE=0 THEN
+     IF BNOERRORCODE=0 THEN
       CALL BUILDSLTRANSFERLIST
     END
    ELSE IF @RGSTATE=STATEDELETERECIP THEN
@@ -888,7 +888,7 @@ PRINT TITLE=BNOPROGRAMNAME
 
 [* Rebuild the transfer list since recipient has been expired/deleted
 *]    
-    IF BNOERRORCODE=0 THEN
+     IF BNOERRORCODE=0 THEN
       CALL BUILDSLTRANSFERLIST     
     END
    ELSE IF @RGSTATE=STATEDELETETRAN THEN
@@ -908,7 +908,7 @@ PRINT TITLE=BNOPROGRAMNAME
 
 [* Rebuild the transfer list since a transfer was deleted
 *]    
-    IF BNOERRORCODE=0 THEN
+     IF BNOERRORCODE=0 THEN
       CALL BUILDSLTRANSFERLIST    
     END       
   END  
