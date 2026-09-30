@@ -65,7 +65,7 @@
 **                           Fix GETCOLLATERAL to work for cross-accounts. V2 code was not repositioning on
 **                           the correct member number/account.
 **    Ver. 2.0.3  09/24/2026 J. Keenan: cus-5022 scanning items
-**    Ver. 2.0.3  09/29/2026 J. Keenan: cus-5042 scanning items
+**    Ver. 2.0.3  09/30/2026 J. Keenan: cus-5042 scanning items
 **    
 *]
 SYMCONNECT
@@ -77,7 +77,7 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '09/24/26'
+ BNOLASTMODDATE            = '09/30/26'
  BNOLASTMODTIME            = "17:00 PT"
  BNOPROGRAMNAME            = "BANNO.LOAN.PAYOFF.V2.POW"
  BNOCFGFILENAME            = "BANNO.LOAN.PAYOFF.V2.CFG"
@@ -1399,9 +1399,15 @@ PROCEDURE BNOSETPARAMVALS
  CALL BNOGETPARAMVAL
  IF BNOPARAMFOUND=TRUE THEN
   DO
-   PARAMFUTUREDAYSMAX=VALUE(BNOPARAMVAL)
-   IF PARAMFUTUREDAYSMAX>365 THEN
+   [Bypass VALUE() crash for huge numbers and force to 365]
+   IF LENGTH(BNOPARAMVAL)>9 THEN
     PARAMFUTUREDAYSMAX=365
+   ELSE
+    DO
+     PARAMFUTUREDAYSMAX=VALUE(BNOPARAMVAL)
+     IF PARAMFUTUREDAYSMAX>365 THEN
+      PARAMFUTUREDAYSMAX=365
+    END
   END
 
  BNOPARAMFIND="FSN"

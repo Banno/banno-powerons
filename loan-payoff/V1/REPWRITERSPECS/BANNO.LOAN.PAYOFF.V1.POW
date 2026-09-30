@@ -40,7 +40,7 @@
 **                         loan warning code numbers.
 **                         Also, added Program Installation Date parameter setting
 **    Ver. 1.1.2  09/24/26 J. Keenan - cus-5022 scanning items
-**    Ver. 1.1.3  09/29/26 J. Keenan - cus-5042 scanning items
+**    Ver. 1.1.3  09/30/26 J. Keenan - cus-5042 scanning items
 *]
 
 SYMCONNECT
@@ -206,7 +206,7 @@ SETUP
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
  PROGRAMVERSION="1.1.3"
- LASTMODDATE='09/29/26'
+ LASTMODDATE='09/30/26'
  LASTMODTIME="17:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=90
@@ -460,10 +460,22 @@ PROCEDURE READCONFIGFILESETTINGS
          CALL TMPCHRNLTS
          IF TMPCHR<>"" THEN
           DO
-           FUTUREDAYS=VALUE(TMPCHR)
-           IF FUTUREDAYS>365 THEN
+           [1. Bypass VALUE() crash for huge numbers and force to 365]
+           IF LENGTH(TMPCHR)>9 THEN
             FUTUREDAYS=365
-           FDCHR=FORMAT("#####9",VALUE(TMPCHR))
+           ELSE 
+            DO 
+             FUTUREDAYS=VALUE(TMPCHR)
+             IF FUTUREDAYS>365 THEN
+             FUTUREDAYS=365
+            END
+
+           [2. Capture the end of the string for debug display] 
+           FDCHR=TMPCHR
+           IF LENGTH(FDCHR)>9 THEN
+            FDCHR=SEGMENT(FDCHR,LENGTH(FDCHR)-8,LENGTH(FDCHR))
+
+           FDCHR=FORMAT("########9",VALUE(FDCHR))
           END
         END
 
