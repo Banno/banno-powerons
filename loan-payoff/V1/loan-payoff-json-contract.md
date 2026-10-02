@@ -112,7 +112,7 @@ Any and all errors should be conveyed via the following structure:
 | Duplicate loan type in CFG (VLT 1234) || In the CFG vehicle loan type has a duplicate loan type that is already in home, boat or secured loan type parameters. Remove the duplicates to resolve. |
 | Duplicate loan type in CFG (SLT 1234) || In the CFG secured loan type has a duplicate loan type that is already in home, boat or vehicle loan type parameters. Remove the duplicates to resolve. |
 | Ineligible Loan Type | : [4-digit loan type] | This set of errors is for ineligible loans |
-| Payoff Days more than Maximum allowed |||
+| Payoff date out of range |||
 | Account Warning Found | : [3-digit comma separated account warning list] ||
 | Loan Warning Found | : [3-digit comma separated loan warning list] ||
 | Loan Projection Error | : [system generated PowerOn function LOANPROJECTCALC error message] | This set of errors is for loan payoff processing errors |
