@@ -65,7 +65,7 @@
 **                           Fix GETCOLLATERAL to work for cross-accounts. V2 code was not repositioning on
 **                           the correct member number/account.
 **    Ver. 2.0.3  09/24/2026 J. Keenan: cus-5022 scanning items
-**    Ver. 2.0.3  09/30/2026 J. Keenan: cus-5042 scanning items
+**    Ver. 2.0.4  10/05/2026 J. Keenan: cus-5042 scanning items
 **    
 *]
 SYMCONNECT
@@ -77,11 +77,11 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '09/30/26'
- BNOLASTMODTIME            = "17:00 PT"
+ BNOLASTMODDATE            = '10/05/26'
+ BNOLASTMODTIME            = "12:00 PT"
  BNOPROGRAMNAME            = "BANNO.LOAN.PAYOFF.V2.POW"
  BNOCFGFILENAME            = "BANNO.LOAN.PAYOFF.V2.CFG"
- BNOPROGRAMVERSION         = "2.0.3"
+ BNOPROGRAMVERSION         = "2.0.4"
  BNOPROGRAMNOTE1           = "various fixes"
  BNOPROGRAMNOTE2           = ""
 
