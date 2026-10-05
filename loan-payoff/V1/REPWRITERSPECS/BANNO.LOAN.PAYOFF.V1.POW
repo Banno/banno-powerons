@@ -40,6 +40,7 @@
 **                         loan warning code numbers.
 **                         Also, added Program Installation Date parameter setting
 **    Ver. 1.1.2  09/24/26 J. Keenan - cus-5022 scanning items
+**    Ver. 1.1.3  10/05/26 J. Keenan - cus-5042 scanning items
 *]
 
 SYMCONNECT
@@ -204,9 +205,9 @@ SETUP
 
  VALIDCHRINPUT1="32-126,128-175,181-184,189,190,198,199,208-216,221,222,224-253"
 
- PROGRAMVERSION="1.1.2"
- LASTMODDATE='09/24/26'
- LASTMODTIME="17:00 PT"
+ PROGRAMVERSION="1.1.3"
+ LASTMODDATE='10/05/26'
+ LASTMODTIME="12:00 PT"
  PRINTCONFIGINFO=FALSE
  PRINTCONFIGINFODAYS=90
  PROGRAMUPDATENOTE1="various fixes"
@@ -458,8 +459,24 @@ PROCEDURE READCONFIGFILESETTINGS
          TMPCHR=SEGMENT(LFLINE,4,LENGTH(LFLINE))
          CALL TMPCHRNLTS
          IF TMPCHR<>"" THEN
-          FUTUREDAYS=VALUE(TMPCHR)
-         FDCHR=FORMAT("#####9",VALUE(TMPCHR))
+          DO
+           [1. Bypass VALUE() crash for huge numbers and force to 365]
+           IF LENGTH(TMPCHR)>9 THEN
+            FUTUREDAYS=365
+           ELSE 
+            DO 
+             FUTUREDAYS=VALUE(TMPCHR)
+             IF FUTUREDAYS>365 THEN
+              FUTUREDAYS=365
+            END
+
+           [2. Capture the end of the string for debug display] 
+           FDCHR=TMPCHR
+           IF LENGTH(FDCHR)>9 THEN
+            FDCHR=SEGMENT(FDCHR,LENGTH(FDCHR)-8,LENGTH(FDCHR))
+
+           FDCHR=FORMAT("########9",VALUE(FDCHR))
+          END
         END
 
        [ Loan warning codes]
@@ -753,11 +770,13 @@ PROCEDURE GETLOANDATA
          LOANINELIGIBLEREASON="Ineligible Loan Type: "+INVLNTYPE
         END
 
-       [CHECK MAX DAYS]
-       IF PAYOFFDATE>SYSTEMDATE+FUTUREDAYS THEN
+       [CHECK MAX DAYS AND PAST DATES]
+       IF @RGSTATE="PERFORMLOANPAYOFFCALC" AND
+          (PAYOFFDATE>SYSTEMDATE+FUTUREDAYS OR
+           PAYOFFDATE<SYSTEMDATE) THEN
         DO
          LOANGOOD=FALSE
-         LOANINELIGIBLEREASON="Payoff Days more than Maximum allowed"
+         LOANINELIGIBLEREASON="Payoff date out of range"
         END
 
        [CHECK LOAN & ACCOUNT WARNINGS]
