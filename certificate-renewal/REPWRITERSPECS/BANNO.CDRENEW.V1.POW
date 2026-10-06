@@ -96,7 +96,7 @@
 **                Added the parameter settings to allow maturity option changes during
 **                memo mode, memo mode message configurable soft text, 
 **                and success message configurable soft text.
-**    Ver. 1.6.1  10/05/26 rrobison - Banno
+**    Ver. 1.6.1  10/06/26 rrobison - Banno
 **                cus-5021 security scanning items 
 **                cus-5056 security scanning items 
 **
@@ -361,8 +361,8 @@ END [DEFINE]
 
 SETUP
  INCLUDEPROGRAMINFO=TRUE
- BNOLASTMODDATE='10/05/25'
- BNOLASTMODTIME="17:00 PT"
+ BNOLASTMODDATE='10/06/26'
+ BNOLASTMODTIME="11:00 MT"
  BNOPROGRAMNAME="BANNO.CDRENEW.V1.POW"
  BNOCFGFILENAME = "BANNO.CDRENEW.V1.CFG"
  BNOPROGRAMVERSION="1.6.1"
