@@ -94,7 +94,7 @@
 **               * cus-5039 scanning items
 **   Ver. 4.3.0  09/29/2026 R. Robison:
 **               * cus-5043 scanning items (medium)
-**   Ver. 4.4.0  10/08/2026 R. Robison:
+**   Ver. 4.4.0  10/09/2026 R. Robison:
 **               * Add error display message support for error 507
 **               * Added verified property to savedRecipients
 **    
@@ -109,8 +109,8 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '10/08/26'
- BNOLASTMODTIME            = "12:30 MT"
+ BNOLASTMODDATE            = '10/09/26'
+ BNOLASTMODTIME            = "10:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
  BNOPROGRAMVERSION         = "4.4.0"
