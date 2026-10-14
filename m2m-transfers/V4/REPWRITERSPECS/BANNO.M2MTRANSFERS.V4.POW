@@ -97,6 +97,8 @@
 **   Ver. 4.4.0  10/09/2026 R. Robison:
 **               * Add error display message support for error 507
 **               * Added verified property to savedRecipients
+**   Ver. 4.5.0  10/14/2026 Jordan:
+**               * cus-5063 scanning items (medium from v1/v3 findings)
 **    
 *]
 SYMCONNECT
