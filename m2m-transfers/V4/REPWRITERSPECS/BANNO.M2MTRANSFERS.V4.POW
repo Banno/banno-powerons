@@ -97,6 +97,8 @@
 **   Ver. 4.4.0  10/09/2026 R. Robison:
 **               * Add error display message support for error 507
 **               * Added verified property to savedRecipients
+**   Ver. 4.5.0  10/16/2026 Jordan:
+**               * cus-5063 scanning items (medium from v1/v3 findings)
 **    
 *]
 SYMCONNECT
@@ -109,8 +111,8 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '10/09/26'
- BNOLASTMODTIME            = "10:00 MT"
+ BNOLASTMODDATE            = '10/16/26'
+ BNOLASTMODTIME            = "17:00 PT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
  BNOPROGRAMVERSION         = "4.4.0"
@@ -849,8 +851,8 @@ PRINT TITLE=BNOPROGRAMNAME
       CALL CREATETRANSFER
      IF BNOERRORCODE=0 THEN
       DO
-       IF PARAMENFORCELIMITS=TRUE THEN
-        CALL UPDATEPREFTOTALS
+      [* jpk REMOVED the old IF PARAMENFORCELIMITS=TRUE THEN CALL UPDATEPREFTOTALS here *]
+
        IF NEWTRANRECIPLOC=0 AND     [Only save the recipient account if the user ]
           NEWTRANNICKNAME<>"" THEN  [has elected to (nickname is not blank)      ]
         CALL CREATERECIPACCT
@@ -3504,6 +3506,38 @@ PROCEDURE DELETEEXPIRETRANSFER
 END [PROCEDURE]
 
 PROCEDURE CREATETRANSFER
+[* Check the daily transfer limits, reserve the amount on the
+** Preference record limts, double-check for a collision,
+** create transfer record,
+** and then revert the reservation if the transfer fails.
+*]
+[* 
+   Step 1: Check if limits are enforced.
+   Step 2: Calculate what the NEW limit amounts and counts will be.
+   Step 3: Check if these new amounts exceed the maximums. If yes, set VALIDLIMITSEXCEEDED=TRUE.
+   Step 4: (The Reservation) If VALIDLIMITSEXCEEDED=FALSE, immediately update the Preference record with the NEW amounts and counts.
+   Step 5: (The Double Check) Read the Preference record again. Are the actual amounts now higher than the maximums? 
+           If yes, another process bumped it up. Set VALIDLIMITSEXCEEDED=TRUE and call REVERTPREFTOTALS.
+   
+   Step 6: If VALIDLIMITSEXCEEDED=TRUE, throw the standard limit error.
+   Step 7: If VALIDLIMITSEXCEEDED=FALSE, proceed to determine TRANTYPE and execute the actual transfer (CREATEIMMEDIATETRANSFER or CREATEFUTURETRANSFER).
+   Step 8: If the transfer fails (TRANERROR<>""), throw the standard transfer error AND call REVERTPREFTOTALS to clean up the ledger.
+*]
+END [PROCEDURE]
+
+PROCEDURE REVERTPREFTOTALS
+[* This script handles the rollback if a collision is detected or
+** a transfer fails.
+*]
+[*
+   Step 1: Read the current Preference limits.
+   Step 2: Calculate the rollback amounts (subtracting the NEWTRANAMOUNT from the current XFERAMOUNT, and subtracting 1 from the XFERCOUNT).
+   Step 3: Update the Preference record with these lowered amounts.
+*]
+END [PROCEDURE]
+
+[* jpk remove when done
+PROCEDURE CREATETRANSFERPREVIOUSVERSION
 [* Create Transfer Record. If creating a new transfer record as a result
 ** of an edit, validate net increase/decrease against daily limits..
 *]
@@ -3552,6 +3586,7 @@ PROCEDURE CREATETRANSFER
     BNOERRORCODE=BNOERRCODEPROCXFER 
   END
 END [PROCEDURE]
+*]
 
 PROCEDURE CREATEIMMEDIATETRANSFER
 [* Perform an immediate transfer
