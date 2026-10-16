@@ -1,8 +1,11 @@
 [* BNOLB.SLLISTBUILD.DEF
-** Copyright 2023-2024 Jack Henry & Associates
+** Copyright 2023-2026 Jack Henry & Associates
 **
 ** Modification History:
 **   Ver. 1.0.0  01/24/24 10:00 MT TKainz - Original Programming
+**   Ver. 1.1.0  10/16/26 12:00 Added logic for Retail/Orgs to
+**               base the share/loan list build off the SSN of the
+**               member logging in.
 **
 ** This definition file is used in conjunction with
 ** BNOLB.SLLISTBUILD.PRO for building a list of eligible Shares,
@@ -180,4 +183,21 @@
  BNOSVCCODEMAX                = 99
  BNOSYMXCLIENTNUM             = NUMBER
  BNOSYMXINSTANCE              = NUMBER
+
+ BNOLISTBUILDBASIS            = NUMBER
+ BNOLISTBUILDBASISCHR         = CHARACTER ARRAY(1)
+ BNOLISTBUILDBASISPRIMARY     = 0
+ BNOLISTBUILDBASISSSN         = 1
+
+
+ BNONAMEISACCTPRIMARY         = NUMBER
+ BNONAMEISACCTJOINT           = NUMBER
+ BNONAMEISALTPRIMARY          = NUMBER
+ BNONAMEISALTJOINT            = NUMBER
+ BNOALLOWSLFLAG               = NUMBER
+ BNOTARGETNAMESSN             = CHARACTER
+
+ BNOTARGETNAMEFOUND           = NUMBER
+ BNOTARGETNAMETYPES           = NUMBER ARRAY(99)
+ BNONAMETYPESMAX              = 53
 

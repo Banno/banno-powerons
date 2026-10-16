@@ -1,8 +1,15 @@
 [* BNOLB.SLLISTBUILD.PRO
-** Copyright 2023-2024, Jack Henry & Associates
+** Copyright 2023-2026, Jack Henry & Associates
 **
 ** Modification History:
 **   Ver. 1.0.0  01/24/24 10:00 MT TKainz - Original Programming
+**   Ver. 1.1.0  10/16/26 12:00 MT TKainz - Retail/Org name record update
+**               Added ability for transfer 'from' list compiling to be based off a specific name record.
+**                 * If a value is not passed back in @RGUSERNUM2 then the program retains ver.1
+**                   functionality (list build based solely off Primary member and Pref Access records.
+**                 * If a value IS passed back then program bases the 'from' share/loan list build
+**                   off the SSN of the targeted name record and the relationship to the Preferenc
+**                   Access records.
 **
 ** These procedures serve the purpose of creating a list of eligible
 ** Shares, Loans and/or External Loans based upon how the search
@@ -84,6 +91,55 @@
 **     Set to TRUE to include charged-off Shares and Loans.
 **      EG:      TRUE
 **      DEFAULT: FALSE
+**
+******************************* ADDED FOR VER. 2.0 *******************************
+**
+**   BNOTARGETNAMETYPES
+**     this array represents the valid name types the program looks for when
+**     looking for targeted name types under eligible shares and/or loans. This
+**     boolean array is indexed by the name type (NAME:TYPE)
+**      EG:      BNOTARGETNAMETYPES(0)=TRUE Primary name types are valid
+**               BNOTARGETNAMETYPES(1)=TRUE Joint name types are valid
+**      DEFAULT: No defaults - values must be set in the CFG Letter file
+**
+**                   LOGIC MAPPING Used when @RGUSERNUM2 passes back a name locator to target
+**           |---------------------------------------------------------------------------------------------|
+**           | Org Membership* | Linked Member* |                                                          |
+**           |   (home acct)   |  (alt account) |    Account & Share/Loan Access                           |
+**           |Mbr logged in as |   Linked as    |                                                          |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           |    Primary      |     None       |  * All shares and loans on home account                  |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           |    Primary      |    Primary     |  * All shares and loans on home account                  |
+**           |                 |                |  * All shares and loans on the alternate account         |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           |    Primary      | Acct Lvl Joint |  * All shares, loans on home account                     |
+**           |                 |                |  * All non-certificate shares on the alternate account   |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           |    Primary      |  Non-Primary   |  * All shares, loans on home account                     |
+**           |                 |   non-joint    |  * Only shares and loans which have the member’s name    |
+**           |                 |                |    (SSN) under them as an approved name type             |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           | Acct Lvl Joint  |     None       |  * All non-certificate shares on the home account        |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           | Acct Lvl Joint  |    Primary     |  * All non-certificate shares on the home account        |
+**           |                 |                |  * All shares and loans on the alternate account         |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           | Acct Lvl Joint  | Acct Lvl Joint |  * All non-certificate shares on the home account        |
+**           |                 |                |  * All non-certificate shares on the alternate account   |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           | Acct Lvl Joint  |  Non-Primary   |  * All non-certificate shares on the home account        |
+**           |                 |   non-joint    |  * Only shares and loans which have the member’s name    |
+**           |                 |                |    (SSN) under them as an approved name type             |
+**           |-----------------|----------------|----------------------------------------------------------|
+**           | When BNOLISTBUILDBASIS=BNOLISTBUILDBASISSSN and evaluating an alternate (cross) account,    |
+**           | where the targeted SSN does not appear as a primary or joint name record at the account     |
+**           | level, a share or loan will only be added to the share/loan list if an eligible name type   |
+**           | record is found with the targeted SSN under the share or loan.                              |
+**           |---------------------------------------------------------------------------------------------|
+**           | * Note: Org Membership refers to the current (home) account being accessed. Linked Member   |
+**           |   refers to an alternet account linked to the home account via Preference Access record(s)  |
+**           |---------------------------------------------------------------------------------------------|
 **
 ********************************************************************************
 ** RETURNS
@@ -233,11 +289,21 @@ PROCEDURE BNOBUILDSHARELOANLISTINIT
  BNOEXTLOANCOUNT=0
  BNOTOTALEXTLOANBALANCE=$0.00
  BNOINCLUDEEXTLOANS=BNOFALSE
+
+ BNOLISTBUILDBASISCHR(BNOLISTBUILDBASISPRIMARY)="by Primary"
+ BNOLISTBUILDBASISCHR(BNOLISTBUILDBASISSSN)="by SSN"
 END
 
 PROCEDURE BNOBUILDSHARELOANLIST
 [* Based upon the program settings, the program branches off to
 ** gather Share, Loan, and/or External Loan data.
+**
+** The logic used to build the share/loan list depends on the BNOLISTBUILDBASIS
+** value. See detailed header info above.
+**
+** PASS    BNOLISTBUILDBASIS      Method to be used in building the S/L list.
+** PASS    BNONAMEISACCTPRIMARY   Is the logged in member the primary name record?
+** PASS    BNONAMEISACCTJOINT     Is the logged in member an account joint name record?
 *]
  IF BNOSLTYPE=BNOSLTYPESHARE OR BNOSLTYPE=BNOSLTYPESHARELOAN THEN
   CALL BNOBUILDSHARELIST
@@ -277,8 +343,21 @@ PROCEDURE BNOBUILDSHARELIST
    BNOACCESSXFEROUTFLAG=BNOTRUE
    BNOACCESSXFERINFLAG=BNOTRUE
    BNOACCESSWDFLAG=BNOTRUE
-   CALL BNOADDTOSHARELIST
-  END
+
+   BNOALLOWSLFLAG=FALSE
+
+   IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISPRIMARY THEN
+    BNOALLOWSLFLAG=TRUE
+
+   ELSE IF BNONAMEISACCTPRIMARY=TRUE OR
+           (BNONAMEISACCTJOINT=TRUE AND SHARE:SHARECODE<>2) THEN
+    BNOALLOWSLFLAG=TRUE
+
+   IF BNOALLOWSLFLAG=TRUE THEN
+    CALL BNOADDTOSHARELIST
+
+  END [FOR EACH SHARE]
+
  UNTIL BNOSHARECOUNT>=BNOSHAREARRAYMAX
 
  IF BNOCROSSACCTACCESS=BNOTRUE THEN
@@ -406,8 +485,11 @@ END
 PROCEDURE BNOADDCROSSACCOUNTS
 [* Review the current Preference Access records on the account
 ** to add cross account Shares and/or Loans as appropriate
+**
+** PASS    BNOTARGETNAMESSN  Target SSN to match when BNOLISTBUILDBASIS=BNOLISTBUILDBASISSSN
 *]
- FOR EACH PREFERENCE WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)
+
+ FOR EACH PREFERENCE [WITH (PREFERENCE:LOCATOR=@PREFLOCATOR)]
   DO
    FOR EACH PREFERENCE ACCESS WITH
     ((PREFERENCE ACCESS:ACCESSTYPE=BNOACCESSRECTYPEXFEROUT OR
@@ -442,6 +524,24 @@ PROCEDURE BNOADDCROSSACCOUNTS
      BNOPREFACCESSID=PREFERENCE ACCESS:ID
      FOR ACCOUNT PREFERENCE ACCESS:ACCOUNTNUMBER
       DO
+       BNONAMEISALTPRIMARY=FALSE
+       BNONAMEISALTJOINT=FALSE
+       BNOALLOWSLFLAG=FALSE
+       FOR EACH NAME WITH (BNOALLOWSLFLAG=FALSE AND
+                           NAME:DEATHDATE=BNODATENULL AND
+                          (NAME:EXPIRATIONDATE=BNODATENULL OR NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                           NAME:EFFECTIVEDATE<=SYSTEMDATE AND
+                           NAME:SSN<>"" AND
+                           NAME:SSN=BNOTARGETNAMESSN AND
+                          (NAME:TYPE=0 OR NAME:TYPE=1))
+          DO
+           BNOALLOWSLFLAG=TRUE
+           IF NAME:TYPE=0 THEN
+            BNONAMEISALTPRIMARY=TRUE
+           ELSE IF NAME:TYPE=1 THEN
+            BNONAMEISALTJOINT=TRUE
+          END UNTIL BNOALLOWSLFLAG=TRUE
+
        IF BNOCROSSACCTSLTYPE=BNOSLTYPESHARE AND
          (BNOPREFACCESSIDTYPE=2 OR
           BNOPREFACCESSIDTYPE=0) THEN
@@ -459,13 +559,44 @@ PROCEDURE BNOADDCROSSACCOUNTS
            IF BNOPREFACCESSIDTYPE=2 OR
              (BNOPREFACCESSIDTYPE=0 AND BNOPREFACCESSID=SHARE:ID) THEN
             DO
+
              BNOCROSSACCTFLAG=BNOTRUE
              BNOACCESSIQFLAG=BNOACCESSRECIQFLAG
              BNOACCESSXFEROUTFLAG=BNOACCESSRECXFEROUTFLAG
              BNOACCESSXFERINFLAG=BNOACCESSRECXFERINFLAG
              BNOACCESSWDFLAG=BNOACCESSRECWDFLAG
-             IF BNOSHARECOUNT<BNOSHAREARRAYMAX THEN
+
+             BNOTARGETNAMEFOUND=FALSE
+
+             IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISPRIMARY THEN
+              BNOTARGETNAMEFOUND=TRUE
+
+             ELSE IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISSSN THEN
+              DO
+               IF BNONAMEISALTPRIMARY=TRUE OR
+                 (BNONAMEISALTJOINT=TRUE AND SHARE:SHARECODE<>2) THEN
+                DO
+                 BNOTARGETNAMEFOUND=TRUE
+                END
+               ELSE
+                DO
+                 FOR EACH SHARE NAME WITH (SHARE NAME:DEATHDATE=BNODATENULL AND
+                                          (SHARE NAME:EXPIRATIONDATE=BNODATENULL OR
+                                           SHARE NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                                           SHARE NAME:EFFECTIVEDATE<=SYSTEMDATE)
+                  DO
+                   IF SHARE NAME:SSN=BNOTARGETNAMESSN AND
+                      BNOTARGETNAMETYPES(SHARE NAME:TYPE)=TRUE AND
+                      SHARE:SHARECODE<>2 THEN
+                    BNOTARGETNAMEFOUND=TRUE
+                  END
+                END
+              END [ELSE IF PROGRAMVERSIONTOUSE=NEWVERSION]
+
+             IF BNOTARGETNAMEFOUND=TRUE AND
+                BNOSHARECOUNT<BNOSHAREARRAYMAX THEN
               CALL BNOADDTOSHARELIST
+
             END
           END
          UNTIL BNOSHARECOUNT>=BNOSHAREARRAYMAX
@@ -492,8 +623,40 @@ PROCEDURE BNOADDCROSSACCOUNTS
              BNOACCESSXFEROUTFLAG=BNOACCESSRECXFEROUTFLAG
              BNOACCESSXFERINFLAG=BNOACCESSRECXFERINFLAG
              BNOACCESSWDFLAG=BNOACCESSRECWDFLAG
-             IF BNOLOANCOUNT<BNOLOANARRAYMAX THEN
+
+
+             BNOTARGETNAMEFOUND=FALSE
+
+             IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISPRIMARY THEN
+              BNOTARGETNAMEFOUND=TRUE
+             ELSE IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISSSN THEN
+              DO
+               IF BNONAMEISALTPRIMARY=TRUE THEN
+                DO
+                 BNOTARGETNAMEFOUND=TRUE
+                END
+               ELSE
+                DO
+
+
+                 FOR EACH LOAN NAME WITH ((LOAN NAME:EXPIRATIONDATE=BNODATENULL OR
+                                           LOAN NAME:EXPIRATIONDATE>SYSTEMDATE) AND
+                                           LOAN NAME:DEATHDATE=BNODATENULL AND
+                                           LOAN NAME:EFFECTIVEDATE<=SYSTEMDATE)
+                  DO
+                   IF LOAN NAME:SSN=BNOTARGETNAMESSN AND
+                      BNOTARGETNAMETYPES(LOAN NAME:TYPE)=TRUE THEN
+                    BNOTARGETNAMEFOUND=TRUE
+                  END
+                END
+              END [IF PROGRAMVERSIONTOUSE=NEWVERSION]
+
+
+
+             IF BNOTARGETNAMEFOUND=TRUE AND
+                BNOLOANCOUNT<BNOLOANARRAYMAX THEN
               CALL BNOADDTOLOANLIST
+
             END
           END
          UNTIL BNOLOANCOUNT>=BNOLOANARRAYMAX
@@ -528,12 +691,16 @@ END
 
 PROCEDURE BNOBUILDLOANLIST
 [* Build a list of eligible loans
+** If list build is based on Retail Org logic, then only add qua;lifying loans
 *]
 
  CALL BNOSETSERVICELISTS
  CALL BNOSETEXCLUDELOANLIST
  BNOLOANCOUNT=0
  BNOTOTALLOANBALANCE=$0.00
+
+
+
 
  FOR EACH LOAN WITH ((BNOINCLUDECLOSED=BNOTRUE OR
                      (BNOINCLUDECLOSED=BNOFALSE AND
@@ -549,7 +716,21 @@ PROCEDURE BNOBUILDLOANLIST
    BNOACCESSXFEROUTFLAG=BNOTRUE
    BNOACCESSXFERINFLAG=BNOTRUE
    BNOACCESSWDFLAG=BNOTRUE
-   CALL BNOADDTOLOANLIST
+
+
+
+
+
+
+   BNOALLOWSLFLAG=FALSE
+
+   IF BNOLISTBUILDBASIS=BNOLISTBUILDBASISPRIMARY THEN
+    BNOALLOWSLFLAG=TRUE
+   ELSE IF BNONAMEISACCTPRIMARY=TRUE THEN
+    BNOALLOWSLFLAG=TRUE
+
+   IF BNOALLOWSLFLAG=TRUE THEN
+    CALL BNOADDTOLOANLIST
   END
  UNTIL BNOLOANCOUNT>=BNOLOANARRAYMAX
 
