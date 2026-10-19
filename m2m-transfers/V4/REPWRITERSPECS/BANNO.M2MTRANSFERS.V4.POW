@@ -104,19 +104,19 @@
 **               * Added verified property to savedRecipients
 **   Ver. 4.5.0  10/14/2026 Jordan:
 **               * cus-5063 scanning items (medium from v1/v3 findings)
-**
 **   Ver. 4.6.0  10/16/2026 T. Kainz:
 **               * cus-5009 Retail Org Update. A value passed back in @RGUSERNUM2 represents the name
 **                 locator of the member logging in. The locator is used to find the related name record
 **                 to retrieve the associated SSN. THe SSN is then used to determine which shares/loans
-**                 are added to the transfer 'from' list.
-**                 * If there is no locator record passed back, or an SSN could not be retrieved,
-**                   list build is based off prior version (VER. 1.0)
+**                 are added to the transfer 'from' list based on the logic mapping chart below.
+**                 * If there is no locator record passed back, the list build is based off prior version
+**                   (VER. 1.0)
+**                 * If there is a locator but the SSN could not be retrieved, an error message will be
+**                   returned
 **                 * If there is a locator and the resulting SSN retrieved, the SSN is then used to
-**                   determine which shares/loans are added to the transfer 'from' list using the following
-**                   logic mapping:
+**                   determine which shares/loans are added to the transfer 'from' list.
 **
-**                   LOGIC MAPPING Used when @RGUSERNUM2 passes back a name locator to target
+**                   LOGIC MAPPING Used when @RGUSERNUM2 passes back a valid name locator to target
 **           |---------------------------------------------------------------------------------------------|
 **           | Org Membership* | Linked Member* |                                                          |
 **           |   (home acct)   |  (alt account) |    Account & Share/Loan Access                           |
@@ -146,10 +146,10 @@
 **           |                 |   non-joint    |  * Only shares and loans which have the member’s name    |
 **           |                 |                |    (SSN) under them as an approved name type             |
 **           |-----------------|----------------|----------------------------------------------------------|
-**           | When BNOLISTBUILDBASIS=BNOLISTBUILDBASISSSN and evaluating an alternate (cross) account,    |
-**           | where the targeted SSN does not appear as a primary or joint name record at the account     |
-**           | level, a share or loan will only be added to the share/loan list if an eligible name type   |
-**           | record is found with the targeted SSN under the share or loan.                              |
+**           | When evaluating an alternate (cross) account, where the targeted SSN does not appear as     |
+**           | a primary or joint name record at the account level, a share or loan will only be added  to |
+**           | the share/loan list if an eligible name type record is found with the targeted SSN under the|
+**           | share or loan.                                                                              |
 **           |---------------------------------------------------------------------------------------------|
 **           | * Note: Org Membership refers to the current (home) account being accessed. Linked Member   |
 **           |   refers to an alternet account linked to the home account via Preference Access record(s)  |
@@ -167,12 +167,12 @@ DEFINE
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
  BNOLASTMODDATE            = '10/16/26'
- BNOLASTMODTIME            = "16:30 MT"
+ BNOLASTMODTIME            = "16:00 MT"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
- BNOPROGRAMVERSION         = "4.4.0"
- BNOPROGRAMNOTE1           = "Update for Retail Org"
- BNOPROGRAMNOTE2           = ""
+ BNOPROGRAMVERSION         = "4.6.0"
+ BNOPROGRAMNOTE1           = "Update for Retail Orgs."
+ BNOPROGRAMNOTE2           = "SSN based share/loan list build"
 
  BNODEBUGPRINTINFODAYS     = 60
  BNODEBUGINCLUDEPARAMS     = 1
@@ -1143,6 +1143,7 @@ PROCEDURE SETUPDATA
 
  TRANSFERFREQCHR(TRANFREQSTD,13)="bimonthly"
  TRANSFERFREQCHR(TRANFREQALT,13)=""
+
  LISTBUILDBASISCHR(BNOLISTBUILDBASISPRIMARY)="by Primary"
  LISTBUILDBASISCHR(BNOLISTBUILDBASISSSN)="by SSN"
 END [PROCEDURE]
@@ -5304,10 +5305,10 @@ PROCEDURE BNOPARSEDATALINE
 END [PROCEDURE]
 
 PROCEDURE FINDNAMEBYLOC
-[* using the locator code passed back in @RGUSERNUM2), find the name record
-** PASS    TARGETNAMELOC     The name record locator to find
-** RETURN  BNONAMEISACCTPRIMARY (boolean) If found was then name the account primary
-** RETURN  BNONAMEISACCTJOINT (boolean) If found was then name an account level joint
+[* using the locator code passed back in @RGUSERNUM2, find the name record
+** PASS    TARGETNAMELOC                  The name record locator to find
+** RETURN  BNONAMEISACCTPRIMARY (boolean) If found was the name the account primary
+** RETURN  BNONAMEISACCTJOINT (boolean)   If found was the name an account level joint
 *]
  BNOTARGETNAMESSN=""
  BNONAMEISACCTPRIMARY=FALSE
