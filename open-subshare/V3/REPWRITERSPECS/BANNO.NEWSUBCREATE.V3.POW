@@ -80,7 +80,9 @@
 **  Modification History
 **
 **    Ver. 3.0.0  08/31/2026 R. Robison: Original V3 version of Open Subshare PowerOn
-**                           Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
+**                Feature set based on: BANNO.NEWSUBCREATE.V1.POW Ver. 1.6.0  07/25/25
+**    Ver. 3.0.1  10/20/26 RRobison
+**                cus-5038 code scanning items
 **                       
 **    
 *]
@@ -93,14 +95,14 @@ DEFINE
  #INCLUDE "RD.GETDATA.DEF"
  #INCLUDE "RB.LISTEXPAND.DEF"
 
- BNOLASTMODDATE            = '08/31/26'
- BNOLASTMODTIME            = "17:00 MT"
+ BNOLASTMODDATE            = '10/20/26'
+ BNOLASTMODTIME            = "13:00 MT"
  BNOPROGRAMNAME            = "BANNO.NEWSUBCREATE.V3.POW"
  BNOCFGFILENAME            = "BANNO.NEWSUBCREATE.V3.CFG"
  [TODO: figure out naming -- using V1 for the datafile is kinda weird]
  BNOCFGDATAFILENAME        = "BANNO.NEWSUBCREATE.V1.CFG"
- BNOPROGRAMVERSION         = "3.0.0"
- BNOPROGRAMNOTE1           = "v3 of open subshare poweron"
+ BNOPROGRAMVERSION         = "3.0.1"
+ BNOPROGRAMNOTE1           = "cus-5038 code scanning items"
  BNOPROGRAMNOTE2           = ""
 
  BNODEBUGPRINTINFODAYS     = 60

@@ -86,7 +86,7 @@
 **              Display error if there are no shares or loans under the member account
 **  Ver. 1.6.0  07/25/25 TKainz
 **              Set up foundation for custom error codes starting at error code 600
-**  Ver. 1.6.1  10/06/26 RRobison
+**  Ver. 1.6.1  10/20/26 RRobison
 **              cus-5038 code scanning items
 **
 **  This Banno service PowerOn allows the user to open a new
@@ -610,7 +610,7 @@ END
 
 SETUP
  PROGRAMVERSION="1.6.1"
- LASTMODDATE='10/06/26'
+ LASTMODDATE='10/20/26'
  LASTMODTIME="15:00 MT"
 
  PROGRAMUPDATENOTE1="code scanning fixes"
@@ -3317,16 +3317,15 @@ IF FEEFROMID<>"" THEN
    TRANERRORTEXT=SACFEESPECFILEERROR
   ELSE
    DO
-     FOUND=FALSE
-     ACCTINDEX=1
-     WHILE ACCTINDEX<=SACFEESHARECOUNT AND
-           FOUND=FALSE
-      DO
-       IF FEEFROMID=SACFEESHAREID(ACCTINDEX) THEN
-        FOUND=TRUE
-
-       ACCTINDEX=ACCTINDEX+1
-      END
+    FOUND=FALSE
+    ACCTINDEX=1
+    WHILE ACCTINDEX<=SACFEESHARECOUNT AND
+          FOUND=FALSE
+     DO
+      IF FEEFROMID=SACFEESHAREID(ACCTINDEX) THEN
+       FOUND=TRUE
+      ACCTINDEX=ACCTINDEX+1
+     END
 
      IF FOUND=FALSE THEN
       TRANERRORTEXT="Invalid Fee Share ID" 
