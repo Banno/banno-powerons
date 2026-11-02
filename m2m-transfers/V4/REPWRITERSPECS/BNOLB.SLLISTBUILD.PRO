@@ -3,13 +3,13 @@
 **
 ** Modification History:
 **   Ver. 1.0.0  01/24/24 10:00 MT TKainz - Original Programming
-**   Ver. 1.1.0  10/16/26 14:30 MT TKainz - Retail Org. name record update
+**   Ver. 1.1.0  11/02/26 11:30 MT TKainz - Retail Org. name record update
 **               Added ability for transfer 'from' list compiling to be based off a specific name record.
-**                 * If a value is not passed back in @RGUSERNUM2 then the program retains ver.1
+**                 * If a value is not passed back in @RGUSERNUM2 then the program retains ver. 1
 **                   functionality (list build based solely off Primary member and Pref Access records.
 **                 * If a value IS passed back then program bases the 'from' share/loan list build
 **                   off the SSN of the targeted name record and the relationship to the Preference
-**                   Access records.
+**                   Access records. Reference the LOGIC MAPPING info below.
 **
 ** These procedures serve the purpose of creating a list of eligible
 ** Shares, Loans and/or External Loans based upon how the search

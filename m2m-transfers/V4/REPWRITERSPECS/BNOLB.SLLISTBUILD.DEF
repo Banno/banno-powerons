@@ -3,7 +3,7 @@
 **
 ** Modification History:
 **   Ver. 1.0.0  01/24/24 10:00 MT TKainz - Original Programming
-**   Ver. 1.1.0  10/16/26 12:00 Added logic for Retail/Orgs to
+**   Ver. 1.1.0  11/02/26 11:30 MT TKainz - Added logic for Retail/Orgs to
 **               base the share/loan list build off the SSN of the
 **               member logging in.
 **
