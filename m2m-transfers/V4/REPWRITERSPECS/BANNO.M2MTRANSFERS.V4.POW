@@ -102,9 +102,7 @@
 **   Ver. 4.4.0  10/09/2026 R. Robison:
 **               * Add error display message support for error 507
 **               * Added verified property to savedRecipients
-**   Ver. 4.5.0  10/14/2026 Jordan:
-**               * cus-5063 scanning items (medium from v1/v3 findings)
-**   Ver. 4.6.0  10/16/2026 T. Kainz:
+**   Ver. 4.5.0  11/02/2026 T. Kainz:
 **               * cus-5009 Retail Org Update. A value passed back in @RGUSERNUM2 represents the name
 **                 locator of the member logging in. The locator is used to find the related name record
 **                 to retrieve the associated SSN. THe SSN is then used to determine which shares/loans
@@ -166,11 +164,11 @@ DEFINE
  #INCLUDE "RB.LISTEXPAND.DEF"
  #INCLUDE "BNOLB.SLLISTBUILD.DEF"
 
- BNOLASTMODDATE            = '10/16/26'
- BNOLASTMODTIME            = "16:00 MT"
+ BNOLASTMODDATE            = '11/02/26'
+ BNOLASTMODTIME            = "11:30 MST"
  BNOPROGRAMNAME            = "BANNO.M2MTRANSFERS.V4.POW"
  BNOCFGFILENAME            = "BANNO.M2MTRANSFERS.V4.CFG"
- BNOPROGRAMVERSION         = "4.6.0"
+ BNOPROGRAMVERSION         = "4.5.0"
  BNOPROGRAMNOTE1           = "Update for Retail Orgs."
  BNOPROGRAMNOTE2           = "SSN based share/loan list build"
 
