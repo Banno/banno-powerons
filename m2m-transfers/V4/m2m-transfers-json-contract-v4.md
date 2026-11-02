@@ -126,7 +126,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientMemberId": "9876543210",
         "recipientAccountType": "savings",
         "recipientAccountId": "0001", // optional
-        "recipientNickname": "Zeke's Future"
+        "recipientNickname": "Zeke's Future",
+        "recipientVerified": true
       },
       {
         "recipientLoc": "5431543",
@@ -134,7 +135,8 @@ list of institution and member limits, eligible shares, list of scheduled transf
         "recipientMemberId": "9876543210",
         "recipientAccountType": "loan",
         "recipientAccountId": "", // optional
-        "recipientNickname": "Sally Martin"
+        "recipientNickname": "Sally Martin",
+        "recipientVerified": true
       }
     ],
     "labels": {
