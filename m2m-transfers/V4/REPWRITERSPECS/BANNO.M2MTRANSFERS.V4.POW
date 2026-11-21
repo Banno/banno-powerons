@@ -1,6 +1,6 @@
 [*  Copyright 2026 Jack Henry and Associates
 **
-**  PowerOn Name:       BANNO.M2MTRANSFERS.V4.POW
+**  PowerOn Name:       BANNO.M2MTRANSFERS.V4JPK.POW
 **  Letterfile Name:    BANNO.M2MTRANSFERS.V4.CFG
 **
 **  --------------------------------------------------------------------
@@ -3655,6 +3655,7 @@ PROCEDURE CREATETRANSFER
 ** of an edit, validate net increase/decrease against daily limits.
 ** (Includes optimistic concurrency lock to serialize limit enforcement).
 *]
+[*
  BNODEBUGMSG="*** PROCEDURE CREATETRANSFER"
  CALL BNODEBUGMSGADD
 
@@ -5418,4 +5419,5 @@ END [PROCEDURE]
 
 #INCLUDE "RB.LISTEXPAND"
 #INCLUDE "BNOLB.SLLISTBUILD.PRO"
+
 
